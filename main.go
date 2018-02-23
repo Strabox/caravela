@@ -4,8 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/strabox/caravela/discovery"
+	"github.com/strabox/caravela/api/discovery"
 	"github.com/strabox/caravela/membership"
+	"github.com/strabox/caravela/node"
 	"github.com/strabox/go-chord"
 	"log"
 	"net"
@@ -33,8 +34,17 @@ func main() {
 	fmt.Println("#          CARAVELA: A Cloud @ Edge                 000000       #")
 	fmt.Println("#            Author: Andre Pires                   000000000     #")
 	fmt.Println("#  Email: pardal.pires@tecnico.ulisboa.pt           | | | |      #")
-	fmt.Println("#              IST/INESC-ID                        |  | | |      #")
+	fmt.Println("#              IST/INESC-ID                        |  | |  |     #")
 	fmt.Println("##################################################################")
+
+	// AKA: TRY ZONZE
+	var g = node.NewGuid(node.GUID_BYTES_SIZE)
+	g.PrintDecimal()
+	var h = node.NewResourcesHash(node.GUID_BYTES_SIZE)
+	h.Write(g.GetKey())
+	fmt.Println(h.Sum(nil))
+	fmt.Println("ENDA")
+	return
 
 	/*
 		#################################################
@@ -45,9 +55,11 @@ func main() {
 		fmt.Println("ERR Invalid Host IP")
 		os.Exit(1)
 	}
+
 	var hostname = *hostIP + ":" + strconv.Itoa(CHORD_PORT)
 	var chordListner = &membership.ChordListner{}
 	var config = chord.DefaultConfig(hostname)
+
 	config.Delegate = chordListner
 	config.NumVnodes = CHORD_V_NODES
 	config.NumSuccessors = CHORD_NUM_SUCCESSORS
