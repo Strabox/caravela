@@ -30,9 +30,10 @@ func main() {
 	flag.Parse() // Scan and parse the arguments list
 
 	fmt.Println("##################################################################")
-	fmt.Println("#                    CARAVELA: A Cloud @ Edge                    #")
-	fmt.Println("#                     Author: Andre Pires                        #")
-	fmt.Println("#            Email: pardal.pires@tecnico.ulisboa.pt              #")
+	fmt.Println("#          CARAVELA: A Cloud @ Edge                 000000       #")
+	fmt.Println("#            Author: Andre Pires                   000000000     #")
+	fmt.Println("#  Email: pardal.pires@tecnico.ulisboa.pt           | | | |      #")
+	fmt.Println("#              IST/INESC-ID                        |  | | |      #")
 	fmt.Println("##################################################################")
 
 	/*
