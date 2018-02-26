@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/docker/docker/client"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/discovery"
 	"github.com/strabox/caravela/membership"
 	"github.com/strabox/caravela/node"
 	"github.com/strabox/go-chord"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -28,6 +31,7 @@ var joinIP *string = flag.String("joinIP", "NOT_AN_IP", "Join a CARAVELA instanc
 var hostIP *string = flag.String("hostIP", "NOT_AN_IP", "Docker Host IP")
 
 func main() {
+	var dockerClient *client.Client
 	flag.Parse() // Scan and parse the arguments list
 
 	fmt.Println("##################################################################")
@@ -37,7 +41,26 @@ func main() {
 	fmt.Println("#              IST/INESC-ID                        |  | |  |     #")
 	fmt.Println("##################################################################")
 
+	/*
+		#################################################
+		#	  Initializing Docker Client                #
+		#################################################
+	*/
+
+	dockerClient = initializeDockerClient("1.35")
+
 	// AKA: TRY ZONZE
+	cpu, ram := getDockerCPUandRAM(dockerClient)
+	fmt.Printf("%d %d\n", cpu, ram)
+
+	one := big.NewInt(1)
+	test1 := big.NewInt(1)
+	test2 := big.NewInt(2)
+	test3 := big.NewInt(160)
+	test1.Exp(test2, test3, nil)
+	test1.Sub(test1, one)
+	fmt.Println("Test: ", test1.Bytes())
+
 	var g = node.NewGuid(node.GUID_BYTES_SIZE)
 	g.PrintDecimal()
 	var h = node.NewResourcesHash(node.GUID_BYTES_SIZE)
@@ -108,4 +131,35 @@ func main() {
 	router.HandleFunc("/lookup/{key}", discovery.ChordLookup).Methods("GET")
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(CARAVELA_PORT), router))
 	fmt.Println("CARAVELA UP AND RUNNING ...")
+}
+
+/*
+initializeDockerClient creates and initialize a docker client
+*/
+func initializeDockerClient(runningDockerVersion string) *client.Client {
+	cli, err := client.NewEnvClient()
+
+	if err != nil {
+		fmt.Println("[Creating Docker SDK Client] ", err)
+		panic(err)
+	}
+
+	cli, err = client.NewClientWithOpts(client.WithVersion(runningDockerVersion))
+	if err != nil {
+		fmt.Println("[Init Docker SDK Client] ", err)
+		panic(err)
+	}
+
+	return cli
+}
+
+/*
+getDockerCPUandRAM get CPU and RAM dedicated to Docker engine (BY the user)
+*/
+func getDockerCPUandRAM(client *client.Client) (uint, uint) {
+	ctx := context.Background()
+	info, _ := client.Info(ctx)
+	cpu := uint(info.NCPU)
+	ram := uint(info.MemTotal / 1000000) //Return in MB
+	return cpu, ram
 }

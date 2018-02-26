@@ -10,7 +10,3 @@ type Resources struct {
 func NewResources(vCPU uint, RAM uint) *Resources {
 	return &Resources{vCPU, RAM}
 }
-
-func (*Resources) GenerateRandomGuid() {
-
-}
