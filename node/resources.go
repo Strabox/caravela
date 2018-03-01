@@ -3,10 +3,10 @@ package node
 import ()
 
 type Resources struct {
-	vCPU uint
-	RAM  uint
+	vCPU int
+	RAM  int
 }
 
-func NewResources(vCPU uint, RAM uint) *Resources {
+func NewResources(vCPU int, RAM int) *Resources {
 	return &Resources{vCPU, RAM}
 }

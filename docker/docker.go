@@ -1,37 +1,46 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"github.com/docker/docker/client"
 )
 
+var dockerClient *client.Client = nil
+
 /*
-InitializeDockerClient creates and initialize a docker client
+Creates and initialize a docker client.
+Used to access the Docker engine.
 */
-func InitializeDockerClient(runningDockerVersion string) *client.Client {
-	cli, err := client.NewEnvClient()
+func Initialize(runningDockerVersion string) {
+	if dockerClient != nil {
+		cli, err := client.NewEnvClient()
 
-	if err != nil {
-		fmt.Println("[Creating Docker SDK Client] ", err)
-		panic(err)
+		if err != nil {
+			fmt.Println("[Creating Docker Client] ", err)
+			panic(err)
+		}
+
+		cli, err = client.NewClientWithOpts(client.WithVersion(runningDockerVersion))
+		if err != nil {
+			fmt.Println("[Init Docker Client] ", err)
+			panic(err)
+		}
+
+		dockerClient = cli
 	}
-
-	cli, err = client.NewClientWithOpts(client.WithVersion(runningDockerVersion))
-	if err != nil {
-		fmt.Println("[Init Docker SDK Client] ", err)
-		panic(err)
-	}
-
-	return cli
 }
 
 /*
-GetDockerCPUandRAM get CPU and RAM dedicated to Docker engine (BY the user)
+Get CPU and RAM dedicated to Docker engine (BY the user)
 */
-func GetDockerCPUandRAM(client *client.Client) (uint, uint) {
-	ctx := context.Background()
-	info, _ := client.Info(ctx)
-	cpu := uint(info.NCPU)
-	ram := uint(info.MemTotal / 1000000) //Return in MB (MegaBytes)
-	return cpu, ram
+func GetDockerCPUandRAM() (int, int) {
+	if dockerClient != nil {
+		ctx := context.Background()
+		info, _ := dockerClient.Info(ctx)
+		cpu := info.NCPU
+		ram := info.MemTotal / 1000000 //Return in MB (MegaBytes)
+		return cpu, int(ram)
+	}
+	panic(fmt.Errorf("Docker Client Not Initialized"))
 }

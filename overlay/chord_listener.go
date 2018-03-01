@@ -1,8 +1,8 @@
-package membership
+package overlay
 
 import (
 	"fmt"
-	"github.com/strabox/go-chord"
+	"github.com/bluele/go-chord"
 )
 
 type ChordListner struct {

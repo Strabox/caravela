@@ -1,4 +1,4 @@
-FROM golang:1.7.1-alpine
+FROM golang:1.9-alpine
 
 ARG GOOS="linux"
 
@@ -9,7 +9,8 @@ RUN set -ex
 RUN apk add --no-cache --virtual .build-deps git
 
 RUN go get github.com/gorilla/mux
-RUN go get github.com/strabox/go-chord
+RUN go get github.com/bluele/go-chord
+RUN go get github.com/docker/docker/client
 RUN GOOS=$GOOS go install -v -gcflags "-N -l" github.com/strabox/caravela
 
 RUN apk del .build-deps

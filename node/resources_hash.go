@@ -12,7 +12,7 @@ type ResourcesHash struct {
 }
 
 func GetHash() hash.Hash {
-	return NewResourcesHash(GUID_BYTES_SIZE)
+	return NewResourcesHash(GUID_BITS_SIZE / 8)
 }
 
 func NewResourcesHash(bytesSize uint) *ResourcesHash {

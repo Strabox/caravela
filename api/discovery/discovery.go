@@ -2,8 +2,8 @@ package discovery
 
 import (
 	"encoding/json"
+	"github.com/bluele/go-chord"
 	"github.com/gorilla/mux"
-	"github.com/strabox/go-chord"
 	"net/http"
 )
 
