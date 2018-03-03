@@ -15,6 +15,9 @@ const CHORD_TIMEOUT_MILIS = 2000
 const CHORD_V_NODES = 3
 const CHORD_NUM_SUCCESSORS = 3
 
+const CPU_PARTITIONS = []int{25,20,15,10,10,10,10}
+const RAM_PARTITIONS = []int{25,25,25,25}
+
 // Flags used as input to CARAVELA container launch
 var joinIP *string = flag.String("joinIP", "NOT_AN_IP", "Join a CARAVELA instance")
 var hostIP *string = flag.String("hostIP", "NOT_AN_IP", "Docker Host IP")
