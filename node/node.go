@@ -4,6 +4,5 @@ package node
 import ()
 
 type Node struct {
-	guid   *Guid
-	trader *Trader
+	guid   *Supplier
 }

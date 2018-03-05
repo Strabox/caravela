@@ -1,6 +1,8 @@
 package node
 
-import ()
+import (
+"strconv"
+)
 
 type Resources struct {
 	vCPU int
@@ -9,4 +11,8 @@ type Resources struct {
 
 func NewResources(vCPU int, RAM int) *Resources {
 	return &Resources{vCPU, RAM}
+}
+
+func (r *Resources) ToString() string {
+	return "CPUs: " + strconv.Itoa(r.vCPU) + " RAM: " + strconv.Itoa(r.RAM); 
 }

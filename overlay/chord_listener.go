@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"fmt"
+	"github.com/strabox/caravela/node"
 	"github.com/bluele/go-chord"
 )
 
@@ -9,15 +10,15 @@ type ChordListner struct {
 }
 
 func (*ChordListner) NewPredecessor(local, remoteNew, remotePrev *chord.Vnode) {
-	fmt.Println("[CHORD-New Predecessor]")
+	fmt.Println("[CHORD] New Predecessor")
 	if local != nil {
-		fmt.Printf("Local Node: [ID:%s IP:%s]\n", local.String(), local.Host)
+		fmt.Printf("Local Node: [ID:%s IP: %s]\n", node.NewGuidBytes(local.Id).ToString(), local.Host)
 	}
 	if remoteNew != nil {
-		fmt.Printf("Remote Node: [ID:%s IP:%s]\n", remoteNew.String(), remoteNew.Host)
+		fmt.Printf("Remote Node: [ID:%s IP: %s]\n", node.NewGuidBytes(remoteNew.Id).ToString(), remoteNew.Host)
 	}
 	if remotePrev != nil {
-		fmt.Printf("Previous Remote Node: [ID:%s IP:%s]\n", remotePrev.String(), remotePrev.Host)
+		fmt.Printf("Previous Remote Node: [ID:%s IP: %s]\n", node.NewGuidBytes(remotePrev.Id).ToString(), remotePrev.Host)
 	}
 }
 

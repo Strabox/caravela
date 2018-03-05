@@ -3,9 +3,11 @@ package overlay
 import (
 	"fmt"
 	"github.com/bluele/go-chord"
+	"github.com/strabox/caravela/node"
 	"net"
 	"strconv"
 	"time"
+	"hash"
 )
 
 var Overlay *chord.Ring = nil
@@ -19,13 +21,14 @@ func Initialize(hostIP string, joinIP string, overlayPort int, numVnodes int, nu
 	var hostname = hostIP + ":" + strconv.Itoa(overlayPort)
 	var chordListner = &ChordListner{}
 	var config = chord.DefaultConfig(hostname)
+	config.HashFunc = func() hash.Hash { return node.NewResourcesHash(node.GUID_BITS_SIZE / 8) }
 	config.Delegate = chordListner
 	config.NumVnodes = numVnodes
 	config.NumSuccessors = numSuccessors
 
 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	fmt.Println("$                      OVERLAY CONFIGURATION                     $")
-	fmt.Printf("$Hostname: %s                                       $\n", config.Hostname)
+	fmt.Printf("$Hostname: %s                                      $\n", config.Hostname)
 	fmt.Printf("$Num Virtual Nodes: %d                                            $\n", config.NumVnodes)
 	fmt.Printf("$Num Successors: %d                                               $\n", config.NumSuccessors)
 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")

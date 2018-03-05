@@ -50,6 +50,14 @@ func NewGuidInteger(intId int64) *Guid {
 	return guid
 }
 
+func NewGuidBytes(bytesId []byte) *Guid {
+	guid := &Guid{}
+
+	guid.id = big.NewInt(0)
+	guid.id.SetBytes(bytesId)
+	return guid
+}
+
 func newGuidBigInt(intId *big.Int) *Guid {
 	guid := &Guid{}
 

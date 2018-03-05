@@ -2,12 +2,12 @@ package discovery
 
 import (
 	"encoding/json"
-	"github.com/bluele/go-chord"
+	"github.com/strabox/caravela/node"
+	"github.com/strabox/caravela/overlay"
 	"github.com/gorilla/mux"
 	"net/http"
+	"fmt"
 )
-
-var Ring *chord.Ring
 
 func ChordStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("REST WORKING")
@@ -15,6 +15,7 @@ func ChordStatus(w http.ResponseWriter, r *http.Request) {
 
 func ChordLookup(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var vnodes, _ = Ring.Lookup(1, []byte(params["key"]))
-	json.NewEncoder(w).Encode(vnodes)
+	fmt.Println(node.NewGuidString(params["key"]).GetBytes())
+	var vnodes, _ = overlay.Overlay.Lookup(1, node.NewGuidString(params["key"]).GetBytes())
+	json.NewEncoder(w).Encode(vnodes[0].Host)
 }

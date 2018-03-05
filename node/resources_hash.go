@@ -1,23 +1,20 @@
 package node
 
 import (
-	"hash"
 )
 
 /*
-ResourcesHash - It is used to pass to the Chord implementation
+ResourcesHash It is used to pass to the Chord implementation
 */
 type ResourcesHash struct {
+	sizeBytes int
 	hash []byte
 }
 
-func GetHash() hash.Hash {
-	return NewResourcesHash(GUID_BITS_SIZE / 8)
-}
-
-func NewResourcesHash(bytesSize uint) *ResourcesHash {
+func NewResourcesHash(bytesSize int) *ResourcesHash {
 	hash := &ResourcesHash{}
 	hash.hash = make([]byte, bytesSize, bytesSize)
+	hash.sizeBytes = bytesSize
 	return hash
 }
 
@@ -42,7 +39,7 @@ func (rh *ResourcesHash) Reset() {
 }
 
 func (rh *ResourcesHash) Size() int {
-	return 0
+	return rh.sizeBytes
 }
 
 func (rh *ResourcesHash) BlockSize() int {
