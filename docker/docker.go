@@ -13,7 +13,7 @@ Creates and initialize a docker client.
 Used to access the Docker engine.
 */
 func Initialize(runningDockerVersion string) {
-	if dockerClient != nil {
+	if dockerClient == nil {
 		cli, err := client.NewEnvClient()
 
 		if err != nil {

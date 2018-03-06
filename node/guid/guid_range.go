@@ -1,4 +1,4 @@
-package node
+package guid
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func (gr *GuidRange) CreatePartitions(partitionsPerc []int) []*GuidRange {
 }
 
 func (gr *GuidRange) Inside(guid Guid) bool {
-	if (gr.startId.Cmp(guid) <= 0) && (gr.endId.Cmp(guid) >= 0) {
+	if (gr.startId.Cmp(guid) <= 0) && (gr.endId.Cmp(guid) > 0) {
 		return true
 	}
 	return false

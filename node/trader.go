@@ -1,7 +1,9 @@
 package node
 
-import ()
+import (
+	 "github.com/strabox/caravela/node/guid"
+)
 
 type Trader struct {
-	guid *Guid
+	guid *guid.Guid
 }

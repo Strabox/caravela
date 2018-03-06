@@ -2,12 +2,17 @@ package discovery
 
 import (
 	"encoding/json"
-	"github.com/strabox/caravela/node"
-	"github.com/strabox/caravela/overlay"
 	"github.com/gorilla/mux"
+	"github.com/strabox/caravela/node"
+	"github.com/strabox/caravela/node/guid"
 	"net/http"
-	"fmt"
 )
+
+var thisNode *node.Node = nil
+
+func InitializeDiscoveryAPI(selfNode *node.Node) {
+	thisNode = selfNode
+}
 
 func ChordStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("REST WORKING")
@@ -15,7 +20,6 @@ func ChordStatus(w http.ResponseWriter, r *http.Request) {
 
 func ChordLookup(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fmt.Println(node.NewGuidString(params["key"]).GetBytes())
-	var vnodes, _ = overlay.Overlay.Lookup(1, node.NewGuidString(params["key"]).GetBytes())
-	json.NewEncoder(w).Encode(vnodes[0].Host)
+	res := thisNode.Overlay().Lookup(*guid.NewGuidString(params["key"]))
+	json.NewEncoder(w).Encode(res[0].IP())
 }

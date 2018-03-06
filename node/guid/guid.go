@@ -1,4 +1,4 @@
-package node
+package guid
 
 import (
 	"fmt"
@@ -8,17 +8,35 @@ import (
 )
 
 /*
-Guid - Represents the global unique identifier of each node
+Guid Represents the global unique identifier of each node
 */
 type Guid struct {
 	id *big.Int
 }
 
-const GUID_BITS_SIZE = 160 // 160-bits for now to maintain compatibility with chord implementation
+var randomSource rand.Source = rand.NewSource(time.Now().Unix())	// Random source to generate random Guid
+var isGuidInitialized bool = false;	// Used to allow only one initialization of the Guid size
+var guidSizeBits int = 160 			// 160-bits default (To maintain compatibility with chord implementation)
+
+func InitializeGuid(guidBitsSize int) {
+	if !isGuidInitialized {
+		guidSizeBits = guidBitsSize
+		isGuidInitialized = true
+	}
+}
+
+func GuidSizeBits() int {
+	return guidSizeBits
+}
+
+func GuidSizeBytes() int {
+	return guidSizeBits / 8
+}
+
 
 func GetMaximumGuid() *Guid {
 	maxId := big.NewInt(0)
-	maxId.Exp(big.NewInt(2), big.NewInt(GUID_BITS_SIZE), nil)
+	maxId.Exp(big.NewInt(2), big.NewInt(int64(guidSizeBits)), nil)
 	maxId = maxId.Sub(maxId, big.NewInt(1))
 	return newGuidBigInt(maxId)
 }
@@ -27,7 +45,7 @@ func NewGuidRandom() *Guid {
 	guid := &Guid{}
 
 	guid.id = big.NewInt(0)
-	guid.id.Rand(rand.New(rand.NewSource(time.Now().Unix())), GetMaximumGuid().id)
+	guid.id.Rand(rand.New(randomSource), GetMaximumGuid().id)
 
 	return guid
 }
@@ -73,7 +91,7 @@ func (guid *Guid) GenerateRandomBetween(nextGuid Guid) (*Guid, error) {
 
 	dif.Sub(nextGuid.id, guid.id)
 
-	randOffset.Rand(rand.New(rand.NewSource(time.Now().Unix())), dif)
+	randOffset.Rand(rand.New(randomSource), dif)
 
 	res.Add(guid.id, randOffset)
 
@@ -111,10 +129,10 @@ func (guid *Guid) Cmp(guid2 Guid) int {
 }
 
 /*
-Returns an array of bytes (with size of GUID_BITS_SIZE) with the value of the Guid
+Returns an array of bytes (with size of guidSizeBits) with the value of the Guid
 */
 func (guid *Guid) GetBytes() []byte {
-	numOfBytes := GUID_BITS_SIZE / 8
+	numOfBytes := guidSizeBits / 8
 	res := make([]byte, numOfBytes)
 	idBytes := guid.id.Bytes()
 	index := 0

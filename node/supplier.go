@@ -1,23 +1,23 @@
 package node
 
-<<<<<<< Upstream, based on origin/master
 import (
-
+	"github.com/strabox/caravela/node/resources"
 )
 
 /*
 Supplier handles all the logic of offering the own resources and receiving requests to deploy containers
 */
 type Supplier struct {
-	node				*Node				// Node of the supplier 
-	resources   		*Resources			// The maximum resources that the node can offer
-	resourcesAvailable 	*Resources 			// The current resources that the node have available
-	containerManager 	*ContainersManager	//
+	node				*Node					// Node of the supplier 
+	maxResources   		*resources.Resources	// The maximum resources that the node can offer
+	resourcesAvailable 	*resources.Resources 	// The current resources that the node have available
 }
 
-=======
-import ()
 
-type Supplier struct {
+func NewSupplier(node *Node, maxResources resources.Resources) *Supplier {
+	resSupplier := &Supplier{}
+	resSupplier.node = node
+	resSupplier.maxResources = &maxResources
+	resSupplier.resourcesAvailable = (&maxResources).Copy()
+	return resSupplier
 }
->>>>>>> 5c6e03b Refactoring, preparing the base for the CARAVELA

@@ -3,60 +3,43 @@ package node
 
 import (
 	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/node/resources"
 )
 
 type Node struct {
-	guid   *Supplier
 	overlay      overlay.Overlay
-	resourcesMap *ResourcesMap
+	resourcesMap *resources.ResourcesMap
 	supplier     *Supplier
 	traders      []*Trader
 }
 
-func NewNode(o overlay.Overlay, rm *ResourcesMap, sup *Supplier) *Node {
+func NewNode(o overlay.Overlay, rm *resources.ResourcesMap, maxNumTraders int) *Node {
 	res := &Node{}
 	res.overlay = o
 	res.resourcesMap = rm
-	res.supplier = sup
-	res.traders = nil
+	res.traders = make([]*Trader, maxNumTraders)
+	for index, _ := range res.traders{
+		res.traders[index] = nil
+	}
 	return res
 }
 
-func NewNodeTraders(o overlay.Overlay, rm *ResourcesMap, sup *Supplier, traders []*Trader) *Node {
-	res := &Node{}
-	res.overlay = o
-	res.resourcesMap = rm
-	res.supplier = sup
-	res.traders = traders
-	return res
-}
-
-func (node *Node) ResourcesMap() *ResourcesMap {
+func (node *Node) ResourcesMap() *resources.ResourcesMap {
 	return node.resourcesMap
-	overlay      overlay.Overlay
-	resourcesMap *ResourcesMap
-	supplier     *Supplier
-	traders      []*Trader
 }
 
-func NewNode(o overlay.Overlay, rm *ResourcesMap, sup *Supplier) *Node {
-	res := &Node{}
-	res.overlay = o
-	res.resourcesMap = rm
-	res.supplier = sup
-	res.traders = nil
-	return res
+func (node *Node) Overlay() overlay.Overlay {
+	return node.overlay
 }
 
-func NewNodeTraders(o overlay.Overlay, rm *ResourcesMap, sup *Supplier, traders []*Trader) *Node {
-	res := &Node{}
-	res.overlay = o
-	res.resourcesMap = rm
-	res.supplier = sup
-	res.traders = traders
-	return res
+func (node *Node) SetSupplier(sup *Supplier)  {
+	node.supplier = sup
 }
 
-func (node *Node) ResourcesMap() *ResourcesMap {
-	return node.resourcesMap
+func (node *Node) AddTrader(trader *Trader)  {
+	for index, value := range node.traders {
+		if value == nil {
+			node.traders[index] = trader
+		}
+	}
 }
