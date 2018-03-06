@@ -15,8 +15,8 @@ const CHORD_TIMEOUT_MILIS = 2000
 const CHORD_V_NODES = 3
 const CHORD_NUM_SUCCESSORS = 3
 
-var CPU_PARTITIONS = []int{25,20,15,10,10,10,10}
-var RAM_PARTITIONS = []int{25,25,25,25}
+var CPU_PARTITIONS []int = []int{25, 20, 15, 10, 10, 10, 10}
+var RAM_PARTITIONS []int = []int{25, 25, 25, 25}
 
 // Flags used as input to CARAVELA container launch
 var joinIP *string = flag.String("joinIP", "NOT_AN_IP", "Join a CARAVELA instance")
@@ -32,6 +32,12 @@ func main() {
 	fmt.Println("#              IST/INESC-ID                        || ||| ||     #")
 	fmt.Println("##################################################################")
 	
+	/*
+		#################################################
+		#	      Initializing CARAVELA structures      #
+		#################################################
+	*/
+
 	/*
 		#################################################
 		#	      Initializing Docker Client            #

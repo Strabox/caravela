@@ -1,6 +1,8 @@
 package node
 
 import (
+	"strings"
+	"hash"
 )
 
 /*
@@ -21,10 +23,18 @@ func NewResourcesHash(bytesSize int) *ResourcesHash {
 // ##################### Hash Interface #######################
 
 func (rh *ResourcesHash) Write(p []byte) (n int, err error) {
-	for index, value := range p {
-		rh.hash[index] = value
+	pString := string(p)
+	tokens := strings.Split(":", pString)
+	if cap(tokens) == 2 { // Generate a Guid id for a joining node
+		guid := NewGuidRandom()
+		rh.hash = guid.GetBytes()
+		return 0, nil
+	} else { // Passing a Guid id that I have already randomly generated
+		for index, value := range p {
+			rh.hash[index] = value
+		}
+		return 0, nil
 	}
-	return 0, nil
 }
 
 func (rh *ResourcesHash) Sum(b []byte) []byte {

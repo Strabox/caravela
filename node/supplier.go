@@ -1,5 +1,6 @@
 package node
 
+<<<<<<< Upstream, based on origin/master
 import (
 
 )
@@ -14,3 +15,9 @@ type Supplier struct {
 	containerManager 	*ContainersManager	//
 }
 
+=======
+import ()
+
+type Supplier struct {
+}
+>>>>>>> 5c6e03b Refactoring, preparing the base for the CARAVELA
