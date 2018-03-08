@@ -22,6 +22,14 @@ func (r *Resources) RAM() int {
 	return r.ram
 }
 
+func (r *Resources) SetCPU(cpu int) {
+	r.vCPU = cpu
+}
+
+func (r *Resources) SetRAM(ram int) {
+	r.ram = ram
+}
+
 func (r *Resources) Copy() *Resources {
 	res := &Resources{}
 	res.vCPU = r.vCPU

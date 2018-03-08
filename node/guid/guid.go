@@ -14,9 +14,12 @@ type Guid struct {
 	id *big.Int
 }
 
-var randomSource rand.Source = rand.NewSource(time.Now().Unix())	// Random source to generate random Guid
+var randomSource rand.Source = rand.NewSource(time.Now().Unix())	// Random source to generate random Guids
+
 var isGuidInitialized bool = false;	// Used to allow only one initialization of the Guid size
+
 var guidSizeBits int = 160 			// 160-bits default (To maintain compatibility with chord implementation)
+
 
 func InitializeGuid(guidBitsSize int) {
 	if !isGuidInitialized {

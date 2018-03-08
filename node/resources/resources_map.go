@@ -16,6 +16,8 @@ type ResourcesMap struct {
 	ramIndexes				map[int]int			// Obtain the RAM indexes
 	invertCpuIndexes		map[int]int			// Obtain the CPU value
 	invertRamIndexes		map[int]int			// Obtain the RAM value
+	cpuPartitions			[]int				// The CPU partitions
+	ramPartitions			[]int				// The RAM partitions
 	numOfCPUPartitions 		int					// Number of CPUs partitions
 	numOfRAMPartitions 		int					// Number of RAM partitions
 }
@@ -29,18 +31,22 @@ func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []Resou
 	rm.ramIndexes = make(map[int]int)
 	rm.invertCpuIndexes = make(map[int]int)
 	rm.invertRamIndexes = make(map[int]int)
+	rm.cpuPartitions = make([]int, rm.numOfCPUPartitions)
+	rm.ramPartitions = make([]int, rm.numOfRAMPartitions)
 	
 	cpuPartitionsPercentage := make([]int, rm.numOfCPUPartitions)
 	ramPartitionsPercentage := make([]int, rm.numOfRAMPartitions)
 	
 	for i, v := range cpuPartitionsPerc {
 		cpuPartitionsPercentage[i] = v.Percentage
+		rm.cpuPartitions[i] = v.Value
 		rm.cpuIndexes[v.Value] = i
 		rm.invertCpuIndexes[i] = v.Value
 	}
 	
 	for i, v := range ramPartitionsPerc {
 		ramPartitionsPercentage[i] = v.Percentage
+		rm.ramPartitions[i] = v.Value
 		rm.ramIndexes[v.Value] = i
 		rm.invertRamIndexes[i] = v.Value
 	}
@@ -53,6 +59,28 @@ func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []Resou
 	}
 
 	return rm
+}
+
+func (rm *ResourcesMap) GetIndexableResources(resources Resources) *Resources {
+	res := &Resources{}
+	
+	for _, v := range rm.cpuPartitions {
+		if resources.CPU() >= v {
+			res.SetCPU(v)
+		} else {
+			break
+		}
+	}
+	
+	for _, v := range rm.ramPartitions {
+		if resources.RAM() >= v {
+			res.SetRAM(v)
+		} else {
+			break
+		}
+	}
+	
+	return res
 }
 
 func (rm *ResourcesMap) RandomGuid(resources Resources) (*guid.Guid, error) {

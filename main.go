@@ -68,7 +68,6 @@ func main() {
 	var supplier *node.Supplier = node.NewSupplier(thisNode, *resources.NewResources(cpu, ram))
 	thisNode.SetSupplier(supplier)
 	
-	
 	/*
 		#################################################
 		#		   Initializing Overlay CHORD           #
