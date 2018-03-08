@@ -41,5 +41,5 @@ func (gr *GuidRange) Inside(guid Guid) bool {
 }
 
 func (gr *GuidRange) Print() {
-	fmt.Printf("[%s, %s)", gr.startId.ToString(), gr.endId.ToString())
+	fmt.Printf("[%s, %s)", gr.startId.String(), gr.endId.String())
 }

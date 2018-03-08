@@ -84,8 +84,9 @@ func (rm *ResourcesMap) GetIndexableResources(resources Resources) *Resources {
 }
 
 func (rm *ResourcesMap) RandomGuid(resources Resources) (*guid.Guid, error) {
-	cpuIndex := rm.cpuIndexes[resources.CPU()]
-	ramIndex := rm.ramIndexes[resources.RAM()]
+	indexableRes := rm.GetIndexableResources(resources)
+	cpuIndex := rm.cpuIndexes[indexableRes.CPU()]
+	ramIndex := rm.ramIndexes[indexableRes.RAM()]
 	return rm.resourcesIdMap[cpuIndex][ramIndex].GenerateRandomBetween()
 }
 
@@ -97,7 +98,7 @@ func (rm *ResourcesMap) ResourcesByGuid(rGuid guid.Guid) (*Resources, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("Invalid GUID: %s", rGuid.ToString())
+	return nil, fmt.Errorf("Invalid GUID: %s", rGuid.String())
 }
 
 func (rm *ResourcesMap) Print() {

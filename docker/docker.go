@@ -17,13 +17,13 @@ func Initialize(runningDockerVersion string) {
 		cli, err := client.NewEnvClient()
 
 		if err != nil {
-			fmt.Println("[Creating Docker Client] ", err)
+			fmt.Println("[Docker] Init: ", err)
 			panic(err)
 		}
 
 		cli, err = client.NewClientWithOpts(client.WithVersion(runningDockerVersion))
 		if err != nil {
-			fmt.Println("[Init Docker Client] ", err)
+			fmt.Println("[Docker] Init: ", err)
 			panic(err)
 		}
 
@@ -32,7 +32,7 @@ func Initialize(runningDockerVersion string) {
 }
 
 /*
-Get CPU and RAM dedicated to Docker engine (BY the user)
+Get CPU and RAM dedicated to Docker engine (Decided by the user in Docker configuration)
 */
 func GetDockerCPUandRAM() (int, int) {
 	if dockerClient != nil {
@@ -42,5 +42,5 @@ func GetDockerCPUandRAM() (int, int) {
 		ram := info.MemTotal / 1000000 //Return in MB (MegaBytes)
 		return cpu, int(ram)
 	}
-	panic(fmt.Errorf("Docker Client Not Initialized"))
+	panic(fmt.Errorf("[Docker] Client Not Initialized"))
 }

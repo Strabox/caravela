@@ -30,7 +30,7 @@ func (rh *ResourcesHash) Write(p []byte) (n int, err error) {
 		pString := string(p)
 		if pString == rh.hostname { // Generate a random Guid id for a joining node
 			guid := guid.NewGuidRandom()
-			 for index, value := range guid.GetBytes() {
+			 for index, value := range guid.Bytes() {
 			 	rh.hash[index] = value
 			 }
 			 rh.ignoreChordWrite = true

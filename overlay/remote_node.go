@@ -20,6 +20,6 @@ func (rn *RemoteNode) IP() string {
 	return rn.nodeIP
 }
 
-func (rn *RemoteNode) Guid() guid.Guid {
-	return *rn.guid
+func (rn *RemoteNode) Guid() *guid.Guid {
+	return rn.guid.Copy()
 }

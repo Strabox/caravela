@@ -18,20 +18,21 @@ type ChordOverlay struct {
 	hostPort     int
 	numVnode     int
 	numSuccessor int
-	timeoutMili  int64
+	timeout      time.Duration
 	chordRing    *chord.Ring
 }
 
 const NUM_NODES_IN_LOOKUP = 3
 
-func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int, numVnode int, numSuccessor int, timeoutMili int64) *ChordOverlay {
+func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int, numVnode int,
+		numSuccessor int, timeout time.Duration) *ChordOverlay {
 	chordOverlay := &ChordOverlay{}
 	chordOverlay.hashSizeBytes = hashSizeBytes
 	chordOverlay.hostIP = hostIP
 	chordOverlay.hostPort = hostPort
 	chordOverlay.numVnode = numVnode
 	chordOverlay.numSuccessor = numSuccessor
-	chordOverlay.timeoutMili = timeoutMili
+	chordOverlay.timeout = timeout
 	chordOverlay.chordRing = nil
 	return chordOverlay
 }
@@ -52,7 +53,7 @@ func (co *ChordOverlay) init(thisNode local.LocalNode) (*chord.Config, chord.Tra
 	fmt.Printf("$Num Successors: %d                                               $\n", config.NumSuccessors)
 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
-	transport, err := chord.InitTCPTransport(":"+strconv.Itoa(co.hostPort), time.Duration(co.timeoutMili)*time.Millisecond)
+	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d",co.hostPort), co.timeout)
 
 	if err != nil {
 		panic(fmt.Errorf("[Chord Overlay] Initializing Transport: %s", err))
@@ -90,7 +91,7 @@ func (co *ChordOverlay) Lookup(key guid.Guid) []*overlay.RemoteNode {
 	if co.chordRing == nil {
 		panic(fmt.Errorf("[Chord Overlay] Lookup failed. Chord not initialized."))	
 	}
-	vnodes, _ := co.chordRing.Lookup(NUM_NODES_IN_LOOKUP, key.GetBytes())
+	vnodes, _ := co.chordRing.Lookup(NUM_NODES_IN_LOOKUP, key.Bytes())
 	res := make([]*overlay.RemoteNode, cap(vnodes))
 	for index, _ := range vnodes {
 		res[index] = overlay.NewRemoteNode(strings.Split(vnodes[index].Host, ":")[0], guid.NewGuidBytes(vnodes[index].Id))

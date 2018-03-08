@@ -134,7 +134,7 @@ func (guid *Guid) Cmp(guid2 Guid) int {
 /*
 Returns an array of bytes (with size of guidSizeBits) with the value of the Guid
 */
-func (guid *Guid) GetBytes() []byte {
+func (guid *Guid) Bytes() []byte {
 	numOfBytes := guidSizeBits / 8
 	res := make([]byte, numOfBytes)
 	idBytes := guid.id.Bytes()
@@ -153,13 +153,13 @@ func (guid *Guid) GetBytes() []byte {
 Creates a copy of the Guid
 */
 func (guid *Guid) Copy() *Guid {
-	return NewGuidString(guid.ToString())
+	return NewGuidString(guid.String())
 }
 
 /*
 Returns the value of the id in a string as an integer in base 10
 */
-func (guid *Guid) ToString() string {
+func (guid *Guid) String() string {
 	return guid.id.String()
 }
 

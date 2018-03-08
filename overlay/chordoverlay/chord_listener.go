@@ -3,8 +3,8 @@ package chordoverlay
 import (
 	"fmt"
 	"github.com/bluele/go-chord"
-	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/local"
+	"math/big"
 )
 
 type ChordListner struct {
@@ -14,15 +14,20 @@ type ChordListner struct {
 func (cl *ChordListner) NewPredecessor(local, remoteNew, remotePrev *chord.Vnode) {
 	fmt.Println("[Chord Overlay] New Predecessor!!")
 	if local != nil {
-		guid := guid.NewGuidBytes(local.Id)
-		resources ,_ := cl.thisNode.ResourcesMap().ResourcesByGuid(*guid)
-		fmt.Printf("Local Node: [ID:%s IP:%s Resources:%s]\n", guid.ToString(), local.Host, resources.ToString())
+		idToPrint := big.NewInt(0)
+		idToPrint.SetBytes(local.Id)
+		cl.thisNode.AddTrader(local.Id)
+		fmt.Printf("Local Node: [ID:%s IP:%s]\n", idToPrint.String(), local.Host)
 	}
 	if remoteNew != nil {
-		fmt.Printf("Remote Node: [ID:%s IP:%s]\n", guid.NewGuidBytes(remoteNew.Id).ToString(), remoteNew.Host)
+		idToPrint := big.NewInt(0)
+		idToPrint.SetBytes(remoteNew.Id)
+		fmt.Printf("Remote Node: [ID:%s IP:%s]\n", idToPrint.String(), remoteNew.Host)
 	}
 	if remotePrev != nil {
-		fmt.Printf("Previous Remote Node: [ID:%s IP:%s]\n", guid.NewGuidBytes(remotePrev.Id).ToString(), remotePrev.Host)
+		idToPrint := big.NewInt(0)
+		idToPrint.SetBytes(remotePrev.Id)
+		fmt.Printf("Previous Remote Node: [ID:%s IP:%s]\n", idToPrint.String(), remotePrev.Host)
 	}
 }
 

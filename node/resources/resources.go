@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"strconv"
+	"fmt"
 )
 
 type Resources struct {
@@ -38,5 +38,5 @@ func (r *Resources) Copy() *Resources {
 }
 
 func (r *Resources) ToString() string {
-	return "CPUs: " + strconv.Itoa(r.vCPU) + " RAM: " + strconv.Itoa(r.ram); 
+	return fmt.Sprintf("CPUs: %d RAM: %d", r.vCPU, r.ram)
 }
