@@ -1,6 +1,0 @@
-package guid
-
-import (
-
-)
-

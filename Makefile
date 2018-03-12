@@ -1,13 +1,15 @@
-upload:
-	docker build --rm -t "strabox/caravela:latest" .
-	docker push "strabox/caravela:latest"
-
 build:
-	docker build --rm -t "strabox/caravela:latest" .
+	go install .
 
 test:
 	go test .
 
-cov:
-	gocov test github.com/armon/go-chord | gocov-html > /tmp/coverage.html
-	open /tmp/coverage.html
+coverage:
+	gocov test github.com/strabox/caravela/node/guid | gocov-html > coverage.html
+	
+docker-upload:
+	docker build --rm -t "strabox/caravela:latest" .
+	docker push "strabox/caravela:latest"
+
+docker-build:
+	docker build --rm -t "strabox/caravela:latest" .

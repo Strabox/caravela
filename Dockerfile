@@ -8,6 +8,7 @@ WORKDIR /go/src/github.com/strabox/caravela
 RUN set -ex
 RUN apk add --no-cache --virtual .build-deps git
 
+RUN go get github.com/stretchr/testify/assert
 RUN go get github.com/gorilla/mux
 RUN go get github.com/bluele/go-chord
 RUN go get github.com/docker/docker/client
