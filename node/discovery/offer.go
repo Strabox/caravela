@@ -1,12 +1,10 @@
 package discovery
 
-import (
+import ()
 
-)
+type OfferID int64
 
-type OfferID int64;
-
-type Offer struct {
-	id OfferID
+type offer struct {
+	id     OfferID
 	amount int
 }

@@ -20,36 +20,37 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/docker/distribution"
   packages = [
-    "digest",
+    "digestset",
     "reference"
   ]
-  revision = "48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89"
-  version = "v2.6.2"
+  revision = "6fca8d6e6713acbdf3f9ca40cf6370fc5ee5ee53"
 
 [[projects]]
+  branch = "master"
   name = "github.com/docker/docker"
   packages = [
+    "api",
     "api/types",
     "api/types/blkiodev",
     "api/types/container",
     "api/types/events",
     "api/types/filters",
+    "api/types/image",
     "api/types/mount",
     "api/types/network",
-    "api/types/reference",
     "api/types/registry",
     "api/types/strslice",
     "api/types/swarm",
+    "api/types/swarm/runtime",
     "api/types/time",
     "api/types/versions",
     "api/types/volume",
-    "client",
-    "pkg/tlsconfig"
+    "client"
   ]
-  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
-  version = "v1.13.1"
+  revision = "fb95dc7eac3ae177d61f7bd67aea5ddeb94454b8"
 
 [[projects]]
   name = "github.com/docker/go-connections"
@@ -68,6 +69,12 @@
   version = "v0.3.2"
 
 [[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -78,6 +85,21 @@
   packages = ["."]
   revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
   version = "v1.6.1"
+
+[[projects]]
+  name = "github.com/opencontainers/go-digest"
+  packages = ["."]
+  revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
+  version = "v1.0.0-rc1"
+
+[[projects]]
+  name = "github.com/opencontainers/image-spec"
+  packages = [
+    "specs-go",
+    "specs-go/v1"
+  ]
+  revision = "d60099175f88c47cd379c4738d158884749ed235"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -105,17 +127,17 @@
     "context/ctxhttp",
     "proxy"
   ]
-  revision = "ae89d30ce0c63142b652837da33d782e2b0a9b25"
+  revision = "803fdb99c0f72e493c28ef2099d250a9c989d8ff"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["windows"]
-  revision = "c28acc882ebcbfbe8ce9f0f14b9ac26ee138dd51"
+  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dfe649fe1d681412cd9dfb8f18a338c5a547c0f19f7254f4afe292bcb02a6540"
+  inputs-digest = "293f2bbf2e839eace90a845b934000bef999bc8b75f5c37b30446065457b88aa"
   solver-name = "gps-cdcl"
   solver-version = 1

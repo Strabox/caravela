@@ -6,12 +6,12 @@ import (
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/client"
 	"github.com/strabox/caravela/docker"
-	"github.com/strabox/caravela/overlay/chordoverlay"
-	"github.com/strabox/caravela/overlay"
-	"github.com/strabox/caravela/node/resources"
 	"github.com/strabox/caravela/node"
-	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/configuration"
+	"github.com/strabox/caravela/node/guid"
+	"github.com/strabox/caravela/node/resources"
+	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/overlay/chord"
 	"net"
 )
 
@@ -28,62 +28,67 @@ func main() {
 	fmt.Println("#  Email: pardal.pires@tecnico.ulisboa.pt           | ||| |      #")
 	fmt.Println("#              IST/INESC-ID                        || ||| ||     #")
 	fmt.Println("##################################################################")
-	
+
 	/*
 		#################################################
-		#	           Create Configurations            #
-		#################################################
-	*/
-	
-	config := configuration.DefaultConfiguration(*hostIP)
-	
-	/*
-		#################################################
-		#	      Initializing Docker Client            #
+		#	     Create Configurations Structure        #
 		#################################################
 	*/
 
-	docker.Initialize("1.35") 	// TODO probably pass Docker API version it as an argument
-	maxCPUs, maxRAM := docker.GetDockerCPUandRAM()
-	
+	config := configuration.DefaultConfiguration(*hostIP)
+
+	/*
+		#################################################
+		#	  Create and initializer Docker Client      #
+		#################################################
+	*/
+
+	dockerClient := docker.NewDockerClient()
+	dockerClient.Initialize("1.35") // TODO probably pass Docker API version it as an argument
+	maxCPUs, maxRAM := dockerClient.GetDockerCPUandRAM()
+
 	/*
 		#################################################
 		#   Create and initialize CARAVELA structures   #
 		#################################################
 	*/
-	
+
 	// Guid size initialization
 	guid.InitializeGuid(config.ChordHashSizeBits)
-	
-	// Overlay initialization (Chord overlay for my project)
-	var overlay overlay.Overlay = chordoverlay.NewChordOverlay(guid.GuidSizeBytes(), *hostIP, config.OverlayPort, 
+
+	// Create Overlay struct (Chord overlay for my project)
+	var overlay overlay.Overlay = chord.NewChordOverlay(guid.GuidSizeBytes(), *hostIP, config.OverlayPort,
 		config.ChordVirtualNodes, config.ChordNumSuccessors, config.ChordTimeout)
-	
-	//
-	var caravelaCli client.CaravelaClient = client.NewHttpClient()
-	
-	// Resources Mapping creation
-	var resourcesMap *resources.ResourcesMap = resources.NewResourcesMap(config.CpuPartitions, config.RamPartitions)
-	resourcesMap.Print()
+
+	// Create CARAVELA's client
+	var caravelaCli client.CaravelaClient = client.NewHttpClient(config.APIPort)
 
 	// Node creation
-	var thisNode *node.Node = node.NewNode(config, overlay, caravelaCli, resourcesMap, config.ChordVirtualNodes, *resources.NewResources(maxCPUs, maxRAM))
-	
+	var thisNode *node.Node = node.NewNode(config, overlay, caravelaCli, *resources.NewResources(maxCPUs, maxRAM))
+
 	/*
 		#################################################
-		#		   Initializing Overlay (CHORD)         #
+		#		     Create/Join an Overlay             #
 		#################################################
 	*/
-	
+
 	if net.ParseIP(*joinIP) != nil {
-		overlay.Join(*joinIP, config.OverlayPort, thisNode)	
+		overlay.Join(*joinIP, config.OverlayPort, thisNode)
 	} else {
 		overlay.Create(thisNode)
 	}
 
 	/*
 		#################################################
-		#		Initializing CARAVELA REST API          #
+		#    Start the CARAVELA's node functions        #
+		#################################################
+	*/
+
+	thisNode.Start()
+
+	/*
+		#################################################
+		#		 Start CARAVELA REST API Server         #
 		#################################################
 	*/
 

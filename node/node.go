@@ -2,44 +2,48 @@
 package node
 
 import (
-	"github.com/strabox/caravela/overlay"
-	"github.com/strabox/caravela/node/resources"
-	"github.com/strabox/caravela/node/discovery/supplier"
-	"github.com/strabox/caravela/node/discovery/trader"
-	"github.com/strabox/caravela/node/configuration"
-	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/api/client"
-	"fmt"
+	"github.com/strabox/caravela/node/configuration"
+	"github.com/strabox/caravela/node/discovery"
+	"github.com/strabox/caravela/node/guid"
+	"github.com/strabox/caravela/node/resources"
+	"github.com/strabox/caravela/node/scheduler"
+	"github.com/strabox/caravela/overlay"
 )
 
 type Node struct {
-	resourcesMap *resources.ResourcesMap
-	supplier     *supplier.Supplier
-	traders      []*trader.Trader
+	discovery *discovery.Discovery
+	scheduler *scheduler.Scheduler
 }
 
-func NewNode(config *configuration.Configuration, overlay overlay.Overlay, client client.CaravelaClient, 
-		rm *resources.ResourcesMap, maxNumTraders int, maxResourcesAvailable resources.Resources) *Node {
+func NewNode(config *configuration.Configuration, overlay overlay.Overlay, client client.CaravelaClient,
+	maxResources resources.Resources) *Node {
+
+	// Resources Mapping creation based on the configurations
+	resourcesMap := resources.NewResourcesMap(config.CpuPartitions, config.RamPartitions)
+	resourcesMap.Print()
+
 	res := &Node{}
-	res.supplier = supplier.NewSupplier(config, overlay, client, rm, maxResourcesAvailable)
-	res.resourcesMap = rm
-	
-	res.traders = make([]*trader.Trader, maxNumTraders)
-	for index, _ := range res.traders{
-		res.traders[index] = nil
-	}
+	res.discovery = discovery.NewDiscovery(config, overlay, client, resourcesMap, maxResources)
+	res.scheduler = scheduler.NewScheduler()
 	return res
 }
 
-func (node *Node) AddTrader(guidBytes []byte)  {
-	guidObj := guid.NewGuidBytes(guidBytes)
-	traderResources,_ := node.resourcesMap.ResourcesByGuid(*guidObj)
-	newTrader := trader.NewTrader(*guidObj, *traderResources)
-	for index, value := range node.traders {
-		if value == nil {
-			fmt.Printf("[Node] New Trader: %s | Resources: %s\n", guidObj.String(), traderResources.ToString())
-			node.traders[index] = newTrader
-			break;
-		}
-	}
+func (node *Node) Start() {
+	node.discovery.Start()
+}
+
+func (node *Node) AddTrader(guidBytes []byte) {
+	guid := guid.NewGuidBytes(guidBytes)
+	node.discovery.AddTrader(*guid)
+}
+
+/* ================================== NodeRemote ============================= */
+
+func (node *Node) Discovery() discovery.DiscoveryRemote {
+	return node.discovery
+}
+
+func (node *Node) Scheduler() scheduler.SchedulerRemote {
+	return node.scheduler
 }

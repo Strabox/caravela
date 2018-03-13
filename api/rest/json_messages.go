@@ -1,24 +1,29 @@
 package rest
 
-import (
-
-)
+import ()
 
 /*
-Decode/Encode from/to Json strings in HTTP body.
-Used only to transmit information in HTTP body.
+Offer struct/JSON used in REST API
 */
 type OfferJSON struct {
-	DestGuid	string
-	SuppIP		string
-	OfferID 	int
-	Amount 		int
+	DestGuid string `json:"DestGuid"`
+	SuppIP   string `json:"SuppIP"`
+	OfferID  int    `json:"OfferID"`
+	Amount   int    `json:"Amount"`
 }
 
 /*
-
+AckOffer struct/JSON used in REST API
 */
 type AckOfferJSON struct {
-	Guid	string
-	Ip		string
+	Guid string `json:"Guid"`
+	IP   string `json:"IP"`
+}
+
+/*
+Error struct/JSON used in REST API
+*/
+type ErrorJSON struct {
+	code    int    `json:"code"`
+	message string `json:"message"`
 }
