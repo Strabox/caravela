@@ -1,3 +1,4 @@
 *.exe
 coverage.html
 importsGraph.png
+/.idea
