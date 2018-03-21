@@ -23,8 +23,8 @@ type DiscoveryLocal interface {
 Interface of discovery module for other CARAVELA's nodes
 */
 type DiscoveryRemote interface {
-	Offer(id OfferID, amount int, res resources.Resources, suppGUID guid.Guid, suppIP string)
-	Refresh(id OfferID, traderGUID guid.Guid)
+	Offer(id int, amount int, suppGUID string, suppIP string)
+	Refresh(id int, traderGUID string)
 }
 
 type Discovery struct {
@@ -67,11 +67,10 @@ func (disc *Discovery) Deploy() {
 
 /*============================== DiscoveryRemote Interface ============================== */
 
-func (disc *Discovery) Offer(id OfferID, amount int, res resources.Resources,
-	suppGUID guid.Guid, suppIP string) {
+func (disc *Discovery) Offer(id int, amount int, suppGUID string, suppIP string) {
 	// TODO
 }
 
-func (disc *Discovery) Refresh(id OfferID, traderGUID guid.Guid) {
+func (disc *Discovery) Refresh(id int, traderGUID string) {
 	// TODO
 }

@@ -2,9 +2,9 @@ package discovery
 
 import ()
 
-type OfferID int64
+type offerID int64
 
 type offer struct {
-	id     OfferID
+	id     offerID
 	amount int
 }

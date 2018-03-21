@@ -2,6 +2,13 @@ package client
 
 import ()
 
+/*
+Client for CARAVELA's nodes trade messages with each other
+*/
 type CaravelaClient interface {
-	Offer(destIP string, destGuid string, suppIP string, offerID int, amount int) error
+	// Discovery
+	Offer(destTraderIP string, destTraderGUID string, suppIP string, suppGUID string, offerID int, amount int) *ClientError
+	RefreshOffer(destSupplierIP string, traderGUID string, offerID int) *ClientError
+	RemoveOffer(destTraderIP string, destTraderGUID string, suppGUID string, offerID int) *ClientError
+	// Scheduling
 }

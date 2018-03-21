@@ -5,11 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/strabox/caravela/api/rest"
+	"log"
 	"net/http"
 	"time"
 )
 
+// Our HTTP body is always a JSON
 const HTTP_CONTENT_TYPE = "application/json"
+
+const TCP_MAX_IDLE_CONNS = 10
+const HTTP_REQUEST_TIMEOUT = 5 * time.Second
 
 type HttpClient struct {
 	httpClient *http.Client
@@ -21,12 +26,12 @@ func NewHttpClient(apiPort int) *HttpClient {
 	res.apiPort = apiPort
 
 	transport := &http.Transport{
-		MaxIdleConns: 10,
+		MaxIdleConns: TCP_MAX_IDLE_CONNS,
 	}
 
 	client := &http.Client{
 		Transport: transport,
-		Timeout:   15 * time.Second,
+		Timeout:   HTTP_REQUEST_TIMEOUT,
 	}
 
 	res.httpClient = client
@@ -34,25 +39,37 @@ func NewHttpClient(apiPort int) *HttpClient {
 	return res
 }
 
-func (client *HttpClient) Offer(destIP string, destGuid string, suppIP string, offerID int, amount int) error {
-	var offer rest.OfferJSON
-	offer.Amount = amount
-	offer.DestGuid = destGuid
-	offer.SuppIP = suppIP
-	offer.OfferID = offerID
+func (client *HttpClient) Offer(destTraderIP string, destTraderGUID string, suppIP string,
+	suppGUID string, offerID int, amount int) *ClientError {
 
-	url := fmt.Sprintf("http://%s:%d%s", destIP, client.apiPort, rest.DISCOVERY_BASE_ENDPOINT+rest.DISCOVERY_OFFER_ENDPOINT)
+	var offer rest.OfferJSON
+	offer.DestGuid = destTraderGUID
+	offer.SuppIP = suppIP
+	offer.SuppGUID = suppGUID
+	offer.OfferID = offerID
+	offer.Amount = amount
+
+	url := fmt.Sprintf("http://%s:%d%s", destTraderIP, client.apiPort, rest.DISCOVERY_BASE_ENDPOINT+rest.DISCOVERY_OFFER_ENDPOINT)
 
 	buffer := new(bytes.Buffer)
 	json.NewEncoder(buffer).Encode(offer)
 
 	_, err := client.httpClient.Post(url, HTTP_CONTENT_TYPE, buffer)
 	if err == nil {
-		fmt.Println("WOOOOT RESPONSE")
-
+		log.Println("[Client] Offer rrceived")
 		return nil
 	} else {
-		fmt.Println("[Client] Error: ", err)
-		return err
+		log.Println("[Client] Offer eeror: ", err)
+		return NewClientError(UNKNOWN)
 	}
+}
+
+func (client *HttpClient) RefreshOffer(destSupplierIP string, traderGUID string, offerID int) *ClientError {
+	// TODO
+	return nil
+}
+
+func (client *HttpClient) RemoveOffer(destTraderIP string, destTraderGUID string, suppGUID string, offerID int) *ClientError {
+	// TODO
+	return nil
 }

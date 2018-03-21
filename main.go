@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/client"
 	"github.com/strabox/caravela/docker"
@@ -12,6 +11,7 @@ import (
 	"github.com/strabox/caravela/node/resources"
 	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/overlay/chord"
+	"log"
 	"net"
 )
 
@@ -22,12 +22,12 @@ var hostIP *string = flag.String("hostIP", "NOT_AN_IP", "Docker Host IP")
 func main() {
 	flag.Parse() // Scan and parse the arguments list
 
-	fmt.Println("##################################################################")
-	fmt.Println("#          CARAVELA: A Cloud @ Edge                 000000       #")
-	fmt.Println("#            Author: Andre Pires                  00000000000    #")
-	fmt.Println("#  Email: pardal.pires@tecnico.ulisboa.pt           | ||| |      #")
-	fmt.Println("#              IST/INESC-ID                        || ||| ||     #")
-	fmt.Println("##################################################################")
+	log.Println("##################################################################")
+	log.Println("#          CARAVELA: A Cloud @ Edge                 000000       #")
+	log.Println("#            Author: Andre Pires                  00000000000    #")
+	log.Println("#  Email: pardal.pires@tecnico.ulisboa.pt           | ||| |      #")
+	log.Println("#              IST/INESC-ID                        || ||| ||     #")
+	log.Println("##################################################################")
 
 	/*
 		#################################################

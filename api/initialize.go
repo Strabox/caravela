@@ -6,14 +6,14 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
 	discoveryapi "github.com/strabox/caravela/api/rest/discovery"
-	"github.com/strabox/caravela/node/discovery"
+	"github.com/strabox/caravela/api/rest/node"
 	"log"
 	"net/http"
 )
 
 var router *mux.Router = nil
 
-func Initialize(apiPort int, nodeDiscovery rest.NodeRemote) {
+func Initialize(apiPort int, thisNode node.NodeRemote) {
 	fmt.Println("[API] Initializing CARAVELA API ...")
 
 	router = mux.NewRouter()
@@ -21,7 +21,7 @@ func Initialize(apiPort int, nodeDiscovery rest.NodeRemote) {
 	router.HandleFunc(rest.API_DEBUG_ENDPOINT, debug).Methods("GET")
 
 	// Initialize all the API endpoints
-	discoveryapi.InitializeDiscoveryAPI(router, nodeDiscovery)
+	discoveryapi.InitializeDiscoveryAPI(router, thisNode)
 
 	// Start listening hor HTTP requests
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", apiPort), router))

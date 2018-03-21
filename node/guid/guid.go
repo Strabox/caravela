@@ -35,7 +35,7 @@ func GuidSizeBytes() int {
 	return guidSizeBits / 8
 }
 
-func GetMaximumGuid() *Guid {
+func MaximumGuid() *Guid {
 	maxId := big.NewInt(0)
 	maxId.Exp(big.NewInt(2), big.NewInt(int64(guidSizeBits)), nil)
 	maxId = maxId.Sub(maxId, big.NewInt(1))
@@ -46,7 +46,7 @@ func NewGuidRandom() *Guid {
 	guid := &Guid{}
 
 	guid.id = big.NewInt(0)
-	guid.id.Rand(rand.New(randomSource), GetMaximumGuid().id)
+	guid.id.Rand(rand.New(randomSource), MaximumGuid().id)
 
 	return guid
 }

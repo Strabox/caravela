@@ -1,7 +1,8 @@
 package chord
 
 import (
-	"github.com/strabox/caravela/node/guid"
+	"math/rand"
+	"time"
 )
 
 /*
@@ -13,6 +14,8 @@ type ResourcesHash struct {
 	hostname         string
 	ignoreChordWrite bool
 }
+
+var randomSource rand.Source = rand.NewSource(time.Now().Unix()) // Random source to generate random []byte
 
 func NewResourcesHash(bytesSize int, hostname string) *ResourcesHash {
 	hash := &ResourcesHash{}
@@ -29,8 +32,8 @@ func (rh *ResourcesHash) Write(p []byte) (n int, err error) {
 	if !rh.ignoreChordWrite {
 		pString := string(p)
 		if pString == rh.hostname { // Generate a random Guid id for a joining node
-			guid := guid.NewGuidRandom()
-			for index, value := range guid.Bytes() {
+			rand.Read(p) // Fill the byte array with random bytes
+			for index, value := range p {
 				rh.hash[index] = value
 			}
 			rh.ignoreChordWrite = true

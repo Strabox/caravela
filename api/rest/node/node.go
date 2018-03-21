@@ -1,4 +1,4 @@
-package rest
+package node
 
 import (
 	"github.com/strabox/caravela/node/discovery"

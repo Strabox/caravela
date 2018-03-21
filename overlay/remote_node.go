@@ -1,15 +1,13 @@
 package overlay
 
-import (
-	"github.com/strabox/caravela/node/guid"
-)
+import ()
 
 type RemoteNode struct {
 	nodeIP string
-	guid   *guid.Guid
+	guid   []byte
 }
 
-func NewRemoteNode(nodeIP string, guid *guid.Guid) *RemoteNode {
+func NewRemoteNode(nodeIP string, guid []byte) *RemoteNode {
 	res := &RemoteNode{}
 	res.nodeIP = nodeIP
 	res.guid = guid
@@ -20,6 +18,6 @@ func (rn *RemoteNode) IP() string {
 	return rn.nodeIP
 }
 
-func (rn *RemoteNode) Guid() *guid.Guid {
-	return rn.guid.Copy()
+func (rn *RemoteNode) Guid() []byte {
+	return rn.guid
 }

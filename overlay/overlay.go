@@ -1,7 +1,6 @@
 package overlay
 
 import (
-	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/local"
 )
 
@@ -17,7 +16,7 @@ type Overlay interface {
 	Join(overlayNodeIP string, overlayNodePort int, thisNode local.LocalNode)
 
 	// Get a list of remote nodes
-	Lookup(key guid.Guid) []*RemoteNode
+	Lookup(key []byte) []*RemoteNode
 
 	// Leave the overlay
 	Leave()

@@ -3,7 +3,6 @@ package chord
 import (
 	"fmt"
 	"github.com/bluele/go-chord"
-	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/local"
 	"github.com/strabox/caravela/overlay"
 	"hash"
@@ -87,14 +86,14 @@ func (co *ChordOverlay) Join(overlayNodeIP string, overlayNodePort int, thisNode
 	fmt.Println("[Chord Overlay] SUCCESS")
 }
 
-func (co *ChordOverlay) Lookup(key guid.Guid) []*overlay.RemoteNode {
+func (co *ChordOverlay) Lookup(key []byte) []*overlay.RemoteNode {
 	if co.chordRing == nil {
 		panic(fmt.Errorf("[Chord Overlay] Lookup failed. Chord not initialized."))
 	}
-	vnodes, _ := co.chordRing.Lookup(NUM_NODES_IN_LOOKUP, key.Bytes())
+	vnodes, _ := co.chordRing.Lookup(NUM_NODES_IN_LOOKUP, key)
 	res := make([]*overlay.RemoteNode, cap(vnodes))
 	for index, _ := range vnodes {
-		res[index] = overlay.NewRemoteNode(strings.Split(vnodes[index].Host, ":")[0], guid.NewGuidBytes(vnodes[index].Id))
+		res[index] = overlay.NewRemoteNode(strings.Split(vnodes[index].Host, ":")[0], vnodes[index].Id)
 	}
 	return res
 }

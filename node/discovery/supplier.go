@@ -4,21 +4,26 @@ import (
 	"fmt"
 	"github.com/strabox/caravela/api/client"
 	"github.com/strabox/caravela/node/configuration"
+	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/resources"
 	"github.com/strabox/caravela/overlay"
 	"time"
 )
 
+type offerSlot struct {
+}
+
 /*
 Supplier handles all the logic of offering the own resources and receiving requests to deploy containers
 */
 type supplier struct {
-	config          *configuration.Configuration
-	overlay         overlay.Overlay
-	client          client.CaravelaClient
-	resourcesMap    *resources.ResourcesMap
-	maxResources    *resources.Resources // The maximum resources that the Docker engine has available
-	supplyingTicker *time.Ticker
+	config             *configuration.Configuration
+	overlay            overlay.Overlay
+	client             client.CaravelaClient
+	resourcesMap       *resources.ResourcesMap // The resources<->GUID mapping
+	maxResources       *resources.Resources    // The maximum resources that the Docker engine has available (FIXED value)
+	availableResources *resources.Resources
+	supplyingTicker    *time.Ticker
 }
 
 func newSupplier(config *configuration.Configuration, overlay overlay.Overlay, client client.CaravelaClient,
@@ -45,9 +50,10 @@ func (sup *supplier) startSupplying() {
 
 	for tick := range sup.supplyingTicker.C {
 		destGuid, _ := sup.resourcesMap.RandomGuid(*sup.maxResources)
-		remoteNode := sup.overlay.Lookup(*destGuid)
+		remoteNode := sup.overlay.Lookup(destGuid.Bytes())
+		remoteNodeGuid := guid.NewGuidBytes(destGuid.Bytes())
 
-		sup.client.Offer(remoteNode[0].IP(), remoteNode[0].Guid().String(), sup.config.HostIP, 1, 1)
+		sup.client.Offer(remoteNode[0].IP(), remoteNodeGuid.String(), sup.config.HostIP, "", 1, 1)
 		fmt.Println("[Supplier] Resupplying...", tick, sup.resourcesMap.GetIndexableResources(*sup.maxResources).ToString())
 	}
 }
