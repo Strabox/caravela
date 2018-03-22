@@ -16,8 +16,8 @@ import (
 )
 
 // Flags used as input to CARAVELA container launch
-var joinIP *string = flag.String("joinIP", "NOT_AN_IP", "Join a CARAVELA instance")
-var hostIP *string = flag.String("hostIP", "NOT_AN_IP", "Docker Host IP")
+var joinIP = flag.String("joinIP", "NOT_AN_IP", "Join a CARAVELA instance")
+var hostIP = flag.String("hostIP", "NOT_AN_IP", "Docker Host IP")
 
 func main() {
 	flag.Parse() // Scan and parse the arguments list
@@ -44,7 +44,7 @@ func main() {
 	*/
 
 	dockerClient := docker.NewDockerClient()
-	dockerClient.Initialize("1.35") // TODO probably pass Docker API version it as an argument
+	dockerClient.Initialize("1.35") // TODO: probably pass Docker API version it as an argument
 	maxCPUs, maxRAM := dockerClient.GetDockerCPUandRAM()
 
 	/*
@@ -54,17 +54,17 @@ func main() {
 	*/
 
 	// Guid size initialization
-	guid.InitializeGuid(config.ChordHashSizeBits)
+	guid.InitializeGuid(config.ChordHashSizeBits())
 
 	// Create Overlay struct (Chord overlay for my project)
-	var overlay overlay.Overlay = chord.NewChordOverlay(guid.GuidSizeBytes(), *hostIP, config.OverlayPort,
-		config.ChordVirtualNodes, config.ChordNumSuccessors, config.ChordTimeout)
+	var usedOverlay overlay.Overlay = chord.NewChordOverlay(guid.GuidSizeBytes(), *hostIP, config.OverlayPort(),
+		config.ChordVirtualNodes(), config.ChordNumSuccessors(), config.ChordTimeout())
 
 	// Create CARAVELA's client
-	var caravelaCli client.CaravelaClient = client.NewHttpClient(config.APIPort)
+	var caravelaCli client.Caravela = client.NewHttpClient(config.APIPort())
 
 	// Node creation
-	var thisNode *node.Node = node.NewNode(config, overlay, caravelaCli, *resources.NewResources(maxCPUs, maxRAM))
+	var thisNode = node.NewNode(config, usedOverlay, caravelaCli, *resources.NewResources(maxCPUs, maxRAM))
 
 	/*
 		#################################################
@@ -73,9 +73,9 @@ func main() {
 	*/
 
 	if net.ParseIP(*joinIP) != nil {
-		overlay.Join(*joinIP, config.OverlayPort, thisNode)
+		usedOverlay.Join(*joinIP, config.OverlayPort(), thisNode)
 	} else {
-		overlay.Create(thisNode)
+		usedOverlay.Create(thisNode)
 	}
 
 	/*
@@ -92,6 +92,6 @@ func main() {
 		#################################################
 	*/
 
-	api.Initialize(config.APIPort, thisNode)
+	api.Initialize(config.APIPort(), thisNode)
 
 }

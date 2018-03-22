@@ -3,6 +3,7 @@ package resources
 import (
 	"fmt"
 	"github.com/strabox/caravela/node/guid"
+	"log"
 )
 
 type ResourcePerc struct {
@@ -10,7 +11,7 @@ type ResourcePerc struct {
 	Percentage int
 }
 
-type ResourcesMap struct {
+type Mapping struct {
 	resourcesIdMap     [][]*guid.GuidRange // Matrix of Guid ranges for each resource combination
 	cpuIndexes         map[int]int         // Obtain the CPU indexes
 	ramIndexes         map[int]int         // Obtain the RAM indexes
@@ -22,8 +23,8 @@ type ResourcesMap struct {
 	numOfRAMPartitions int                 // Number of RAM partitions
 }
 
-func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []ResourcePerc) *ResourcesMap {
-	rm := &ResourcesMap{}
+func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []ResourcePerc) *Mapping {
+	rm := &Mapping{}
 	rm.numOfCPUPartitions = cap(cpuPartitionsPerc)
 	rm.numOfRAMPartitions = cap(ramPartitionsPerc)
 	rm.resourcesIdMap = make([][]*guid.GuidRange, rm.numOfCPUPartitions)
@@ -61,7 +62,7 @@ func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []Resou
 	return rm
 }
 
-func (rm *ResourcesMap) GetIndexableResources(resources Resources) *Resources {
+func (rm *Mapping) GetIndexableResources(resources Resources) *Resources {
 	res := &Resources{}
 
 	for _, v := range rm.cpuPartitions {
@@ -83,16 +84,16 @@ func (rm *ResourcesMap) GetIndexableResources(resources Resources) *Resources {
 	return res
 }
 
-func (rm *ResourcesMap) RandomGuid(resources Resources) (*guid.Guid, error) {
+func (rm *Mapping) RandomGuid(resources Resources) (*guid.Guid, error) {
 	indexableRes := rm.GetIndexableResources(resources)
 	cpuIndex := rm.cpuIndexes[indexableRes.CPU()]
 	ramIndex := rm.ramIndexes[indexableRes.RAM()]
 	return rm.resourcesIdMap[cpuIndex][ramIndex].GenerateRandomBetween()
 }
 
-func (rm *ResourcesMap) ResourcesByGuid(rGuid guid.Guid) (*Resources, error) {
-	for indexCPU, _ := range rm.resourcesIdMap {
-		for indexRAM, _ := range rm.resourcesIdMap {
+func (rm *Mapping) ResourcesByGuid(rGuid guid.Guid) (*Resources, error) {
+	for indexCPU := range rm.resourcesIdMap {
+		for indexRAM := range rm.resourcesIdMap {
 			if rm.resourcesIdMap[indexCPU][indexRAM].Inside(rGuid) {
 				return NewResources(rm.invertCpuIndexes[indexCPU], rm.invertRamIndexes[indexRAM]), nil
 			}
@@ -101,13 +102,13 @@ func (rm *ResourcesMap) ResourcesByGuid(rGuid guid.Guid) (*Resources, error) {
 	return nil, fmt.Errorf("Invalid GUID: %s", rGuid.String())
 }
 
-func (rm *ResourcesMap) Print() {
-	for indexCPU, _ := range rm.resourcesIdMap {
-		fmt.Printf("|%v CPUs:", rm.invertCpuIndexes[indexCPU])
-		for indexRAM, _ := range rm.resourcesIdMap {
-			fmt.Printf(" |%vMB RAM: ", rm.invertRamIndexes[indexRAM])
+func (rm *Mapping) Print() {
+	for indexCPU := range rm.resourcesIdMap {
+		log.Printf("|%v CPUs:", rm.invertCpuIndexes[indexCPU])
+		for indexRAM := range rm.resourcesIdMap {
+			log.Printf(" |%vMB RAM: ", rm.invertRamIndexes[indexRAM])
 			rm.resourcesIdMap[indexCPU][indexRAM].Print()
 		}
-		fmt.Println("")
+		log.Println("")
 	}
 }

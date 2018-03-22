@@ -3,6 +3,7 @@ package node
 
 import (
 	"github.com/strabox/caravela/api/client"
+	nodeAPI "github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/node/configuration"
 	"github.com/strabox/caravela/node/discovery"
 	"github.com/strabox/caravela/node/guid"
@@ -16,11 +17,11 @@ type Node struct {
 	scheduler *scheduler.Scheduler
 }
 
-func NewNode(config *configuration.Configuration, overlay overlay.Overlay, client client.CaravelaClient,
+func NewNode(config *configuration.Configuration, overlay overlay.Overlay, client client.Caravela,
 	maxResources resources.Resources) *Node {
 
 	// Resources Mapping creation based on the configurations
-	resourcesMap := resources.NewResourcesMap(config.CpuPartitions, config.RamPartitions)
+	resourcesMap := resources.NewResourcesMap(config.CpuPartitions(), config.RamPartitions())
 	resourcesMap.Print()
 
 	res := &Node{}
@@ -34,16 +35,16 @@ func (node *Node) Start() {
 }
 
 func (node *Node) AddTrader(guidBytes []byte) {
-	guid := guid.NewGuidBytes(guidBytes)
-	node.discovery.AddTrader(*guid)
+	guidRes := guid.NewGuidBytes(guidBytes)
+	node.discovery.AddTrader(*guidRes)
 }
 
 /* ================================== NodeRemote ============================= */
 
-func (node *Node) Discovery() discovery.DiscoveryRemote {
+func (node *Node) Discovery() nodeAPI.Discovery {
 	return node.discovery
 }
 
-func (node *Node) Scheduler() scheduler.SchedulerRemote {
+func (node *Node) Scheduler() nodeAPI.Scheduler {
 	return node.scheduler
 }

@@ -2,16 +2,16 @@ package discovery
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
-	"github.com/strabox/caravela/api/rest/node"
+	nodeAPI "github.com/strabox/caravela/node/api"
+	"log"
 	"net/http"
 )
 
-var thisNode node.NodeRemote = nil
+var thisNode nodeAPI.Node = nil
 
-func InitializeDiscoveryAPI(router *mux.Router, selfNode node.NodeRemote) {
+func InitializeAPI(router *mux.Router, selfNode nodeAPI.Node) {
 	thisNode = selfNode
 	router.HandleFunc(rest.DISCOVERY_BASE_ENDPOINT+rest.DISCOVERY_OFFER_ENDPOINT, offer).Methods(http.MethodPost)
 	router.HandleFunc(rest.DISCOVERY_BASE_ENDPOINT+rest.DISCOVERY_REFERSH_OFFER_ENDPOINT, refreshOffer).Methods(http.MethodGet)
@@ -25,7 +25,7 @@ func offer(w http.ResponseWriter, r *http.Request) {
 	if r.Body != nil {
 		err := json.NewDecoder(r.Body).Decode(&offer)
 		if err == nil {
-			fmt.Println("IT ARRIVED")
+			log.Println("IT ARRIVED")
 			// TODO Update Internals
 			http.Error(w, "", http.StatusOK)
 			return

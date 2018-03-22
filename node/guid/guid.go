@@ -14,11 +14,11 @@ type Guid struct {
 	id *big.Int
 }
 
-var randomSource rand.Source = rand.NewSource(time.Now().Unix()) // Random source to generate random Guids
+var randomSource = rand.NewSource(time.Now().Unix()) // Random source to generate random Guids
 
-var isGuidInitialized bool = false // Used to allow only one initialization of the Guid size
+var isGuidInitialized = false // Used to allow only one initialization of the Guid size
 
-var guidSizeBits int = 160 // 160-bits default (To maintain compatibility with chord implementation)
+var guidSizeBits = 160 // 160-bits default (To maintain compatibility with chord implementation)
 
 func InitializeGuid(guidBitsSize int) {
 	if !isGuidInitialized {
@@ -102,7 +102,7 @@ func (guid *Guid) GenerateRandomBetween(nextGuid Guid) (*Guid, error) {
 /*
 Returns the number of ids (as a string with an integer in base 10) using % offset to higher Guid
 */
-func (guid *Guid) Partitionate(offsetPercentage int, nextGuid Guid) string {
+func (guid *Guid) Partitioning(offsetPercentage int, nextGuid Guid) string {
 	offset := big.NewInt(int64(offsetPercentage))
 	dif := big.NewInt(0)
 	dif.Sub(nextGuid.id, guid.id)
@@ -127,6 +127,13 @@ Compare to see what is the biggest Guid
 */
 func (guid *Guid) Cmp(guid2 Guid) int {
 	return guid.id.Cmp(guid2.id)
+}
+
+/*
+Compare if two GUIDs are equal or not.
+*/
+func (guid *Guid) Equals(guid2 Guid) bool {
+	return guid.id.Cmp(guid2.id) == 0
 }
 
 /*
@@ -161,6 +168,9 @@ func (guid *Guid) String() string {
 	return guid.id.String()
 }
 
+/*
+Prints the Guid in a base 10 decimal format
+*/
 func (guid *Guid) PrintDecimal() {
 	fmt.Println(guid.id)
 }

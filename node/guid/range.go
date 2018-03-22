@@ -1,7 +1,7 @@
 package guid
 
 import (
-	"fmt"
+	"log"
 )
 
 // GuidRange represents a guid range like [startId, endId)
@@ -24,7 +24,7 @@ func (gr *GuidRange) CreatePartitions(partitionsPerc []int) []*GuidRange {
 	currentBase := gr.startId.Copy()
 	for index, percentage := range partitionsPerc {
 		nextBase := currentBase.Copy()
-		nextBase.AddOffset(gr.startId.Partitionate(percentage, *gr.endId))
+		nextBase.AddOffset(gr.startId.Partitioning(percentage, *gr.endId))
 		res[index] = NewGuidRange(*currentBase, *nextBase)
 		currentBase = nextBase.Copy()
 	}
@@ -41,5 +41,5 @@ func (gr *GuidRange) Inside(guid Guid) bool {
 }
 
 func (gr *GuidRange) Print() {
-	fmt.Printf("[%s, %s)", gr.startId.String(), gr.endId.String())
+	log.Printf("[%s, %s)", gr.startId.String(), gr.endId.String())
 }

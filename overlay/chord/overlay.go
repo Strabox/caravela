@@ -3,9 +3,10 @@ package chord
 import (
 	"fmt"
 	"github.com/bluele/go-chord"
-	"github.com/strabox/caravela/node/local"
+	nodeAPI "github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/overlay"
 	"hash"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -36,21 +37,21 @@ func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int, numVnode in
 	return chordOverlay
 }
 
-func (co *ChordOverlay) init(thisNode local.LocalNode) (*chord.Config, chord.Transport) {
+func (co *ChordOverlay) init(thisNode nodeAPI.LocalNode) (*chord.Config, chord.Transport) {
 	var hostname = co.hostIP + ":" + strconv.Itoa(co.hostPort)
-	var chordListner = &ChordListner{thisNode}
+	var chordListner = &Listener{thisNode}
 	var config = chord.DefaultConfig(hostname)
 	config.Delegate = chordListner
 	config.NumVnodes = co.numVnode
 	config.NumSuccessors = co.numSuccessor
 	config.HashFunc = func() hash.Hash { return NewResourcesHash(co.hashSizeBytes, hostname) }
 
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-	fmt.Println("$                    CHORD OVERLAY CONFIGURATION                 $")
-	fmt.Printf("$Hostname: %s                                       $\n", config.Hostname)
-	fmt.Printf("$Num Virtual Nodes: %d                                            $\n", config.NumVnodes)
-	fmt.Printf("$Num Successors: %d                                               $\n", config.NumSuccessors)
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Println("$                    CHORD OVERLAY CONFIGURATION                 $")
+	log.Printf("$Hostname: %s                                       $\n", config.Hostname)
+	log.Printf("$Num Virtual Nodes: %d                                            $\n", config.NumVnodes)
+	log.Printf("$Num Successors: %d                                               $\n", config.NumSuccessors)
+	log.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
 	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d", co.hostPort), co.timeout)
 
@@ -63,27 +64,27 @@ func (co *ChordOverlay) init(thisNode local.LocalNode) (*chord.Config, chord.Tra
 
 /* ============================ Overlay Interface ============================ */
 
-func (co *ChordOverlay) Create(thisNode local.LocalNode) {
+func (co *ChordOverlay) Create(thisNode nodeAPI.LocalNode) {
 	config, transport := co.init(thisNode)
-	fmt.Println("[Chord Overlay] Creating a NEW CARAVELA instance ...")
+	log.Println("[Chord Overlay] Creating a NEW CARAVELA instance ...")
 	ring, err := chord.Create(config, transport)
 	if err != nil {
 		panic(fmt.Errorf("[Chord Overlay] Creating: %s", err))
 	}
 	co.chordRing = ring
-	fmt.Println("[Chord Overlay] SUCCESS")
+	log.Println("[Chord Overlay] SUCCESS")
 }
 
-func (co *ChordOverlay) Join(overlayNodeIP string, overlayNodePort int, thisNode local.LocalNode) {
+func (co *ChordOverlay) Join(overlayNodeIP string, overlayNodePort int, thisNode nodeAPI.LocalNode) {
 	config, transport := co.init(thisNode)
-	fmt.Println("[Chord Overlay] Joining a CARAVELA instance ...")
+	log.Println("[Chord Overlay] Joining a CARAVELA instance ...")
 	var joinHostname = overlayNodeIP + ":" + strconv.Itoa(overlayNodePort)
 	ring, err := chord.Join(config, transport, joinHostname)
 	if err != nil {
 		panic(fmt.Errorf("[Chord Overlay] Joining: %s", err))
 	}
 	co.chordRing = ring
-	fmt.Println("[Chord Overlay] SUCCESS")
+	log.Println("[Chord Overlay] SUCCESS")
 }
 
 func (co *ChordOverlay) Lookup(key []byte) []*overlay.RemoteNode {
@@ -92,7 +93,7 @@ func (co *ChordOverlay) Lookup(key []byte) []*overlay.RemoteNode {
 	}
 	vnodes, _ := co.chordRing.Lookup(NUM_NODES_IN_LOOKUP, key)
 	res := make([]*overlay.RemoteNode, cap(vnodes))
-	for index, _ := range vnodes {
+	for index := range vnodes {
 		res[index] = overlay.NewRemoteNode(strings.Split(vnodes[index].Host, ":")[0], vnodes[index].Id)
 	}
 	return res

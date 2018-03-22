@@ -1,7 +1,5 @@
 package overlay
 
-import ()
-
 type RemoteNode struct {
 	nodeIP string
 	guid   []byte

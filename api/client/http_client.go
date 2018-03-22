@@ -43,9 +43,9 @@ func (client *HttpClient) Offer(destTraderIP string, destTraderGUID string, supp
 	suppGUID string, offerID int, amount int) *ClientError {
 
 	var offer rest.OfferJSON
-	offer.DestGuid = destTraderGUID
-	offer.SuppIP = suppIP
-	offer.SuppGUID = suppGUID
+	offer.TraderDestGUID = destTraderGUID
+	offer.SupplierIP = suppIP
+	offer.SupplierGUID = suppGUID
 	offer.OfferID = offerID
 	offer.Amount = amount
 
@@ -56,10 +56,10 @@ func (client *HttpClient) Offer(destTraderIP string, destTraderGUID string, supp
 
 	_, err := client.httpClient.Post(url, HTTP_CONTENT_TYPE, buffer)
 	if err == nil {
-		log.Println("[Client] Offer rrceived")
+		log.Println("[Client] Offer received")
 		return nil
 	} else {
-		log.Println("[Client] Offer eeror: ", err)
+		log.Println("[Client] Offer error: ", err)
 		return NewClientError(UNKNOWN)
 	}
 }

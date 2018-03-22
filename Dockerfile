@@ -17,7 +17,7 @@ RUN apk del .build-deps
 
 
 EXPOSE 8000	# Expose the Overlay Port to outside
-EXPOSE 8001	# Expose the CARAVELA's Port to outside
+EXPOSE 8001	# Expose the CARAVELAs Port to outside
 
 VOLUME $HOME/.caravela
 

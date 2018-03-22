@@ -4,20 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/client"
+	"log"
 )
 
 /*
-DockerClient interfaces with docker daemon using the Docker SDK
+Client interfaces with docker daemon using the Docker SDK
 */
-type DockerClient struct {
+type Client struct {
 	docker *client.Client
 }
 
 /*
 Creates a new docker client
 */
-func NewDockerClient() *DockerClient {
-	res := &DockerClient{}
+func NewDockerClient() *Client {
+	res := &Client{}
 	res.docker = nil
 	return res
 }
@@ -25,11 +26,11 @@ func NewDockerClient() *DockerClient {
 /*
 Initialize a Docker client.
 */
-func (dockerClient *DockerClient) Initialize(runningDockerVersion string) {
+func (dockerClient *Client) Initialize(runningDockerVersion string) {
 	var err error
 	dockerClient.docker, err = client.NewClientWithOpts(client.WithVersion(runningDockerVersion))
 	if err != nil {
-		fmt.Println("[Docker] Initialize: ", err)
+		log.Println("[Docker] Initialize: ", err)
 		panic(err)
 	}
 
@@ -38,7 +39,7 @@ func (dockerClient *DockerClient) Initialize(runningDockerVersion string) {
 /*
 Get CPU and RAM dedicated to Docker engine (Decided by the user in Docker configuration)
 */
-func (dockerClient *DockerClient) GetDockerCPUandRAM() (int, int) {
+func (dockerClient *Client) GetDockerCPUandRAM() (int, int) {
 	if dockerClient.docker != nil {
 		ctx := context.Background()
 		info, _ := dockerClient.docker.Info(ctx)
