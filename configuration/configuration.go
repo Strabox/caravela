@@ -12,6 +12,8 @@ type Configuration struct {
 	hostIP             string
 	supplyingInterval  time.Duration
 	refreshingInterval time.Duration
+	maxRefreshesFailed int
+	maxRefreshesMissed int
 
 	// Overlay (chord) configurations
 	overlayPort        int
@@ -32,8 +34,10 @@ type Configuration struct {
 func DefaultConfiguration(hostIP string) *Configuration {
 	res := &Configuration{}
 	res.hostIP = hostIP
-	res.supplyingInterval = 10 * time.Second
+	res.supplyingInterval = 45 * time.Second
 	res.refreshingInterval = 15 * time.Second
+	res.maxRefreshesFailed = 2
+	res.maxRefreshesMissed = 2
 
 	res.overlayPort = 8000
 	res.chordTimeout = 2 * time.Second
@@ -59,6 +63,14 @@ func (c *Configuration) SupplyingInterval() time.Duration {
 
 func (c *Configuration) RefreshingInterval() time.Duration {
 	return c.refreshingInterval
+}
+
+func (c *Configuration) MaxRefreshesMissed() int {
+	return c.maxRefreshesMissed
+}
+
+func (c *Configuration) MaxRefreshesFailed() int {
+	return c.maxRefreshesFailed
 }
 
 func (c *Configuration) OverlayPort() int {

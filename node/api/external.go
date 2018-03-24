@@ -4,9 +4,8 @@ package api
 Interface of discovery module for other CARAVELA's nodes (exposed via the API)
 */
 type Discovery interface {
-	CreateOffer(id int, amount int, supplierGUID string, supplierIP string)
-	RefreshOffer(id int, traderGUID string)
-	RemoveOffer(id int, destTraderGUID string, supplierIP string)
+	CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string, id int, amount int, cpus int, ram int)
+	RefreshOffer(id int, fromTraderGUID string) bool
 }
 
 /*

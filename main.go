@@ -4,9 +4,9 @@ import (
 	"flag"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/client"
+	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
 	"github.com/strabox/caravela/node"
-	"github.com/strabox/caravela/node/configuration"
 	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/resources"
 	"github.com/strabox/caravela/overlay"
@@ -61,7 +61,7 @@ func main() {
 		config.ChordVirtualNodes(), config.ChordNumSuccessors(), config.ChordTimeout())
 
 	// Create CARAVELA's client
-	var caravelaCli client.Caravela = client.NewHttpClient(config.APIPort())
+	var caravelaCli client.Caravela = client.NewHttpClient(config)
 
 	// Node creation
 	var thisNode = node.NewNode(config, usedOverlay, caravelaCli, *resources.NewResources(maxCPUs, maxRAM))
@@ -92,6 +92,6 @@ func main() {
 		#################################################
 	*/
 
-	api.Initialize(config.APIPort(), thisNode)
+	api.Initialize(config, thisNode)
 
 }

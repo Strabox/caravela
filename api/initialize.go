@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/api/rest/discovery"
+	"github.com/strabox/caravela/configuration"
 	nodeAPI "github.com/strabox/caravela/node/api"
 	"log"
 	"net/http"
@@ -13,19 +14,19 @@ import (
 
 var router *mux.Router = nil
 
-func Initialize(apiPort int, thisNode nodeAPI.Node) {
+func Initialize(config *configuration.Configuration, thisNode nodeAPI.Node) {
 	log.Println("[API] Initializing CARAVELA API ...")
 
 	router = mux.NewRouter()
 
 	// Endpoint used to know everything about the node (Debug Purposes Only)
-	router.HandleFunc(rest.API_DEBUG_ENDPOINT, debug).Methods("GET")
+	router.HandleFunc(rest.ApiDebugEndpoint, debug).Methods("GET")
 
 	// Initialize all the API endpoints
 	discovery.InitializeAPI(router, thisNode)
 
 	// Start listening hor HTTP requests
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", apiPort), router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.APIPort()), router))
 }
 
 func debug(w http.ResponseWriter, r *http.Request) {

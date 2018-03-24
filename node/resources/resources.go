@@ -9,7 +9,6 @@ type Resources struct {
 	ram  int
 }
 
-
 func NewResources(vCPU int, RAM int) *Resources {
 	return &Resources{vCPU, RAM}
 }
@@ -30,6 +29,27 @@ func (r *Resources) SetRAM(ram int) {
 	r.ram = ram
 }
 
+func (r *Resources) AddCPU(cpu int) {
+	r.vCPU += cpu
+}
+
+func (r *Resources) AddRAM(ram int) {
+	r.ram += ram
+}
+
+func (r *Resources) SetZero() {
+	r.vCPU = 0
+	r.ram = 0
+}
+
+func (r *Resources) IsZero() bool {
+	return r.vCPU == 0 && r.ram == 0
+}
+
+func (r *Resources) Equals(r2 Resources) bool {
+	return r.vCPU == r2.vCPU && r.ram == r2.ram
+}
+
 func (r *Resources) Copy() *Resources {
 	res := &Resources{}
 	res.vCPU = r.vCPU
@@ -37,6 +57,6 @@ func (r *Resources) Copy() *Resources {
 	return res
 }
 
-func (r *Resources) ToString() string {
+func (r *Resources) String() string {
 	return fmt.Sprintf("CPUs: %d RAM: %d", r.vCPU, r.ram)
 }

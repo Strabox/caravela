@@ -3,8 +3,8 @@ package node
 
 import (
 	"github.com/strabox/caravela/api/client"
+	"github.com/strabox/caravela/configuration"
 	nodeAPI "github.com/strabox/caravela/node/api"
-	"github.com/strabox/caravela/node/configuration"
 	"github.com/strabox/caravela/node/discovery"
 	"github.com/strabox/caravela/node/guid"
 	"github.com/strabox/caravela/node/resources"
