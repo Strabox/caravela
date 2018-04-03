@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
 	nodeAPI "github.com/strabox/caravela/node/api"
@@ -10,31 +9,22 @@ import (
 
 var thisNode nodeAPI.Node = nil
 
-func InitializeAPI(router *mux.Router, selfNode nodeAPI.Node) {
+func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
 	thisNode = selfNode
-	router.HandleFunc(rest.DiscoveryBaseEndpoint+rest.DiscoveryOfferEndpoint, offer).Methods(http.MethodPost)
-	router.HandleFunc(rest.DiscoveryBaseEndpoint+rest.DiscoveryRefreshOfferEndpoint, refreshOffer).Methods(http.MethodGet)
+	router.HandleFunc(rest.DiscoveryBaseEndpoint+rest.DiscoveryOfferEndpoint, createOffer).Methods(http.MethodPost)
+	router.HandleFunc(rest.DiscoveryBaseEndpoint+rest.DiscoveryRefreshOfferEndpoint, refreshOffer).Methods(http.MethodPost)
+	router.HandleFunc(rest.DiscoveryBaseEndpoint+rest.DiscoveryRemoveOfferEndpoint, removeOffer).Methods(http.MethodPost)
 }
 
-func offer(w http.ResponseWriter, r *http.Request) {
-	var offer rest.OfferJSON
+func createOffer(w http.ResponseWriter, r *http.Request) {
+	var createOffer rest.OfferJSON
 
 	discovery := thisNode.Discovery()
 
-	if r.Body != nil {
-		err := json.NewDecoder(r.Body).Decode(&offer)
-		if err == nil {
-			discovery.CreateOffer(offer.FromSupplierGUID, offer.FromSupplierIP, offer.ToTraderGUID, offer.OfferID,
-				offer.Amount, offer.CPUs, offer.RAM)
-			http.Error(w, "", http.StatusOK)
-			return
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	} else {
-		http.Error(w, "Empty request body", http.StatusBadRequest)
-		return
+	if rest.VerifyAndExtractJson(w, r, &createOffer) {
+		discovery.CreateOffer(createOffer.FromSupplierGUID, createOffer.FromSupplierIP, createOffer.ToTraderGUID,
+			createOffer.OfferID, createOffer.Amount, createOffer.CPUs, createOffer.RAM)
+		http.Error(w, "", http.StatusOK)
 	}
 }
 
@@ -43,22 +33,22 @@ func refreshOffer(w http.ResponseWriter, r *http.Request) {
 
 	discovery := thisNode.Discovery()
 
-	if r.Body != nil {
-		err := json.NewDecoder(r.Body).Decode(&offerRefresh)
-		if err == nil {
-			res := discovery.RefreshOffer(offerRefresh.OfferID, offerRefresh.FromTraderGUID)
-			if res {
-				http.Error(w, "", http.StatusOK)
-			} else {
-				http.Error(w, "", http.StatusBadRequest)
-			}
-			return
+	if rest.VerifyAndExtractJson(w, r, &offerRefresh) {
+		res := discovery.RefreshOffer(offerRefresh.OfferID, offerRefresh.FromTraderGUID)
+		if res {
+			http.Error(w, "", http.StatusOK)
 		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			http.Error(w, "", http.StatusBadRequest)
 		}
-	} else {
-		http.Error(w, "Empty request body", http.StatusBadRequest)
-		return
+	}
+}
+
+func removeOffer(w http.ResponseWriter, r *http.Request) {
+	var offerRemove rest.OfferRemoveJSON
+
+	//discovery := thisNode.Discovery()
+
+	if rest.VerifyAndExtractJson(w, r, &offerRemove) {
+		// TODO
 	}
 }

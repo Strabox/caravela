@@ -8,6 +8,12 @@
   version = "v0.4.7"
 
 [[projects]]
+  name = "github.com/Sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
+
+[[projects]]
   branch = "master"
   name = "github.com/bluele/go-chord"
   packages = ["."]
@@ -120,6 +126,18 @@
   version = "v1.2.1"
 
 [[projects]]
+  name = "github.com/urfave/cli"
+  packages = ["."]
+  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
+  version = "v1.20.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "12892e8c234f4fe6f6803f052061de9057903bb2"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = [
@@ -132,12 +150,15 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "293f2bbf2e839eace90a845b934000bef999bc8b75f5c37b30446065457b88aa"
+  inputs-digest = "541d0156eb827197d99739c74c04fea01dd0528bf40bcbd05018f2e7140d7b24"
   solver-name = "gps-cdcl"
   solver-version = 1

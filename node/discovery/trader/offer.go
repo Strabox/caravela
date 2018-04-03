@@ -1,11 +1,19 @@
 package trader
 
 import (
+	"github.com/strabox/caravela/node/common/guid"
+	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
-	"github.com/strabox/caravela/node/guid"
-	"github.com/strabox/caravela/node/resources"
 	"time"
 )
+
+/*
+offerKey is based on the local offer id and the supplier IP TODO: Hoping the supplier IP is unique????
+*/
+type offerKey struct {
+	id         common.OfferID
+	supplierIP string
+}
 
 type traderOffer struct {
 	supplierGUID *guid.Guid    // GUID of the supplier offering these resources
@@ -13,7 +21,7 @@ type traderOffer struct {
 	offer        *common.Offer // Offer resources
 
 	lastRefreshTimestamp time.Time // Last time the offer was refreshed with/without success
-	waitingForRefresh    bool      // Marks if there is still a refresh pending for the offer (avoids multiple refreshes)
+	waitingForRefresh    bool      // Marks if there is still a refresh pending for the offer (avoid multiple refreshes)
 	refreshesFailed      int       // Number of times the supplier didn't answer to the refresh message
 }
 
@@ -42,7 +50,7 @@ func (offer *traderOffer) Amount() int {
 }
 
 func (offer *traderOffer) Resources() *resources.Resources {
-	return offer.offer.Resources()
+	return offer.offer.Resources().Copy()
 }
 
 func (offer *traderOffer) RefreshesFailed() int {

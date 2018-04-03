@@ -10,11 +10,11 @@ build:
 
 test:
 	@echo Testing CARAVELA ...
-	go test github.com/strabox/caravela/node/guid
+	go test github.com/strabox/caravela/node/guid github.com/strabox/caravela/node/resources
 
 test-coverage:
 	@echo Testing and coverage report generation...
-	gocov test github.com/strabox/caravela/node/guid | gocov-html > coverage.html
+	gocov test github.com/strabox/caravela/node/guid github.com/strabox/caravela/node/resources | gocov-html > coverage.html
 
 dep-graph:
 	@echo Generating package import dependency graph...

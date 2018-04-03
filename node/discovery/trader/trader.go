@@ -1,32 +1,24 @@
 package trader
 
 import (
-	"github.com/strabox/caravela/api/client"
+	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common/guid"
+	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
-	"github.com/strabox/caravela/node/guid"
-	"github.com/strabox/caravela/node/resources"
 	"log"
 	"sync"
 	"time"
 )
 
 /*
-offerKey is based on the local offer id and the supplier IP (Hoping the supplier IP is unique????)
-*/
-type offerKey struct {
-	id         common.OfferID
-	supplierIP string
-}
-
-/*
 Trader is responsible for managing offers from suppliers and negotiate these offers with buyers
 */
 type Trader struct {
 	config           *configuration.Configuration // System configuration values
-	client           client.Caravela              // Client for the system
+	client           remote.Caravela              // Client for the system
 	guid             *guid.Guid                   // Trader's own GUID
-	handledResources *resources.Resources         // Combination of resources that its responsible for managing
+	handledResources *resources.Resources         // Combination of resources that its responsible for managing (Static value)
 
 	refreshOffersTicker <-chan time.Time // Time ticker for running the refreshing offer messages
 
@@ -34,7 +26,7 @@ type Trader struct {
 	offersMutex *sync.Mutex               // Mutex for managing the offer
 }
 
-func NewTrader(config *configuration.Configuration, client client.Caravela, guid guid.Guid,
+func NewTrader(config *configuration.Configuration, client remote.Caravela, guid guid.Guid,
 	resources resources.Resources) *Trader {
 	res := &Trader{}
 	res.config = config
@@ -54,64 +46,71 @@ func (trader *Trader) Guid() *guid.Guid {
 }
 
 func (trader *Trader) Start() {
-	log.Println("[Trader] Starting refreshing resource offers...")
+	log.Println("[Trader] Starting refreshing resource's offers...")
 	go trader.refreshingOffers()
 }
 
 /*
-Runs in a individual thread and refreshes the trader's offers from time to time
+Runs in a individual goroutine and refreshes the trader's offers from time to time
 */
 func (trader *Trader) refreshingOffers() {
-	responsesChan := make(chan client.OfferRefreshResponse)
 	for {
 		select {
-		case <-trader.refreshOffersTicker:
+		case <-trader.refreshOffersTicker: // Time to refresh all the current offers (verify if the suppliers are alive)
 			trader.offersMutex.Lock()
 
 			for _, offer := range trader.offersMap {
 				if offer.Refresh() {
-					go trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(), int(offer.LocalID()), responsesChan)
+					go func() {
+						trader.offersMutex.Lock()
+						defer trader.offersMutex.Unlock()
+
+						_, refreshed := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(), int64(offer.LocalID()))
+
+						offerKEY := offerKey{common.OfferID(offer.LocalID()), offer.supplierIP}
+						offer, exist := trader.offersMap[offerKEY]
+
+						if refreshed && exist {
+							log.Printf("[Trader]\t-- Refresh SUCCEEDED for supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
+							offer.RefreshSucceeded()
+						} else if !refreshed && exist {
+							log.Printf("[Trader]\t-- Refresh FAILED for supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
+							offer.RefreshFailed()
+							if offer.refreshesFailed >= trader.config.MaxRefreshesFailed() {
+								log.Printf("[Trader]\t-- Removing offer of supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
+								delete(trader.offersMap, offerKEY)
+							}
+						}
+					}()
 				}
 			}
 
-			trader.offersMutex.Unlock()
-		case response := <-responsesChan:
-			trader.offersMutex.Lock()
-
-			offerKEY := offerKey{common.OfferID(response.OfferID), response.ToSupplierIP}
-			offer, exist := trader.offersMap[offerKEY]
-
-			if response.Success && exist {
-				log.Printf("[Trader] Refresh SUCCEEDED for supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
-				offer.RefreshSucceeded()
-			} else if !response.Success && exist {
-				log.Printf("[Trader] Refresh FAILED for supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
-				offer.RefreshFailed()
-				if offer.refreshesFailed >= trader.config.MaxRefreshesFailed() {
-					log.Printf("[Trader] Removing offer of supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
-					delete(trader.offersMap, offerKEY)
-				}
-			}
 			trader.offersMutex.Unlock()
 		}
 	}
 }
 
 /*
-Receives a resource offer from other node of the system
+Receives a resource offer from other node (supplier) of the system
 */
 func (trader *Trader) CreateOffer(id int64, amount int, cpus int, ram int, supplierGUID string, supplierIP string) {
-	log.Printf("[Trader] %s offer received %dX(CPUs: %d, RAM: %d) from: %s\n", trader.guid.String(), amount, cpus, ram, supplierIP)
+	log.Printf("[Trader]\t<-- %s offer received %dX(CPUs: %d, RAM: %d) from: %s\n", trader.guid.String(), amount, cpus, ram, supplierIP)
 
-	// Verify if this trader is responsible for these type of offers
-	//if cpus == trader.handledResources.CPU() && ram == trader.handledResources.RAM() {
-	trader.offersMutex.Lock()
-	defer trader.offersMutex.Unlock()
+	resourcesOffered := resources.NewResources(cpus, ram)
+	// Verify if the offer contains the resources of trader (Basically if the offer is bigger than the handled resources)
+	if resourcesOffered.Contains(*trader.handledResources) {
+		trader.offersMutex.Lock()
+		defer trader.offersMutex.Unlock()
 
-	offer := newTraderOffer(*guid.NewGuidString(supplierGUID), supplierIP, *common.NewOffer(common.OfferID(id),
-		amount, *resources.NewResources(cpus, ram)))
-	offerKey := offerKey{common.OfferID(id), supplierIP}
+		offer := newTraderOffer(*guid.NewGuidString(supplierGUID), supplierIP, *common.NewOffer(common.OfferID(id),
+			amount, *resources.NewResources(cpus, ram)))
+		offerKey := offerKey{common.OfferID(id), supplierIP}
 
-	trader.offersMap[offerKey] = offer
-	//}
+		trader.offersMap[offerKey] = offer
+		log.Printf("[Trader]\t<-- %s Offer CREATED %dX(CPUs: %d, RAM: %d) from: %s\n", trader.guid.String(), amount, cpus, ram, supplierIP)
+	}
+}
+
+func (trader *Trader) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64) {
+
 }

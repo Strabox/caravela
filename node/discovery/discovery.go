@@ -1,19 +1,19 @@
 package discovery
 
 import (
-	"github.com/strabox/caravela/api/client"
+	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common/guid"
+	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/supplier"
 	"github.com/strabox/caravela/node/discovery/trader"
-	"github.com/strabox/caravela/node/guid"
-	"github.com/strabox/caravela/node/resources"
 	"github.com/strabox/caravela/overlay"
 	"log"
 )
 
 type Discovery struct {
 	config       *configuration.Configuration
-	client       client.Caravela
+	client       remote.Caravela
 	resourcesMap *resources.Mapping
 
 	supplier *supplier.Supplier        // Node supplier offer the node's resources
@@ -21,7 +21,7 @@ type Discovery struct {
 }
 
 func NewDiscovery(config *configuration.Configuration, overlay overlay.Overlay,
-	client client.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
+	client remote.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
 	res := &Discovery{}
 	res.config = config
 	res.client = client
@@ -46,25 +46,21 @@ func (disc *Discovery) AddTrader(traderGUID guid.Guid) {
 	log.Printf("[Discovery] New Trader: %s | Resources: %s\n", (&traderGUID).String(), traderResources.String())
 }
 
-func (disc *Discovery) Find() {
-	// TODO
-}
-
-func (disc *Discovery) Deploy() {
-	// TODO
-}
-
 /*============================== DiscoveryExternal Interface ============================== */
 
-func (disc *Discovery) CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string, id int,
+func (disc *Discovery) CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string, id int64,
 	amount int, cpus int, ram int) {
 
 	t, exist := disc.traders[toTraderGUID]
 	if exist {
-		t.CreateOffer(int64(id), amount, cpus, ram, fromSupplierGUID, fromSupplierIP)
+		t.CreateOffer(id, amount, cpus, ram, fromSupplierGUID, fromSupplierIP)
 	}
 }
 
-func (disc *Discovery) RefreshOffer(id int, fromTraderGUID string) bool {
-	return disc.supplier.RefreshOffer(id, fromTraderGUID)
+func (disc *Discovery) RefreshOffer(offerID int64, fromTraderGUID string) bool {
+	return disc.supplier.RefreshOffer(offerID, fromTraderGUID)
+}
+
+func (disc *Discovery) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64) {
+
 }

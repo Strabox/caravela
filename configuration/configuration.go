@@ -1,19 +1,29 @@
 package configuration
 
 import (
-	"github.com/strabox/caravela/node/resources"
+	"github.com/strabox/caravela/node/common/resources"
 	"time"
 )
 
 /*
-Used to configure  CARAVELA's node. Static parameters during system execution.
+ Global configuration values (for clients, servers, ...)
+*/
+const APIPort = 8001
+
+/*
+Used to configure CARAVELA's node. Static parameters during system execution.
 */
 type Configuration struct {
-	hostIP             string
-	supplyingInterval  time.Duration
-	refreshingInterval time.Duration
-	maxRefreshesFailed int
-	maxRefreshesMissed int
+	hostIP           string
+	dockerAPIVersion string
+
+	// CARAVELA system configurations
+	supplyingInterval      time.Duration
+	refreshesCheckInterval time.Duration
+	refreshingInterval     time.Duration
+	maxRefreshesFailed     int
+	maxRefreshesMissed     int
+	refreshMissedTimeout   time.Duration
 
 	// Overlay (chord) configurations
 	overlayPort        int
@@ -31,13 +41,17 @@ type Configuration struct {
 	apiTimeout time.Duration
 }
 
-func DefaultConfiguration(hostIP string) *Configuration {
+func DefaultConfiguration(hostIP string, dockerAPIVersion string) *Configuration {
 	res := &Configuration{}
 	res.hostIP = hostIP
+	res.dockerAPIVersion = dockerAPIVersion
+
 	res.supplyingInterval = 45 * time.Second
+	res.refreshesCheckInterval = 30 * time.Second
 	res.refreshingInterval = 15 * time.Second
 	res.maxRefreshesFailed = 2
 	res.maxRefreshesMissed = 2
+	res.refreshMissedTimeout = res.refreshingInterval + (5 * time.Second)
 
 	res.overlayPort = 8000
 	res.chordTimeout = 2 * time.Second
@@ -48,7 +62,7 @@ func DefaultConfiguration(hostIP string) *Configuration {
 	res.cpuPartitions = []resources.ResourcePerc{{1, 50}, {2, 50}}
 	res.ramPartitions = []resources.ResourcePerc{{256, 50}, {512, 50}}
 
-	res.apiPort = 8001
+	res.apiPort = APIPort
 	res.apiTimeout = 2 * time.Second
 	return res
 }
@@ -57,8 +71,16 @@ func (c *Configuration) HostIP() string {
 	return c.hostIP
 }
 
+func (c *Configuration) DockerAPIVersion() string {
+	return c.dockerAPIVersion
+}
+
 func (c *Configuration) SupplyingInterval() time.Duration {
 	return c.supplyingInterval
+}
+
+func (c *Configuration) RefreshesCheckInterval() time.Duration {
+	return c.refreshesCheckInterval
 }
 
 func (c *Configuration) RefreshingInterval() time.Duration {
@@ -71,6 +93,10 @@ func (c *Configuration) MaxRefreshesMissed() int {
 
 func (c *Configuration) MaxRefreshesFailed() int {
 	return c.maxRefreshesFailed
+}
+
+func (c *Configuration) RefreshMissedTimeout() time.Duration {
+	return c.refreshMissedTimeout
 }
 
 func (c *Configuration) OverlayPort() int {

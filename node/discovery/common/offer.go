@@ -1,6 +1,6 @@
 package common
 
-import "github.com/strabox/caravela/node/resources"
+import "github.com/strabox/caravela/node/common/resources"
 
 type OfferID int64
 
