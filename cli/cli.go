@@ -2,23 +2,17 @@ package cli
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/version"
 	"github.com/urfave/cli"
 	"os"
 	"path"
 )
 
-const Usage = "Caravela a fully decentralized docker cluster platform"
-const Version = "0.0.1"
-
-const Author = "André Pires"
-const Email = "pardal.pires@tecnico.ulisboa.pt"
-
-func Start() {
+func Run() {
 	app := cli.NewApp()
 	app.Name = path.Base(os.Args[0])
-	app.Usage = Usage
-	app.Version = Version
-
+	app.Usage = AppUsage
+	app.Version = version.Version
 	app.Author = Author
 	app.Email = Email
 
@@ -27,13 +21,12 @@ func Start() {
 		cli.StringFlag{
 			Name:  "debug, d",
 			Value: "fatal",
-			Usage: "Print debug traces depending on the granularity level",
+			Usage: "Log traces depending on the granularity level",
 		},
 	}
 
 	// Before running the user's command
 	app.Before = func(context *cli.Context) error {
-
 		switch context.String("debug") {
 		case "debug":
 			log.SetLevel(log.DebugLevel)
@@ -48,18 +41,12 @@ func Start() {
 		case "panic":
 			log.SetLevel(log.PanicLevel)
 		}
-
+		// Set the format of the log text and the place to write
 		logOutputFormatter := &log.TextFormatter{}
 		logOutputFormatter.DisableColors = true
+		logOutputFormatter.DisableTimestamp = true
 		log.SetFormatter(logOutputFormatter)
 		log.SetOutput(os.Stdout)
-
-		log.Infof("##################################################################")
-		log.Infof("#          CARAVELA: A Cloud @ Edge                 000000       #")
-		log.Infof("#            Author: %s                 00000000000     #", Author)
-		log.Infof("#  Email: %s           | ||| |      #", Email)
-		log.Infof("#              IST/INESC-ID                        || ||| ||     #")
-		log.Infof("##################################################################")
 		return nil
 	}
 

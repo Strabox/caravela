@@ -8,8 +8,8 @@ import (
 )
 
 type supplierOffer struct {
-	offerContent      *common.Offer // Offer's resources content
-	traderResponsible *guid.Guid    // Trader's GUID responsible for managing the offer
+	offerContent      common.Offer // Offer's resources content
+	traderResponsible *guid.Guid   // Trader's GUID responsible for managing the offer
 
 	lastTimeRefreshed time.Time // Last time the responsible trader has refreshed the offer
 	refreshesMissed   int       // Number of times the responsible trader did not send a refresh
@@ -17,7 +17,7 @@ type supplierOffer struct {
 
 func newSupplierOffer(offerContent common.Offer, traderResponsible guid.Guid) *supplierOffer {
 	offerRes := &supplierOffer{}
-	offerRes.offerContent = &offerContent
+	offerRes.offerContent = offerContent
 	offerRes.traderResponsible = &traderResponsible
 
 	offerRes.lastTimeRefreshed = time.Now()
@@ -25,7 +25,7 @@ func newSupplierOffer(offerContent common.Offer, traderResponsible guid.Guid) *s
 	return offerRes
 }
 
-func (offer *supplierOffer) LocalID() common.OfferID {
+func (offer *supplierOffer) ID() common.OfferID {
 	return offer.offerContent.ID()
 }
 

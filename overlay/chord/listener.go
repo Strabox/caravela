@@ -1,48 +1,47 @@
 package chord
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/bluele/go-chord"
 	nodeAPI "github.com/strabox/caravela/node/api"
-	"log"
 	"math/big"
 )
 
 type Listener struct {
-	thisNode nodeAPI.LocalNode
+	thisNode nodeAPI.OverlayMembership // Caravela Node on top of the chord overlay
 }
 
 func (cl *Listener) NewPredecessor(local, remoteNew, remotePrev *chord.Vnode) {
-	log.Println("[Chord Overlay] New Predecessor!!")
 	if local != nil {
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(local.Id)
 		cl.thisNode.AddTrader(local.Id)
-		log.Printf("Local Node: [ID:%s IP:%s]\n", idToPrint.String(), local.Host)
+		log.Debugf("[Chord] Local Node: ID: %s IP: %s", idToPrint.String(), local.Host)
 	}
 	if remoteNew != nil {
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(remoteNew.Id)
-		log.Printf("Remote Node: [ID:%s IP:%s]\n", idToPrint.String(), remoteNew.Host)
+		log.Debugf("[Chord] Remote Node: ID: %s IP: %s", idToPrint.String(), remoteNew.Host)
 	}
 	if remotePrev != nil {
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(remotePrev.Id)
-		log.Printf("Previous Remote Node: [ID:%s IP:%s]\n", idToPrint.String(), remotePrev.Host)
+		log.Debugf("[Chord] Previous Remote Node: ID: %s IP: %s", idToPrint.String(), remotePrev.Host)
 	}
 }
 
-func (cl *Listener) Leaving(local, pred, succ *chord.Vnode) {
-	log.Println("[Chord Overlay] I am leaving!!")
+func (cl *Listener) Leaving(local, predecessor, successor *chord.Vnode) {
+	log.Debugln("[Chord] I am leaving!!")
 }
 
 func (cl *Listener) PredecessorLeaving(local, remote *chord.Vnode) {
-	log.Println("[Chord Overlay] Current predecessor is leaving!!")
+	log.Debugln("[Chord] Current predecessor is leaving!!")
 }
 
 func (cl *Listener) SuccessorLeaving(local, remote *chord.Vnode) {
-	log.Println("[Chord Overlay] A successor is leaving!!")
+	log.Debugln("[Chord] A successor is leaving!!")
 }
 
 func (cl *Listener) Shutdown() {
-	log.Println("[Chord Overlay] Shutting Down!!")
+	log.Debugln("[Chord] Shutting Down!!")
 }

@@ -35,7 +35,7 @@ func (client *Client) Initialize(runningDockerVersion string) {
 	var err error
 	client.docker, err = dockerClient.NewClientWithOpts(dockerClient.WithVersion(runningDockerVersion))
 	if err != nil {
-		log.Fatalf("[Docker] Initialize: %s", err.Error())
+		log.Fatalf("[Docker] Initialize error: %s", err.Error())
 	}
 }
 
@@ -57,7 +57,7 @@ func (client *Client) GetDockerCPUAndRAM() (int, int) {
 /*
 Launches a container from an image in the local Docker Engine.
 */
-func (client *Client) RunContainer(imageKey string, args []string) {
+func (client *Client) RunContainer(imageKey string, args []string, machineCpus string, ram int) {
 	if client.docker != nil {
 		imageKeyTokens := strings.Split(imageKey, "/")
 		ctx := context.Background()
@@ -71,7 +71,12 @@ func (client *Client) RunContainer(imageKey string, args []string) {
 			Image: imageKeyTokens[len(imageKeyTokens)-1], // Image key name
 			Cmd:   args,                                  // Command arguments to the container
 			Tty:   true,
-		}, nil, nil, "")
+		}, &container.HostConfig{
+			Resources: container.Resources{
+				Memory:     int64(ram) * 1000000,
+				CpusetCpus: machineCpus,
+			},
+		}, nil, "")
 		if err != nil {
 			panic(err)
 		}
@@ -89,14 +94,6 @@ func (client *Client) RunContainer(imageKey string, args []string) {
 		case <-statusCh:
 			// Container is running!!!
 		}
-
-		/*
-			_, err := remote.docker.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
-			if err != nil {
-				panic(err)
-			}
-		*/
-
 	} else {
 		panic(fmt.Errorf(ClientNotInitializedError))
 	}

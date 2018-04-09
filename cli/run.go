@@ -1,18 +1,16 @@
 package cli
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"fmt"
 	"github.com/strabox/caravela/api/client"
 	"github.com/urfave/cli"
+	"os"
 )
 
-const DefaultNumOfCPUs = 1
-const DefaultAmountOfRAM = 256
-
 func run(c *cli.Context) {
-
 	if c.NArg() < 1 {
-		log.Fatal("Please provide at least a container image key")
+		fmt.Println("Please provide at least a container image to launch")
+		os.Exit(1)
 	}
 
 	var containerArgs []string = nil
@@ -24,7 +22,11 @@ func run(c *cli.Context) {
 		}
 	}
 
-	caravelaClient := client.NewCaravela()
+	caravelaClient := client.NewCaravela(c.String("ip"))
 
-	caravelaClient.Run(c.Args().Get(0), containerArgs, int(c.Uint("cpus")), int(c.Uint("ram")))
+	err := caravelaClient.Run(c.Args().Get(0), containerArgs, int(c.Uint("cpus")), int(c.Uint("ram")))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

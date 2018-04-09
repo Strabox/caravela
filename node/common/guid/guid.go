@@ -7,18 +7,16 @@ import (
 	"time"
 )
 
+var randomSource = rand.NewSource(time.Now().Unix()) // Random source to generate random GUIDS
+var isGuidInitialized = false                        // Used to allow only one initialization of the GUID size
+var guidSizeBits = 160                               // 160-bits default (To maintain compatibility with chord implementation)
+
 /*
-Guid Represents the global unique identifier of each node
+GUID Represents the global unique identifier of each node
 */
 type Guid struct {
 	id *big.Int
 }
-
-var randomSource = rand.NewSource(time.Now().Unix()) // Random source to generate random Guids
-
-var isGuidInitialized = false // Used to allow only one initialization of the Guid size
-
-var guidSizeBits = 160 // 160-bits default (To maintain compatibility with chord implementation)
 
 func InitializeGuid(guidBitsSize int) {
 	if !isGuidInitialized {
@@ -100,7 +98,7 @@ func (guid *Guid) GenerateRandomBetween(nextGuid Guid) (*Guid, error) {
 }
 
 /*
-Returns the number of ids (as a string with an integer in base 10) using % offset to higher Guid
+Returns the number of ids (as a string with an integer in base 10) using % offset to higher GUID
 */
 func (guid *Guid) Partitioning(offsetPercentage int, nextGuid Guid) string {
 	offset := big.NewInt(int64(offsetPercentage))
@@ -113,7 +111,7 @@ func (guid *Guid) Partitioning(offsetPercentage int, nextGuid Guid) string {
 }
 
 /*
-Adds an offset of ids to the Guid
+Adds an offset of ids to the GUID
 */
 func (guid *Guid) AddOffset(offset string) {
 	toAdd := big.NewInt(0)
@@ -123,7 +121,7 @@ func (guid *Guid) AddOffset(offset string) {
 }
 
 /*
-Compare to see what is the biggest Guid
+Compare to see what is the biggest GUID
 */
 func (guid *Guid) Cmp(guid2 Guid) int {
 	return guid.id.Cmp(guid2.id)
@@ -137,7 +135,7 @@ func (guid *Guid) Equals(guid2 Guid) bool {
 }
 
 /*
-Returns an array of bytes (with size of guidSizeBits) with the value of the Guid
+Returns an array of bytes (with size of guidSizeBits) with the value of the GUID
 */
 func (guid *Guid) Bytes() []byte {
 	numOfBytes := guidSizeBits / 8
@@ -155,7 +153,7 @@ func (guid *Guid) Bytes() []byte {
 }
 
 /*
-Creates a copy of the Guid
+Creates a copy of the GUID
 */
 func (guid *Guid) Copy() *Guid {
 	return NewGuidString(guid.String())
@@ -169,7 +167,7 @@ func (guid *Guid) String() string {
 }
 
 /*
-Prints the Guid in a base 10 decimal format
+Prints the GUID in a base 10 decimal format
 */
 func (guid *Guid) PrintDecimal() {
 	fmt.Println(guid.id)

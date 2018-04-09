@@ -12,18 +12,14 @@ var thisNode nodeAPI.Node = nil
 
 func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
 	thisNode = selfNode
-	router.HandleFunc(rest.UserBaseEndpoint+rest.UserRunContainerEndpoint, runContainer).Methods(http.MethodPost)
+	router.HandleFunc(rest.UserContainerBaseEndpoint, runContainer).Methods(http.MethodPost)
 }
 
 func runContainer(w http.ResponseWriter, r *http.Request) {
 	var runContainer rest.RunContainerJSON
 
-	docker := thisNode.Docker()
-
-	if rest.VerifyAndExtractJson(w, r, &runContainer) {
+	if rest.ReceiveJSONFromHttp(w, r, &runContainer) {
 		log.Debug(runContainer)
-		docker.RunContainer(runContainer.ContainerImage, runContainer.Arguments)
-
-		http.Error(w, "", http.StatusOK)
+		thisNode.Scheduler().Deploy(runContainer.ContainerImage, runContainer.Arguments, runContainer.CPUs, runContainer.RAM)
 	}
 }

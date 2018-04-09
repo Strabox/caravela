@@ -8,23 +8,30 @@ var (
 			Name:      "join",
 			ShortName: "j",
 			Usage:     "Join a caravela instance",
-			Category:  "Caravela instance management",
+			Category:  "Caravela system management",
+			Before:    printBanner,
 			Action:    join,
 		},
 		{
 			Name:      "create",
 			ShortName: "c",
 			Usage:     "Create a caravela instance",
-			Category:  "Caravela instance management",
+			Category:  "Caravela system management",
+			Before:    printBanner,
 			Action:    create,
 		},
 		{
 			Name:      "run",
 			ShortName: "r",
 			Usage:     "Launch a container in the Caravela instance",
-			Category:  "Node management",
+			Category:  "Caravela node management",
 			Action:    run,
 			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "ip",
+					Value: DefaultCaravelaInstanceIP,
+					Usage: "IP of the caravela instance to send the request",
+				},
 				cli.UintFlag{
 					Name:  "cpus, c",
 					Value: DefaultNumOfCPUs,

@@ -3,5 +3,5 @@ package main
 import commandLine "github.com/strabox/caravela/cli"
 
 func main() {
-	commandLine.Start()
+	commandLine.Run()
 }

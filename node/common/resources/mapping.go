@@ -2,35 +2,35 @@ package resources
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/node/common/guid"
-	"log"
 )
 
-type ResourcePerc struct {
+type ResourcePartition struct {
 	Value      int
 	Percentage int
 }
 
 type Mapping struct {
-	resourcesIdMap     [][]*guid.GuidRange // Matrix of GUID ranges for each resource combination
-	cpuIndexes         map[int]int         // Obtain the CPU indexes
-	ramIndexes         map[int]int         // Obtain the RAM indexes
-	invertCpuIndexes   map[int]int         // Obtain the CPU value
-	invertRamIndexes   map[int]int         // Obtain the RAM value
-	cpuPartitions      []int               // The CPU partitions
-	ramPartitions      []int               // The RAM partitions
-	numOfCPUPartitions int                 // Number of CPUs partitions
-	numOfRAMPartitions int                 // Number of RAM partitions
+	resourcesIdMap     [][]*guid.Range // Matrix of GUID ranges for each resource combination
+	cpuIndexes         map[int]int     // Obtain the CPU indexes
+	ramIndexes         map[int]int     // Obtain the RAM indexes
+	invertCpuIndexes   map[int]int     // Obtain the CPU value
+	invertRamIndexes   map[int]int     // Obtain the RAM value
+	cpuPartitions      []int           // The CPU partitions
+	ramPartitions      []int           // The RAM partitions
+	numOfCPUPartitions int             // Number of CPUs partitions
+	numOfRAMPartitions int             // Number of RAM partitions
 }
 
 /*
 Creates a new resource map given the CPUs and RAM partitions and the respective GUID distributions
 */
-func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []ResourcePerc) *Mapping {
+func NewResourcesMap(cpuPartitionsPerc []ResourcePartition, ramPartitionsPerc []ResourcePartition) *Mapping {
 	rm := &Mapping{}
 	rm.numOfCPUPartitions = cap(cpuPartitionsPerc)
 	rm.numOfRAMPartitions = cap(ramPartitionsPerc)
-	rm.resourcesIdMap = make([][]*guid.GuidRange, rm.numOfCPUPartitions)
+	rm.resourcesIdMap = make([][]*guid.Range, rm.numOfCPUPartitions)
 	rm.cpuIndexes = make(map[int]int)
 	rm.ramIndexes = make(map[int]int)
 	rm.invertCpuIndexes = make(map[int]int)
@@ -58,7 +58,7 @@ func NewResourcesMap(cpuPartitionsPerc []ResourcePerc, ramPartitionsPerc []Resou
 	cpuBaseGuid := guid.NewGuidInteger(0) // The GUID starts at 0
 	cpuPartitions := guid.NewGuidRange(*cpuBaseGuid, *guid.MaximumGuid()).CreatePartitions(cpuPartitionsPercentage)
 	for partIndex, partValue := range cpuPartitions {
-		rm.resourcesIdMap[partIndex] = make([]*guid.GuidRange, rm.numOfRAMPartitions) //Allocate the array of ranges for a CPU and RAM capacity
+		rm.resourcesIdMap[partIndex] = make([]*guid.Range, rm.numOfRAMPartitions) //Allocate the array of ranges for a CPU and RAM capacity
 		rm.resourcesIdMap[partIndex] = partValue.CreatePartitions(ramPartitionsPercentage)
 	}
 
@@ -86,7 +86,6 @@ func (rm *Mapping) GetResourcesIndexes(resources Resources) *Resources {
 			break
 		}
 	}
-
 	return res
 }
 
@@ -118,12 +117,13 @@ func (rm *Mapping) ResourcesByGuid(rGuid guid.Guid) (*Resources, error) {
 Prints the resource map into the log/std
 */
 func (rm *Mapping) Print() {
+	log.Infoln("%%%%%%%%%%%%%%%%% Resource <-> GUID Mapping %%%%%%%%%%%%%%%%%%%%%%")
 	for indexCPU := range rm.resourcesIdMap {
-		log.Printf("|%v CPUs:", rm.invertCpuIndexes[indexCPU])
+		log.Infof("-> %v CPUs", rm.invertCpuIndexes[indexCPU])
 		for indexRAM := range rm.resourcesIdMap {
-			log.Printf(" |%vMB RAM: ", rm.invertRamIndexes[indexRAM])
+			log.Infof("--> %vMB RAM", rm.invertRamIndexes[indexRAM])
 			rm.resourcesIdMap[indexCPU][indexRAM].Print()
 		}
-		log.Println("")
 	}
+	log.Infoln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 }

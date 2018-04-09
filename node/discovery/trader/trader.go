@@ -1,12 +1,13 @@
 package trader
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
-	"log"
 	"sync"
 	"time"
 )
@@ -22,7 +23,7 @@ type Trader struct {
 
 	refreshOffersTicker <-chan time.Time // Time ticker for running the refreshing offer messages
 
-	offersMap   map[offerKey]*traderOffer // Map with all the offers that the trader is managing
+	offers      map[offerKey]*traderOffer // Map with all the offers that the trader is managing
 	offersMutex *sync.Mutex               // Mutex for managing the offer
 }
 
@@ -36,7 +37,7 @@ func NewTrader(config *configuration.Configuration, client remote.Caravela, guid
 
 	res.refreshOffersTicker = time.NewTicker(config.RefreshingInterval()).C
 
-	res.offersMap = make(map[offerKey]*traderOffer)
+	res.offers = make(map[offerKey]*traderOffer)
 	res.offersMutex = &sync.Mutex{}
 	return res
 }
@@ -46,7 +47,7 @@ func (trader *Trader) Guid() *guid.Guid {
 }
 
 func (trader *Trader) Start() {
-	log.Println("[Trader] Starting refreshing resource's offers...")
+	log.Debugln("[Trader] Starting refreshing resource's offers...")
 	go trader.refreshingOffers()
 }
 
@@ -59,26 +60,26 @@ func (trader *Trader) refreshingOffers() {
 		case <-trader.refreshOffersTicker: // Time to refresh all the current offers (verify if the suppliers are alive)
 			trader.offersMutex.Lock()
 
-			for _, offer := range trader.offersMap {
+			for _, offer := range trader.offers {
 				if offer.Refresh() {
 					go func() {
 						trader.offersMutex.Lock()
 						defer trader.offersMutex.Unlock()
 
-						_, refreshed := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(), int64(offer.LocalID()))
+						_, refreshed := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(), int64(offer.ID()))
 
-						offerKEY := offerKey{common.OfferID(offer.LocalID()), offer.supplierIP}
-						offer, exist := trader.offersMap[offerKEY]
+						offerKEY := offerKey{common.OfferID(offer.ID()), offer.supplierIP}
+						offer, exist := trader.offers[offerKEY]
 
 						if refreshed && exist {
-							log.Printf("[Trader]\t-- Refresh SUCCEEDED for supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
+							log.Debugf("[Trader] Refresh SUCCEEDED for supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
 							offer.RefreshSucceeded()
 						} else if !refreshed && exist {
-							log.Printf("[Trader]\t-- Refresh FAILED for supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
+							log.Debugf("[Trader] Refresh FAILED for supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
 							offer.RefreshFailed()
 							if offer.refreshesFailed >= trader.config.MaxRefreshesFailed() {
-								log.Printf("[Trader]\t-- Removing offer of supplier: %s offer: %d\n", offer.SupplierIP(), offer.LocalID())
-								delete(trader.offersMap, offerKEY)
+								log.Debugf("[Trader] Removing offer of supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
+								delete(trader.offers, offerKEY)
 							}
 						}
 					}()
@@ -90,11 +91,30 @@ func (trader *Trader) refreshingOffers() {
 	}
 }
 
+func (trader *Trader) GetOffers() []api.Offer {
+	trader.offersMutex.Lock()
+	defer trader.offersMutex.Unlock()
+
+	availableOffers := len(trader.offers)
+	if len(trader.offers) <= 0 {
+		return nil
+	} else {
+		resOffers := make([]api.Offer, availableOffers)
+		index := 0
+		for _, offer := range trader.offers {
+			resOffers[index].SupplierIP = trader.config.HostIP()
+			resOffers[index].ID = int64(offer.ID())
+			index++
+		}
+		return resOffers
+	}
+}
+
 /*
 Receives a resource offer from other node (supplier) of the system
 */
 func (trader *Trader) CreateOffer(id int64, amount int, cpus int, ram int, supplierGUID string, supplierIP string) {
-	log.Printf("[Trader]\t<-- %s offer received %dX(CPUs: %d, RAM: %d) from: %s\n", trader.guid.String(), amount, cpus, ram, supplierIP)
+	log.Debugf("[Trader] %s offer received %dX(CPUs: %d, RAM: %d) from: %s", trader.guid.String(), amount, cpus, ram, supplierIP)
 
 	resourcesOffered := resources.NewResources(cpus, ram)
 	// Verify if the offer contains the resources of trader (Basically if the offer is bigger than the handled resources)
@@ -102,15 +122,15 @@ func (trader *Trader) CreateOffer(id int64, amount int, cpus int, ram int, suppl
 		trader.offersMutex.Lock()
 		defer trader.offersMutex.Unlock()
 
-		offer := newTraderOffer(*guid.NewGuidString(supplierGUID), supplierIP, *common.NewOffer(common.OfferID(id),
+		offer := newTraderOffer(*guid.NewGuidString(supplierGUID), supplierIP, common.NewOffer(common.OfferID(id),
 			amount, *resources.NewResources(cpus, ram)))
 		offerKey := offerKey{common.OfferID(id), supplierIP}
 
-		trader.offersMap[offerKey] = offer
-		log.Printf("[Trader]\t<-- %s Offer CREATED %dX(CPUs: %d, RAM: %d) from: %s\n", trader.guid.String(), amount, cpus, ram, supplierIP)
+		trader.offers[offerKey] = offer
+		log.Debugf("[Trader] %s Offer CREATED %dX(CPUs: %d, RAM: %d) from: %s", trader.guid.String(), amount, cpus, ram, supplierIP)
 	}
 }
 
 func (trader *Trader) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64) {
-
+	// TODO
 }

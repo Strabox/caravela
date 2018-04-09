@@ -16,9 +16,9 @@ type offerKey struct {
 }
 
 type traderOffer struct {
-	supplierGUID *guid.Guid    // GUID of the supplier offering these resources
-	supplierIP   string        // IP of the supplier offering these resources
-	offer        *common.Offer // Offer resources
+	supplierGUID *guid.Guid   // GUID of the supplier offering these resources
+	supplierIP   string       // IP of the supplier offering these resources
+	offer        common.Offer // Offer resources
 
 	lastRefreshTimestamp time.Time // Last time the offer was refreshed with/without success
 	waitingForRefresh    bool      // Marks if there is still a refresh pending for the offer (avoid multiple refreshes)
@@ -29,7 +29,7 @@ func newTraderOffer(supplierGUID guid.Guid, supplierIP string, offer common.Offe
 	offerRes := &traderOffer{}
 	offerRes.supplierGUID = &supplierGUID
 	offerRes.supplierIP = supplierIP
-	offerRes.offer = &offer
+	offerRes.offer = offer
 
 	offerRes.lastRefreshTimestamp = time.Now()
 	offerRes.waitingForRefresh = false
@@ -41,7 +41,7 @@ func (offer *traderOffer) SupplierIP() string {
 	return offer.supplierIP
 }
 
-func (offer *traderOffer) LocalID() common.OfferID {
+func (offer *traderOffer) ID() common.OfferID {
 	return offer.offer.ID()
 }
 

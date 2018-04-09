@@ -1,51 +1,34 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
 	"github.com/strabox/caravela/api/rest"
-	"github.com/strabox/caravela/configuration"
 	"net/http"
-	"time"
 )
 
-// Our HTTP body is always a JSON
-const HTTPContentType = "application/json"
-const HTTPRequestTimeout = 2 * time.Second // TODO: Put in configuration struct?
-
 type Caravela struct {
-	httpClient *http.Client
+	httpClient *http.Client   // Http client to send requests into Caravela's daemon
+	config     *Configuration // Configuration parameters for the CARAVELA client
 }
 
-func NewCaravela() *Caravela {
+func NewCaravela(caravelaHostIP string) *Caravela {
 	res := &Caravela{}
-
+	res.config = DefaultConfiguration(caravelaHostIP)
 	res.httpClient = &http.Client{
-		Timeout: HTTPRequestTimeout,
+		Timeout: res.config.HttpRequestTimeout(),
 	}
-
 	return res
 }
 
-func (client *Caravela) Run(containerImage string, arguments []string, cpus int, ram int) {
-	var runContainer rest.RunContainerJSON
+func (client *Caravela) Run(containerImage string, arguments []string, cpus int, ram int) *Error {
+	runContainerJSON := rest.RunContainerJSON{containerImage, arguments, cpus, ram}
 
-	runContainer.ContainerImage = containerImage
-	runContainer.Arguments = arguments
-	runContainer.CPUs = cpus
-	runContainer.RAM = ram
+	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		rest.UserContainerBaseEndpoint)
 
-	url := rest.BuildHttpURL(false, "localhost", configuration.APIPort, rest.UserBaseEndpoint+
-		rest.UserRunContainerEndpoint)
-
-	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(runContainer)
-
-	_, err := client.httpClient.Post(url, HTTPContentType, buffer)
+	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, runContainerJSON, nil)
 	if err == nil {
-		//return nil
+		return nil
 	} else {
-		//return NewClientError(UNKNOWN)
+		return NewClientError(err)
 	}
-
 }

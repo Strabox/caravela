@@ -33,15 +33,15 @@ type Configuration struct {
 	chordHashSizeBits  int
 
 	// Resources Partitions
-	cpuPartitions []resources.ResourcePerc
-	ramPartitions []resources.ResourcePerc
+	cpuPartitions []resources.ResourcePartition
+	ramPartitions []resources.ResourcePartition
 
 	// CARAVELA's REST API configurations
 	apiPort    int
 	apiTimeout time.Duration
 }
 
-func DefaultConfiguration(hostIP string, dockerAPIVersion string) *Configuration {
+func Default(hostIP string, dockerAPIVersion string) *Configuration {
 	res := &Configuration{}
 	res.hostIP = hostIP
 	res.dockerAPIVersion = dockerAPIVersion
@@ -54,13 +54,13 @@ func DefaultConfiguration(hostIP string, dockerAPIVersion string) *Configuration
 	res.refreshMissedTimeout = res.refreshingInterval + (5 * time.Second)
 
 	res.overlayPort = 8000
-	res.chordTimeout = 2 * time.Second
+	res.chordTimeout = 5 * time.Second
 	res.chordVirtualNodes = 6
 	res.chordNumSuccessors = 3
 	res.chordHashSizeBits = 160
 
-	res.cpuPartitions = []resources.ResourcePerc{{1, 50}, {2, 50}}
-	res.ramPartitions = []resources.ResourcePerc{{256, 50}, {512, 50}}
+	res.cpuPartitions = []resources.ResourcePartition{{1, 50}, {2, 50}}
+	res.ramPartitions = []resources.ResourcePartition{{256, 50}, {512, 50}}
 
 	res.apiPort = APIPort
 	res.apiTimeout = 2 * time.Second
@@ -119,11 +119,11 @@ func (c *Configuration) ChordHashSizeBits() int {
 	return c.chordHashSizeBits
 }
 
-func (c *Configuration) CpuPartitions() []resources.ResourcePerc {
+func (c *Configuration) CpuPartitions() []resources.ResourcePartition {
 	return c.cpuPartitions
 }
 
-func (c *Configuration) RamPartitions() []resources.ResourcePerc {
+func (c *Configuration) RamPartitions() []resources.ResourcePartition {
 	return c.ramPartitions
 }
 

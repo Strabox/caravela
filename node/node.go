@@ -49,7 +49,7 @@ func NewNode(config *configuration.Configuration) *Node {
 
 	res.config = config
 	res.discovery = discovery.NewDiscovery(config, res.overlay, caravelaCli, resourcesMap, *maxResources)
-	res.scheduler = scheduler.NewScheduler()
+	res.scheduler = scheduler.NewScheduler(res.discovery, caravelaCli)
 
 	return res
 }
@@ -70,10 +70,6 @@ func (node *Node) AddTrader(guidBytes []byte) {
 }
 
 /* ================================== NodeRemote ============================= */
-
-func (node *Node) Docker() *docker.Client {
-	return node.dockerClient
-}
 
 func (node *Node) Discovery() nodeAPI.Discovery {
 	return node.discovery

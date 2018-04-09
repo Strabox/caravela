@@ -1,4 +1,4 @@
-package remote
+package client
 
 import "strings"
 
@@ -9,7 +9,7 @@ type Error struct {
 	Code int
 }
 
-func NewRemoteClientError(err error) *Error {
+func NewClientError(err error) *Error {
 	res := &Error{}
 	if strings.Contains(err.Error(), "No connection") {
 		res.Code = CaravelaInstanceUnavailable
@@ -22,7 +22,7 @@ func NewRemoteClientError(err error) *Error {
 func (ce *Error) Error() string {
 	switch ce.Code {
 	case CaravelaInstanceUnavailable:
-		return "Instance unavailable"
+		return "Caravela instance unavailable"
 	default:
 		return "Unknown error"
 	}

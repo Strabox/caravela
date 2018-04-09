@@ -1,13 +1,14 @@
 package supplier
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
+	nodeCommon "github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/overlay"
-	"log"
 	"sync"
 	"time"
 )
@@ -51,7 +52,7 @@ func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, c
 }
 
 func (sup *Supplier) Start() {
-	log.Println("[Supplier] \t -- Starting supplying resources...")
+	log.Debugln("[Supplier] Starting supplying resources...")
 	go sup.startSupplying()
 }
 
@@ -62,16 +63,14 @@ func (sup *Supplier) startSupplying() {
 			sup.offersMutex.Lock()
 
 			if !sup.availableResources.IsZero() {
-				log.Println("[Supplier] \t -- Resupplying...", sup.resourcesMap.GetResourcesIndexes(*sup.maxResources).String())
+				log.Debugln("[Supplier] Resupplying...", sup.resourcesMap.GetResourcesIndexes(*sup.maxResources).String())
 
 				destinationGUID, _ := sup.resourcesMap.RandomGuid(*sup.availableResources)
 				remoteNode := sup.overlay.Lookup(destinationGUID.Bytes())
-				remoteNodeGUID := guid.NewGuidBytes(remoteNode[0].Guid())
+				remoteNodeGUID := guid.NewGuidBytes(remoteNode[0].GUID())
 
 				/*
 					handledResources, _ := sup.resourcesMap.ResourcesByGuid(*remoteNodeGUID)
-
-
 					for !sup.availableResources.Contains(*handledResources) {
 
 					}
@@ -85,7 +84,7 @@ func (sup *Supplier) startSupplying() {
 						sup.offersID, 1, sup.availableResources.CPU(), sup.availableResources.RAM())
 
 					if err == nil {
-						sup.offers[sup.offersID] = newSupplierOffer(*common.NewOffer(common.OfferID(sup.offersID),
+						sup.offers[sup.offersID] = newSupplierOffer(common.NewOffer(common.OfferID(sup.offersID),
 							1, *sup.availableResources.Copy()), *remoteNodeGUID)
 						sup.availableResources.SetZero()
 						sup.offersID++
@@ -97,7 +96,7 @@ func (sup *Supplier) startSupplying() {
 		case <-sup.refreshesCheckTicker: // Check if the offers are being refreshed by the respective trader
 			sup.offersMutex.Lock()
 
-			log.Println("[Supplier] \t -- Checking refreshes...")
+			log.Debugln("[Supplier] Checking refreshes...")
 
 			for offerKey, offer := range sup.offers {
 
@@ -114,24 +113,44 @@ func (sup *Supplier) startSupplying() {
 	}
 }
 
+func (sup *Supplier) FindNodes(resources resources.Resources) []*nodeCommon.RemoteNode {
+	sup.offersMutex.Lock()
+	defer sup.offersMutex.Unlock()
+
+	var resultNodes []*nodeCommon.RemoteNode = nil
+
+	destinationGUID, _ := sup.resourcesMap.RandomGuid(resources)
+	overlayNodes := sup.overlay.Lookup(destinationGUID.Bytes())
+
+	if overlayNodes != nil {
+		resultNodes = make([]*nodeCommon.RemoteNode, len(overlayNodes))
+		for i, overlayNode := range overlayNodes {
+			nodeGuid := guid.NewGuidBytes(overlayNode.GUID())
+			resultNodes[i] = nodeCommon.NewRemoteNode(overlayNode.IP(), *nodeGuid)
+		}
+	}
+
+	return resultNodes
+}
+
 func (sup *Supplier) RefreshOffer(offerID int64, fromTraderGUID string) bool {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
-	log.Printf("[Supplier] \t <-- Refreshing Offer: %d from: %s", offerID, fromTraderGUID)
+	log.Debugf("[Supplier] Refreshing Offer: %d from: %s", offerID, fromTraderGUID)
 
 	offer, exist := sup.offers[offerID]
 
 	if exist {
 		if offer.IsResponsibleTrader(*guid.NewGuidString(fromTraderGUID)) {
 			offer.Refresh()
-			log.Printf("[Supplier] \t -- Offer: %d refresh SUCCESS", offerID)
+			log.Debugf("[Supplier] Offer: %d refresh SUCCESS", offerID)
 			return true
 		} else {
-			log.Printf("[Supplier] \t -- Offer: %d refresh FAILED (Wrong trader)", offerID)
+			log.Debugf("[Supplier] Offer: %d refresh FAILED (Wrong trader)", offerID)
 			return false // TODO: Return an error for fake traders trying to refresh the offer?
 		}
 	} else {
-		log.Printf("[Supplier] \t -- Offer: %d refresh FAILED (Offer does not exist)", offerID)
+		log.Debugf("[Supplier] Offer: %d refresh FAILED (Offer does not exist)", offerID)
 		return false // TODO: Return an error because this offerContent does not exist and the trader can remove it?
 	}
 }
