@@ -1,3 +1,4 @@
+sudo: enabled
 language: go
 go:
     - 1.9.4
