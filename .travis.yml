@@ -11,7 +11,7 @@ script:
     - make build
     - make test
 after_success:
-    - make docker-upload OS=linux
+    - make docker-build OS=linux
 notifications:
     on_success: never
     on_failure: never
