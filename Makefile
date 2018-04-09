@@ -43,12 +43,12 @@ dep-graph:
 	godepgraph -s -p github.com/docker github.com/strabox/caravela | dot -Tpng -o importsGraph.png
 
 docker-build:
-	@echo Building CARAVELA's Docker container ...
-	docker build --build-arg GOOS=${OS} --rm -t strabox/caravela:latest .
+	@echo Building Docker container...
+	docker build --build-arg GOOS=$(OS) --rm -t strabox/caravela:latest .
 	
 docker-upload:
-	@echo Building CARAVELA's Docker container and uploading to DockerHub...
-	docker build --build-arg GOOS=${OS} --rm -t strabox/caravela:latest .
+	@echo Building Docker container and uploading to DockerHub...
+	docker build --build-arg GOOS=$(OS) --rm -t strabox/caravela:latest .
 	docker push strabox/caravela:latest
 
 install-aux-tools:
