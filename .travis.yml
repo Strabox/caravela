@@ -2,6 +2,7 @@ language: go
 go:
     - 1.9
 before_script:
+    mv ../../${PWD##*/} ../../strabox
     mv ../${PWD##*/} ../caravela
 script:
     - make build
