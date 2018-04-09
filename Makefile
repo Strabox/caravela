@@ -44,12 +44,12 @@ dep-graph:
 
 docker-build:
 	@echo Building CARAVELA's Docker container ...
-	docker build --build-arg GOOS=${OS} --rm -t "strabox/caravela:latest" .
+	docker build --build-arg GOOS=${OS} --rm -t strabox/caravela:latest .
 	
 docker-upload:
 	@echo Building CARAVELA's Docker container and uploading to DockerHub...
-	docker build --build-arg GOOS=${OS} --rm -t "strabox/caravela:latest" .
-	docker push "strabox/caravela:latest"
+	docker build --build-arg GOOS=${OS} --rm -t strabox/caravela:latest .
+	docker push strabox/caravela:latest
 
 install-aux-tools:
 	@echo Installing dependencies necessary for coverage report and import dependencies...
