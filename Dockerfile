@@ -15,9 +15,10 @@ RUN GOOS=$GOOS GOARCH=$GOARCH go install -v -gcflags "-N -l" github.com/strabox/
 
 RUN apk del .build-deps
 
-
-EXPOSE 8000	# Expose the Overlay Port to outside
-EXPOSE 8001	# Expose the CARAVELAs Port to outside
+# Expose the Overlay Port to outside
+EXPOSE 8000
+# Expose the CARAVELAs Port to outside
+EXPOSE 8001
 
 VOLUME $HOME/.caravela
 

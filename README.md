@@ -1,2 +1,6 @@
-# Msc-Thesis-CARAVELA-A-Cloud-At-Edge
-CARAVELA is a cloud management platform (extended from the Swarm solution) with a fully decentralized and scalable architecture in order to be deployed in a Edge Computing environment. This work is being development in the context of my Masters Degree Thesis in Computer Scinecen and Engineering @ Instituto Superior Técnico
+# Caravela: A Cloud @ Edge [![Build Status](https://travis-ci.com/Strabox/CARAVELA-A-Cloud-at-Edge.svg?token=8iyx88Q98Rgp5aaUbkKN&branch=master)](https://travis-ci.com/Strabox/CARAVELA-A-Cloud-at-Edge)
+
+Caravela is a container cloud management platform (inspired by the Docker Swarm) with a fully decentralized and scalable
+architecture in order to be deployed in a Edge Computing environment. This work is being development in the context
+of my Masters Degree Thesis in Computer Science and Engineering @ Instituto Superior Técnico
+

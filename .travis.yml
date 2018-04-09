@@ -1,6 +1,6 @@
 language: go
 go:
-    - 1.9
+    - 1.9.4
 before_script:
     - mv ../${PWD##*/} ../caravela
     - mv ../../Strabox ../../strabox
@@ -8,8 +8,7 @@ script:
     - make build
     - make test
 after_success:
-env:
-    global:
+    - make docker-upload OS=linux
 notifications:
     on_success: never
     on_failure: never
