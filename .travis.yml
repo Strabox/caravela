@@ -11,6 +11,8 @@ script:
     - make build
     - make test
 after_success:
+    # Login in the docker daemon
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - make docker-upload OS=linux
 notifications:
     on_success: never
