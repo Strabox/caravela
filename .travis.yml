@@ -2,7 +2,7 @@ language: go
 go:
     - 1.9
 before_script:
-    mv ../${PWD##*/} caravela
+    mv ../${PWD##*/} ../caravela
 script:
     - make build
     - make test
