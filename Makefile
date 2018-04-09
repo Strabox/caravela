@@ -10,7 +10,7 @@ build:
 
 test:
 	@echo Testing CARAVELA ...
-	go test github.com/strabox/caravela/node/guid github.com/strabox/caravela/node/resources
+	go test github.com/strabox/caravela/node/common/guid github.com/strabox/caravela/node/common/resources
 
 test-coverage:
 	@echo Testing and coverage report generation...
