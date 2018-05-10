@@ -22,7 +22,7 @@ func run(c *cli.Context) {
 		}
 	}
 
-	caravelaClient := client.NewCaravela(c.String("ip"))
+	caravelaClient := client.NewCaravelaIP(c.String("ip"))
 
 	err := caravelaClient.Run(c.Args().Get(0), containerArgs, int(c.Uint("cpus")), int(c.Uint("ram")))
 	if err != nil {

@@ -28,9 +28,9 @@
   branch = "master"
   name = "github.com/docker/distribution"
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/bluele/go-chord"
+[[override]]
+  name = "github.com/docker/go-connections"
+  version = "0.3.0"
 
 [[constraint]]
   branch = "master"
@@ -51,3 +51,7 @@
 [[constraint]]
   name = "github.com/urfave/cli"
   version = "1.20.0"
+
+[[constraint]]
+  name = "github.com/shirou/gopsutil"
+  version = "2.18.3"

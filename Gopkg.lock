@@ -14,12 +14,6 @@
   version = "v1.0.5"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/bluele/go-chord"
-  packages = ["."]
-  revision = "2fa66deca1a27f6e24ddfaa86b3cf3a783c94ff5"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -56,7 +50,7 @@
     "api/types/volume",
     "client"
   ]
-  revision = "fb95dc7eac3ae177d61f7bd67aea5ddeb94454b8"
+  revision = "f238bfda902d8193dd2d33bb334cd2419ffa5578"
 
 [[projects]]
   name = "github.com/docker/go-connections"
@@ -120,6 +114,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/strabox/go-chord"
+  packages = ["."]
+  revision = "2fa66deca1a27f6e24ddfaa86b3cf3a783c94ff5"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
   revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
@@ -159,6 +159,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "541d0156eb827197d99739c74c04fea01dd0528bf40bcbd05018f2e7140d7b24"
+  inputs-digest = "f0eb9af630de88f102dde379e696a27b96d31df086a52e8e6da69e08787870e9"
   solver-name = "gps-cdcl"
   solver-version = 1

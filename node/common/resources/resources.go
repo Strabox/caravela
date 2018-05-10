@@ -4,6 +4,9 @@ import (
 	"fmt"
 )
 
+/*
+Representation of the resources that a user can ask for a container to have available.
+*/
 type Resources struct {
 	vCPU int
 	ram  int

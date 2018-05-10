@@ -13,6 +13,6 @@ type DiscoveryInternal interface {
 	Start()                                                  // Starts the discovery module operations
 	AddTrader(traderGUID guid.Guid)                          // Add a new trader (called during overlay bootstrap)
 	Find(resources resources.Resources) []*common.RemoteNode // Find remote nodes that offer the given resources
-	ObtainResourcesSlot(offerID int64) (error, resources.Resources)
-	ReturnResourcesSlot(resources resources.Resources)
+	ObtainResourcesSlot(offerID int64) *resources.Resources  // Obtain a resource offer to submit a container
+	ReturnResourcesSlot(resources resources.Resources)       // Release a resource offer into the system
 }

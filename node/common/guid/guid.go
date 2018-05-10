@@ -7,29 +7,32 @@ import (
 	"time"
 )
 
-var randomSource = rand.NewSource(time.Now().Unix()) // Random source to generate random GUIDS
+var randomSource = rand.NewSource(time.Now().Unix()) // Random source to generate random GUIDs
 var isGuidInitialized = false                        // Used to allow only one initialization of the GUID size
 var guidSizeBits = 160                               // 160-bits default (To maintain compatibility with chord implementation)
 
 /*
-GUID Represents the global unique identifier of each node
+GUID Represents a Global Unique IDentifier for a system node
 */
 type Guid struct {
 	id *big.Int
 }
 
-func InitializeGuid(guidBitsSize int) {
+/*
+Initializes the GUID package with the size of the GUID.
+*/
+func InitializeGUID(guidBitsSize int) {
 	if !isGuidInitialized {
 		guidSizeBits = guidBitsSize
 		isGuidInitialized = true
 	}
 }
 
-func GuidSizeBits() int {
+func SizeBits() int {
 	return guidSizeBits
 }
 
-func GuidSizeBytes() int {
+func SizeBytes() int {
 	return guidSizeBits / 8
 }
 

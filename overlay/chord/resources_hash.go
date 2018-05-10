@@ -2,6 +2,7 @@ package chord
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/util"
 	"math/rand"
 	"sync"
 	"time"
@@ -37,7 +38,7 @@ func (rh *ResourcesHash) Write(p []byte) (n int, err error) {
 		pString := string(p)
 		if pString == rh.hostname { // Generate a random GUID id for a joining node
 			rh.generateRandomHash(p)
-			log.Debugf("[Hash] Hostname: %s, Random GUID: %v", rh.hostname, p)
+			log.Debugf(util.LogTag("[Hash]")+"Trader GUID: %v", p)
 			for index, value := range p {
 				rh.hash[index] = value
 			}

@@ -7,17 +7,22 @@ import (
 	"time"
 )
 
+/*
+Offer that the supplier is advertising into the system.
+*/
 type supplierOffer struct {
-	offerContent      common.Offer // Offer's resources content
-	traderResponsible *guid.Guid   // Trader's GUID responsible for managing the offer
+	*common.Offer                // Offer's resources content
+	traderResponsible *guid.Guid // Trader's GUID responsible for managing the offer
 
 	lastTimeRefreshed time.Time // Last time the responsible trader has refreshed the offer
 	refreshesMissed   int       // Number of times the responsible trader did not send a refresh
 }
 
-func newSupplierOffer(offerContent common.Offer, traderResponsible guid.Guid) *supplierOffer {
+func newSupplierOffer(id common.OfferID, amount int, res resources.Resources,
+	traderResponsible guid.Guid) *supplierOffer {
+
 	offerRes := &supplierOffer{}
-	offerRes.offerContent = offerContent
+	offerRes.Offer = common.NewOffer(id, amount, res)
 	offerRes.traderResponsible = &traderResponsible
 
 	offerRes.lastTimeRefreshed = time.Now()
@@ -25,24 +30,8 @@ func newSupplierOffer(offerContent common.Offer, traderResponsible guid.Guid) *s
 	return offerRes
 }
 
-func (offer *supplierOffer) ID() common.OfferID {
-	return offer.offerContent.ID()
-}
-
-func (offer *supplierOffer) Amount() int {
-	return offer.offerContent.Amount()
-}
-
-func (offer *supplierOffer) Resources() *resources.Resources {
-	return offer.offerContent.Resources().Copy()
-}
-
 func (offer *supplierOffer) IsResponsibleTrader(traderGUID guid.Guid) bool {
-	if offer.traderResponsible.Equals(traderGUID) {
-		return true
-	} else {
-		return false
-	}
+	return offer.traderResponsible.Equals(traderGUID)
 }
 
 func (offer *supplierOffer) RefreshesMissed() int {

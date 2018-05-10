@@ -9,17 +9,19 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/util"
 	"sync"
 	"time"
 )
 
 /*
-Supplier handles all the logic of offering the own resources and receiving requests to deploy containers
+Supplier handles all the logic of managing the node own resources, advertising them into the system.
 */
 type Supplier struct {
-	config             *configuration.Configuration
-	overlay            overlay.Overlay
-	client             remote.Caravela      // Client to collaborate with other CARAVELA's nodes
+	config  *configuration.Configuration // Configurations of the system
+	overlay overlay.Overlay              // Node overlay to efficient route/search of messages
+	client  remote.Caravela              // Client to collaborate with other CARAVELA's nodes
+
 	resourcesMap       *resources.Mapping   // The resources<->GUID mapping
 	maxResources       *resources.Resources // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources // Available resources to offerContent
@@ -38,6 +40,7 @@ func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, c
 	resSupplier.config = config
 	resSupplier.overlay = overlay
 	resSupplier.client = client
+
 	resSupplier.resourcesMap = resourcesMap
 	resSupplier.maxResources = maxResources.Copy()
 	resSupplier.availableResources = maxResources.Copy()
@@ -51,52 +54,53 @@ func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, c
 	return resSupplier
 }
 
+/*
+Starts the supplier.
+*/
 func (sup *Supplier) Start() {
-	log.Debugln("[Supplier] Starting supplying resources...")
+	log.Debug(util.LogTag("[Supplier]") + "STARTED...")
 	go sup.startSupplying()
 }
 
+/*
+Controls the time dependant actions like supplying the resources.
+*/
 func (sup *Supplier) startSupplying() {
 	for {
 		select {
-		case <-sup.supplyingTicker: // Offer the available resources into a random trader (responsible for them)
+		/*
+			- Offer the available resources into a random trader (responsible for them).
+			- This actions can be customized with a different strategy to split the available resources
+			into different resource offers.
+		*/
+		case <-sup.supplyingTicker:
 			sup.offersMutex.Lock()
 
 			if !sup.availableResources.IsZero() {
-				log.Debugln("[Supplier] Resupplying...", sup.resourcesMap.GetResourcesIndexes(*sup.maxResources).String())
+				log.Debugf(util.LogTag("[Supplier]")+"Supplying: %s",
+					sup.resourcesMap.GetFittestResources(*sup.maxResources).String())
 
-				destinationGUID, _ := sup.resourcesMap.RandomGuid(*sup.availableResources)
+				destinationGUID, _ := sup.resourcesMap.RandomGUID(*sup.availableResources)
 				remoteNode := sup.overlay.Lookup(destinationGUID.Bytes())
 				remoteNodeGUID := guid.NewGuidBytes(remoteNode[0].GUID())
 
-				/*
-					handledResources, _ := sup.resourcesMap.ResourcesByGuid(*remoteNodeGUID)
-					for !sup.availableResources.Contains(*handledResources) {
+				err := sup.client.CreateOffer(sup.config.HostIP(), "", remoteNode[0].IP(),
+					remoteNodeGUID.String(), sup.offersID, 1, sup.availableResources.CPU(),
+					sup.availableResources.RAM())
 
-					}
-				*/
-
-				go func() {
-					sup.offersMutex.Lock()
-					defer sup.offersMutex.Unlock()
-
-					err := sup.client.CreateOffer(sup.config.HostIP(), "", remoteNode[0].IP(), remoteNodeGUID.String(),
-						sup.offersID, 1, sup.availableResources.CPU(), sup.availableResources.RAM())
-
-					if err == nil {
-						sup.offers[sup.offersID] = newSupplierOffer(common.NewOffer(common.OfferID(sup.offersID),
-							1, *sup.availableResources.Copy()), *remoteNodeGUID)
-						sup.availableResources.SetZero()
-						sup.offersID++
-					}
-				}()
+				if err == nil {
+					sup.offers[sup.offersID] = newSupplierOffer(common.OfferID(sup.offersID),
+						1, *sup.availableResources, *remoteNodeGUID)
+					sup.availableResources.SetZero()
+					sup.offersID++
+				}
 			}
 
 			sup.offersMutex.Unlock()
-		case <-sup.refreshesCheckTicker: // Check if the offers are being refreshed by the respective trader
+			// Check if the offers are being refreshed by the respective trader
+		case <-sup.refreshesCheckTicker:
 			sup.offersMutex.Lock()
-
-			log.Debugln("[Supplier] Checking refreshes...")
+			log.Debug(util.LogTag("[Supplier]") + "Checking refreshes...")
 
 			for offerKey, offer := range sup.offers {
 
@@ -113,13 +117,13 @@ func (sup *Supplier) startSupplying() {
 	}
 }
 
+/*
+Finds a list of CARAVELA's nodes (in this case Traders) that manage the given resources combinations.
+*/
 func (sup *Supplier) FindNodes(resources resources.Resources) []*nodeCommon.RemoteNode {
-	sup.offersMutex.Lock()
-	defer sup.offersMutex.Unlock()
-
 	var resultNodes []*nodeCommon.RemoteNode = nil
 
-	destinationGUID, _ := sup.resourcesMap.RandomGuid(resources)
+	destinationGUID, _ := sup.resourcesMap.RandomGUID(resources)
 	overlayNodes := sup.overlay.Lookup(destinationGUID.Bytes())
 
 	if overlayNodes != nil {
@@ -133,24 +137,48 @@ func (sup *Supplier) FindNodes(resources resources.Resources) []*nodeCommon.Remo
 	return resultNodes
 }
 
+/*
+Refreshes an offer.
+*/
 func (sup *Supplier) RefreshOffer(offerID int64, fromTraderGUID string) bool {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
-	log.Debugf("[Supplier] Refreshing Offer: %d from: %s", offerID, fromTraderGUID)
+	log.Debugf(util.LogTag("[Supplier]")+"Refreshing Offer: %d from: %s", offerID, fromTraderGUID)
 
 	offer, exist := sup.offers[offerID]
 
 	if exist {
 		if offer.IsResponsibleTrader(*guid.NewGuidString(fromTraderGUID)) {
 			offer.Refresh()
-			log.Debugf("[Supplier] Offer: %d refresh SUCCESS", offerID)
+			log.Debugf(util.LogTag("[Supplier]")+"Offer: %d refresh SUCCESS", offerID)
 			return true
 		} else {
-			log.Debugf("[Supplier] Offer: %d refresh FAILED (Wrong trader)", offerID)
+			log.Debugf(util.LogTag("[Supplier]")+"Offer: %d refresh FAILED (Wrong trader)", offerID)
 			return false // TODO: Return an error for fake traders trying to refresh the offer?
 		}
 	} else {
-		log.Debugf("[Supplier] Offer: %d refresh FAILED (Offer does not exist)", offerID)
+		log.Debugf(util.LogTag("[Supplier]")+"Offer: %d refresh FAILED (Offer does not exist)", offerID)
 		return false // TODO: Return an error because this offerContent does not exist and the trader can remove it?
 	}
+}
+
+func (sup *Supplier) ObtainOffer(offerID int64) *resources.Resources {
+	sup.offersMutex.Lock()
+	defer sup.offersMutex.Unlock()
+
+	supOffer := sup.offers[offerID]
+	if supOffer == nil {
+		return nil
+	} else {
+		res := sup.offers[offerID].Resources().Copy()
+		delete(sup.offers, offerID)
+		return res
+	}
+}
+
+func (sup *Supplier) ReturnOffer(returnedResources resources.Resources) {
+	sup.offersMutex.Lock()
+	defer sup.offersMutex.Unlock()
+
+	sup.availableResources.Add(returnedResources)
 }

@@ -1,23 +1,32 @@
 package guid
 
-import (
-	log "github.com/Sirupsen/logrus"
-)
+import log "github.com/Sirupsen/logrus"
 
-// Range represents a guid range like [startId, endId)
+/*
+Range represents a range of GUIDs i.e. [startId, endId)
+*/
 type Range struct {
 	startId *Guid //Included in range
 	endId   *Guid //Excluded from the range
 }
 
-func NewGuidRange(guid1 Guid, guid2 Guid) *Range {
-	return &Range{&guid1, &guid2}
+/*
+Creates a new GUID range given a start GUID and end GUID
+*/
+func NewGuidRange(startGUID Guid, endGUID Guid) *Range {
+	return &Range{&startGUID, &endGUID}
 }
 
+/*
+Generate random GUID inside the range.
+*/
 func (gr *Range) GenerateRandomBetween() (*Guid, error) {
 	return gr.startId.GenerateRandomBetween(*gr.endId)
 }
 
+/*
+Create partitions of the GUID range.
+*/
 func (gr *Range) CreatePartitions(partitionsPerc []int) []*Range {
 	res := make([]*Range, cap(partitionsPerc))
 
@@ -33,6 +42,9 @@ func (gr *Range) CreatePartitions(partitionsPerc []int) []*Range {
 	return res
 }
 
+/*
+Verify if the given GUID is inside the range.
+*/
 func (gr *Range) Inside(guid Guid) bool {
 	if (gr.startId.Cmp(guid) <= 0) && (gr.endId.Cmp(guid) > 0) {
 		return true
@@ -40,6 +52,23 @@ func (gr *Range) Inside(guid Guid) bool {
 	return false
 }
 
+/*
+Get the start GUID of the range.
+*/
+func (gr *Range) StartGUID() *Guid {
+	return gr.startId.Copy()
+}
+
+/*
+Get the end GUID of the range.
+*/
+func (gr *Range) EndGUID() *Guid {
+	return gr.endId.Copy()
+}
+
+/*
+Print the range into the log.
+*/
 func (gr *Range) Print() {
-	log.Printf("[%s, %s)", gr.startId.String(), gr.endId.String())
+	log.Debugf("[%s, %s)", gr.startId.String(), gr.endId.String())
 }

@@ -7,6 +7,7 @@ import (
 	nodeAPI "github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
+	"github.com/strabox/caravela/node/containers"
 	"github.com/strabox/caravela/node/discovery"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/overlay"
@@ -17,21 +18,24 @@ import (
 Top level structure that contains all the modules/objects that manages the Caravela node.
 */
 type Node struct {
-	discovery    *discovery.Discovery
-	scheduler    *scheduler.Scheduler
-	config       *configuration.Configuration
-	overlay      overlay.Overlay
-	dockerClient *docker.Client
+	discovery         *discovery.Discovery
+	scheduler         *scheduler.Scheduler
+	containersManager *containers.Manager
+	config            *configuration.Configuration
+	overlay           overlay.Overlay
+	dockerClient      *docker.Client
 }
 
 func NewNode(config *configuration.Configuration) *Node {
 	res := &Node{}
 
+	res.config = config
+
 	// Global GUID size initialization
-	guid.InitializeGuid(config.ChordHashSizeBits())
+	guid.InitializeGUID(config.ChordHashSizeBits())
 
 	// Create Overlay struct (Chord overlay initial)
-	res.overlay = chord.NewChordOverlay(guid.GuidSizeBytes(), config.HostIP(), config.OverlayPort(),
+	res.overlay = chord.NewChordOverlay(guid.SizeBytes(), config.HostIP(), config.OverlayPort(),
 		config.ChordVirtualNodes(), config.ChordNumSuccessors(), config.ChordTimeout())
 
 	// Create CARAVELA's remote client
@@ -47,9 +51,12 @@ func NewNode(config *configuration.Configuration) *Node {
 	maxCPUs, maxRAM := res.dockerClient.GetDockerCPUAndRAM()
 	maxResources := resources.NewResources(maxCPUs, maxRAM)
 
-	res.config = config
 	res.discovery = discovery.NewDiscovery(config, res.overlay, caravelaCli, resourcesMap, *maxResources)
-	res.scheduler = scheduler.NewScheduler(res.discovery, caravelaCli)
+
+	// Create the containers manager
+	res.containersManager = containers.NewManager(config, res.dockerClient, res.discovery)
+
+	res.scheduler = scheduler.NewScheduler(config, res.discovery, res.containersManager, caravelaCli)
 
 	return res
 }
@@ -62,6 +69,7 @@ func (node *Node) Start(join bool, joinIP string) {
 	}
 
 	node.discovery.Start()
+	node.containersManager.Start()
 }
 
 func (node *Node) AddTrader(guidBytes []byte) {

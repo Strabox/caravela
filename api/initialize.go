@@ -7,16 +7,21 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/api/rest/discovery"
+	"github.com/strabox/caravela/api/rest/scheduling"
 	"github.com/strabox/caravela/api/rest/user"
 	"github.com/strabox/caravela/configuration"
 	nodeAPI "github.com/strabox/caravela/node/api"
+	"github.com/strabox/caravela/util"
 	"net/http"
 )
 
+/*
+REST router for the http requests.
+*/
 var router *mux.Router = nil
 
 func Initialize(config *configuration.Configuration, thisNode nodeAPI.Node) {
-	log.Debugln("[API] ", "Initializing CARAVELA API ...")
+	log.Debug(util.LogTag("[API]") + "Initializing CARAVELA API ...")
 
 	router = mux.NewRouter()
 
@@ -25,12 +30,13 @@ func Initialize(config *configuration.Configuration, thisNode nodeAPI.Node) {
 
 	// Initialize all the API rest endpoints
 	discovery.Initialize(router, thisNode)
+	scheduling.Initialize(router, thisNode)
 	user.Initialize(router, thisNode)
 
-	// Start listening hor HTTP requests
+	// Start listening for HTTP requests
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.APIPort()), router))
 }
 
 func debug(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode("Debug Endpoint")
+	json.NewEncoder(w).Encode("TODO: Debug Endpoint")
 }

@@ -2,12 +2,11 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
-	"strings"
+	"github.com/strabox/caravela/util"
 )
 
 /*
@@ -26,16 +25,29 @@ func NewDockerClient() *Client {
 	return res
 }
 
-const ClientNotInitializedError = "[Docker] Please turn on the Docker Engine"
-
 /*
-Initialize a Docker remote with a corresponding docker daemon API version.
+Initialize a Docker client with a corresponding docker daemon API version.
 */
 func (client *Client) Initialize(runningDockerVersion string) {
 	var err error
 	client.docker, err = dockerClient.NewClientWithOpts(dockerClient.WithVersion(runningDockerVersion))
 	if err != nil {
-		log.Fatalf("[Docker] Initialize error: %s", err.Error())
+		log.Fatalf(util.LogTag("[Docker]")+"Initialize error: %s", err.Error())
+	}
+}
+
+/*
+Verify if the Docker client is initialized or not.
+*/
+func (client *Client) verifyInitialization() {
+	if client.docker != nil {
+		if _, err := client.docker.Ping(context.Background()); err != nil {
+			// TODO: Shutdown node gracefully in each place where docker calls can fail!!
+			log.Fatalf(util.LogTag("[Docker]") + "Please turn on the Docker Engine")
+		}
+		return
+	} else {
+		log.Fatalf(util.LogTag("[Docker]") + "Please initialize the Docker client")
 	}
 }
 
@@ -43,58 +55,92 @@ func (client *Client) Initialize(runningDockerVersion string) {
 Get CPU and RAM dedicated to Docker engine (Decided by the user in Docker configuration).
 */
 func (client *Client) GetDockerCPUAndRAM() (int, int) {
-	if client.docker != nil {
-		ctx := context.Background()
-		info, _ := client.docker.Info(ctx)
-		cpu := info.NCPU
-		ram := info.MemTotal / 1000000 //Return in MB (MegaBytes)
-		return cpu, int(ram)
+	client.verifyInitialization()
+
+	ctx := context.Background()
+	info, err := client.docker.Info(ctx)
+	if err != nil {
+		log.Errorf(util.LogTag("[Docker]")+"Get Info: %s", err)
+	}
+	cpu := info.NCPU
+	ram := info.MemTotal / 1000000 //Return in MB (MegaBytes)
+	return cpu, int(ram)
+}
+
+/*
+Check the container status (running, stopped, etc)
+*/
+func (client *Client) CheckContainerStatus(containerID string) (ContainerStatus, error) {
+	client.verifyInitialization()
+
+	ctx := context.Background()
+	status, err := client.docker.ContainerInspect(ctx, containerID)
+	if err == nil {
+		if status.State.Running {
+			return NewContainerStatus(Running), nil
+		} else {
+			return NewContainerStatus(Finished), nil
+		}
 	} else {
-		panic(fmt.Errorf(ClientNotInitializedError))
+		return NewContainerStatus(Unknown), err
 	}
 }
 
 /*
 Launches a container from an image in the local Docker Engine.
 */
-func (client *Client) RunContainer(imageKey string, args []string, machineCpus string, ram int) {
-	if client.docker != nil {
-		imageKeyTokens := strings.Split(imageKey, "/")
-		ctx := context.Background()
+func (client *Client) RunContainer(imageKey string, args []string, machineCpus string, ram int) (string, error) {
+	client.verifyInitialization()
 
-		_, err := client.docker.ImagePull(ctx, imageKey, types.ImagePullOptions{})
-		if err != nil {
-			panic(err)
-		}
+	ctx := context.Background()
 
-		resp, err := client.docker.ContainerCreate(ctx, &container.Config{
-			Image: imageKeyTokens[len(imageKeyTokens)-1], // Image key name
-			Cmd:   args,                                  // Command arguments to the container
-			Tty:   true,
-		}, &container.HostConfig{
-			Resources: container.Resources{
-				Memory:     int64(ram) * 1000000,
-				CpusetCpus: machineCpus,
-			},
-		}, nil, "")
-		if err != nil {
-			panic(err)
-		}
-
-		if err := client.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-			panic(err)
-		}
-
-		statusCh, errCh := client.docker.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-		select {
-		case err := <-errCh:
-			if err != nil {
-				panic(err)
-			}
-		case <-statusCh:
-			// Container is running!!!
-		}
-	} else {
-		panic(fmt.Errorf(ClientNotInitializedError))
+	_, err := client.docker.ImagePull(ctx, imageKey, types.ImagePullOptions{})
+	if err != nil { // Error pulling the image from Docker
+		log.Errorf(util.LogTag("[Docker]")+"Pulling: %s", err)
+		return "", err
 	}
+
+	resp, err := client.docker.ContainerCreate(ctx, &container.Config{
+		Image: imageKey, // Image key name
+		Cmd:   args,     // Command arguments to the container
+		Tty:   true,
+	}, &container.HostConfig{
+		Resources: container.Resources{
+			Memory:     int64(ram) * 1000000,
+			CpusetCpus: machineCpus,
+		},
+	}, nil, "")
+	if err != nil { // Error creating the container from the given
+		log.Errorf(util.LogTag("[Docker]")+"Creating: %s", err)
+		return "", err
+	}
+
+	if err := client.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+		log.Errorf(util.LogTag("[Docker]")+"Starting: %s", err)
+		return "", err // Error starting the container
+	}
+
+	statusCh, errCh := client.docker.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			log.Errorf(util.LogTag("[Docker]")+"Waiting: %s", err)
+			return "", err
+		}
+	case <-statusCh:
+		// Container is finally running!!!
+		log.Debug(util.LogTag("[Docker]") + "Container running")
+	}
+	return resp.ID, nil
+}
+
+/*
+Remove a container from the Docker image (to avoid filling space in the node).
+*/
+func (client *Client) RemoveContainer(containerID string) {
+	client.verifyInitialization()
+
+	ctx := context.Background()
+	client.docker.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{})
+
 }

@@ -12,14 +12,18 @@ var thisNode nodeAPI.Node = nil
 
 func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
 	thisNode = selfNode
-	router.HandleFunc(rest.UserContainerBaseEndpoint, runContainer).Methods(http.MethodPost)
+	router.Handle(rest.UserContainerBaseEndpoint, rest.AppHandler(runContainer)).Methods(http.MethodPost)
 }
 
-func runContainer(w http.ResponseWriter, r *http.Request) {
+func runContainer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 	var runContainer rest.RunContainerJSON
 
-	if rest.ReceiveJSONFromHttp(w, r, &runContainer) {
-		log.Debug(runContainer)
+	err := rest.ReceiveJSONFromHttp(w, r, &runContainer)
+	if err == nil {
+		log.Debugf("<-- RUN Image: %s", runContainer.ContainerImage)
+
 		thisNode.Scheduler().Deploy(runContainer.ContainerImage, runContainer.Arguments, runContainer.CPUs, runContainer.RAM)
+		return nil, nil
 	}
+	return err, nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
+	"github.com/strabox/caravela/util"
 	"sync"
 	"time"
 )
@@ -47,7 +48,7 @@ func (trader *Trader) Guid() *guid.Guid {
 }
 
 func (trader *Trader) Start() {
-	log.Debugln("[Trader] Starting refreshing resource's offers...")
+	log.Debug(util.LogTag("[Trader]") + "Starting refreshing resource's offers...")
 	go trader.refreshingOffers()
 }
 
@@ -57,7 +58,8 @@ Runs in a individual goroutine and refreshes the trader's offers from time to ti
 func (trader *Trader) refreshingOffers() {
 	for {
 		select {
-		case <-trader.refreshOffersTicker: // Time to refresh all the current offers (verify if the suppliers are alive)
+		// Time to refresh all the current offers (verify if the suppliers are alive)
+		case <-trader.refreshOffersTicker:
 			trader.offersMutex.Lock()
 
 			for _, offer := range trader.offers {
@@ -66,21 +68,27 @@ func (trader *Trader) refreshingOffers() {
 						trader.offersMutex.Lock()
 						defer trader.offersMutex.Unlock()
 
-						_, refreshed := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(), int64(offer.ID()))
+						err, refreshed := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(),
+							int64(offer.ID()))
 
 						offerKEY := offerKey{common.OfferID(offer.ID()), offer.supplierIP}
 						offer, exist := trader.offers[offerKEY]
 
-						if refreshed && exist {
-							log.Debugf("[Trader] Refresh SUCCEEDED for supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
+						if err == nil && refreshed && exist {
+							log.Debugf(util.LogTag("[Trader]")+"Refresh SUCCEEDED for supplier: %s offer: %d",
+								offer.SupplierIP(), offer.ID())
 							offer.RefreshSucceeded()
-						} else if !refreshed && exist {
-							log.Debugf("[Trader] Refresh FAILED for supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
+						} else if err != nil && !refreshed && exist {
+							log.Debugf(util.LogTag("[Trader]")+"Refresh FAILED for supplier: %s offer: %d",
+								offer.SupplierIP(), offer.ID())
 							offer.RefreshFailed()
 							if offer.refreshesFailed >= trader.config.MaxRefreshesFailed() {
-								log.Debugf("[Trader] Removing offer of supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
+								log.Debugf(util.LogTag("[Trader]")+"Removing offer of supplier: %s offer: %d",
+									offer.SupplierIP(), offer.ID())
 								delete(trader.offers, offerKEY)
 							}
+						} else {
+
 						}
 					}()
 				}
@@ -114,20 +122,18 @@ func (trader *Trader) GetOffers() []api.Offer {
 Receives a resource offer from other node (supplier) of the system
 */
 func (trader *Trader) CreateOffer(id int64, amount int, cpus int, ram int, supplierGUID string, supplierIP string) {
-	log.Debugf("[Trader] %s offer received %dX(CPUs: %d, RAM: %d) from: %s", trader.guid.String(), amount, cpus, ram, supplierIP)
-
 	resourcesOffered := resources.NewResources(cpus, ram)
 	// Verify if the offer contains the resources of trader (Basically if the offer is bigger than the handled resources)
 	if resourcesOffered.Contains(*trader.handledResources) {
 		trader.offersMutex.Lock()
 		defer trader.offersMutex.Unlock()
 
-		offer := newTraderOffer(*guid.NewGuidString(supplierGUID), supplierIP, common.NewOffer(common.OfferID(id),
-			amount, *resources.NewResources(cpus, ram)))
+		offer := newTraderOffer(*guid.NewGuidString(supplierGUID), supplierIP, common.OfferID(id),
+			amount, *resources.NewResources(cpus, ram))
 		offerKey := offerKey{common.OfferID(id), supplierIP}
 
 		trader.offers[offerKey] = offer
-		log.Debugf("[Trader] %s Offer CREATED %dX(CPUs: %d, RAM: %d) from: %s", trader.guid.String(), amount, cpus, ram, supplierIP)
+		log.Debugf(util.LogTag("[Trader]")+"%s Offer CREATED %dX(CPUs: %d, RAM: %d) from: %s", trader.guid.String(), amount, cpus, ram, supplierIP)
 	}
 }
 

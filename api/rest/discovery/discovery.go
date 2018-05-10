@@ -1,6 +1,8 @@
 package discovery
 
 import (
+	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
 	nodeAPI "github.com/strabox/caravela/node/api"
@@ -11,53 +13,66 @@ var thisNode nodeAPI.Node = nil
 
 func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
 	thisNode = selfNode
-	router.HandleFunc(rest.DiscoveryOfferBaseEndpoint, createOffer).Methods(http.MethodPost)
-	router.HandleFunc(rest.DiscoveryOfferBaseEndpoint, refreshOffer).Methods(http.MethodPatch)
-	router.HandleFunc(rest.DiscoveryOfferBaseEndpoint, removeOffer).Methods(http.MethodDelete)
-	router.HandleFunc(rest.DiscoveryOfferBaseEndpoint, getOffers).Methods(http.MethodGet)
+	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(createOffer)).Methods(http.MethodPost)
+	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(refreshOffer)).Methods(http.MethodPatch)
+	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(removeOffer)).Methods(http.MethodDelete)
+	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(getOffers)).Methods(http.MethodGet)
 }
 
-func createOffer(w http.ResponseWriter, r *http.Request) {
+func createOffer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 	var createOffer rest.CreateOfferJSON
 
 	discovery := thisNode.Discovery()
 
-	if rest.ReceiveJSONFromHttp(w, r, &createOffer) {
+	err := rest.ReceiveJSONFromHttp(w, r, &createOffer)
+	if err == nil {
+		log.Debugf("<-- CREATE OFFER SuppIP: %s, Resources: <%d,%d>", createOffer.FromSupplierIP, createOffer.CPUs,
+			createOffer.RAM)
+
 		discovery.CreateOffer(createOffer.FromSupplierGUID, createOffer.FromSupplierIP, createOffer.ToTraderGUID,
 			createOffer.OfferID, createOffer.Amount, createOffer.CPUs, createOffer.RAM)
-		w.WriteHeader(http.StatusOK)
 	}
+	return err, nil
 }
 
-func refreshOffer(w http.ResponseWriter, r *http.Request) {
+func refreshOffer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 	var offerRefresh rest.RefreshOfferJSON
 
 	discovery := thisNode.Discovery()
 
-	if rest.ReceiveJSONFromHttp(w, r, &offerRefresh) {
+	err := rest.ReceiveJSONFromHttp(w, r, &offerRefresh)
+	if err == nil {
+		log.Debugf("<-- REFRESH OFFER OfferID: %d, FromTrader: %s", offerRefresh.OfferID, offerRefresh.FromTraderGUID)
+
 		res := discovery.RefreshOffer(offerRefresh.OfferID, offerRefresh.FromTraderGUID)
 		if res {
-			w.WriteHeader(http.StatusOK)
+			return nil, nil
 		} else {
-			w.WriteHeader(http.StatusBadRequest)
+			return fmt.Errorf("offer not refreshed"), nil
 		}
 	}
+	return err, nil
 }
 
-func removeOffer(w http.ResponseWriter, r *http.Request) {
+func removeOffer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 	var offerRemove rest.OfferRemoveJSON
 
 	//discovery := thisNode.Discovery()
 
-	if rest.ReceiveJSONFromHttp(w, r, &offerRemove) {
+	err := rest.ReceiveJSONFromHttp(w, r, &offerRemove)
+	if err == nil {
 		// TODO
 	}
+	return err, nil
 }
 
-func getOffers(w http.ResponseWriter, r *http.Request) {
+func getOffers(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 	var getOffersJSON rest.GetOffersJSON
 
-	if rest.ReceiveJSONFromHttp(w, r, &getOffersJSON) {
+	err := rest.ReceiveJSONFromHttp(w, r, &getOffersJSON)
+	if err == nil {
+		log.Debugf("<-- GET OFFERS Trader: %s", getOffersJSON.ToTraderGUID)
+
 		offers := thisNode.Discovery().GetOffers(getOffersJSON.ToTraderGUID)
 		var offersJSON []rest.OfferJSON = nil
 		offersJSON = make([]rest.OfferJSON, len(offers))
@@ -67,7 +82,7 @@ func getOffers(w http.ResponseWriter, r *http.Request) {
 			offersJSON[i].SupplierIP = o.SupplierIP
 		}
 
-		w.WriteHeader(http.StatusOK)
-		w.Write(rest.ToJSONBytes(rest.OffersListJSON{offersJSON}))
+		return nil, rest.OffersListJSON{Offers: offersJSON}
 	}
+	return err, nil
 }

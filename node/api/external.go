@@ -22,9 +22,10 @@ type Discovery interface {
 Interface of the scheduler module for other CARAVELA's nodes (exposed via the REST API)
 */
 type Scheduler interface {
+	// User<->Node
 	Deploy(containerImageKey string, containerArgs []string, cpus int, ram int)
-	Launch(containerImageKey string, containerArgs []string, cpus int, ram int, offerId int64)
-	LaunchNotification()
+	// Node<->Node
+	Launch(fromBuyerIP string, offerId int64, containerImageKey string, containerArgs []string, cpus int, ram int)
 }
 
 /*

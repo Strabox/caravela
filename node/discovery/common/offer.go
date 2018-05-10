@@ -4,34 +4,31 @@ import "github.com/strabox/caravela/node/common/resources"
 
 type OfferID int64
 
-type Offer interface {
-	ID() OfferID
-	Amount() int
-	Resources() *resources.Resources
-}
-
-type offer struct {
+/*
+Represents the basic structure of an offer of resources into the system
+*/
+type Offer struct {
 	id        OfferID
 	amount    int
 	resources *resources.Resources
 }
 
-func NewOffer(id OfferID, amount int, res resources.Resources) *offer {
-	offer := &offer{}
+func NewOffer(id OfferID, amount int, res resources.Resources) *Offer {
+	offer := &Offer{}
 	offer.id = id
 	offer.amount = amount
 	offer.resources = &res
 	return offer
 }
 
-func (offer *offer) ID() OfferID {
+func (offer *Offer) ID() OfferID {
 	return offer.id
 }
 
-func (offer *offer) Amount() int {
+func (offer *Offer) Amount() int {
 	return offer.amount
 }
 
-func (offer *offer) Resources() *resources.Resources {
+func (offer *Offer) Resources() *resources.Resources {
 	return offer.resources.Copy()
 }

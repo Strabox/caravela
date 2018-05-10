@@ -6,11 +6,6 @@ import (
 )
 
 /*
- Global configuration values (for clients, servers, ...)
-*/
-const APIPort = 8001
-
-/*
 Used to configure CARAVELA's node. Static parameters during system execution.
 */
 type Configuration struct {
@@ -18,12 +13,13 @@ type Configuration struct {
 	dockerAPIVersion string
 
 	// CARAVELA system configurations
-	supplyingInterval      time.Duration
-	refreshesCheckInterval time.Duration
-	refreshingInterval     time.Duration
-	maxRefreshesFailed     int
-	maxRefreshesMissed     int
-	refreshMissedTimeout   time.Duration
+	checkContainersInterval time.Duration
+	supplyingInterval       time.Duration
+	refreshesCheckInterval  time.Duration
+	refreshingInterval      time.Duration
+	maxRefreshesFailed      int
+	maxRefreshesMissed      int
+	refreshMissedTimeout    time.Duration
 
 	// Overlay (chord) configurations
 	overlayPort        int
@@ -46,6 +42,7 @@ func Default(hostIP string, dockerAPIVersion string) *Configuration {
 	res.hostIP = hostIP
 	res.dockerAPIVersion = dockerAPIVersion
 
+	res.checkContainersInterval = 30 * time.Second
 	res.supplyingInterval = 45 * time.Second
 	res.refreshesCheckInterval = 30 * time.Second
 	res.refreshingInterval = 15 * time.Second
@@ -59,10 +56,10 @@ func Default(hostIP string, dockerAPIVersion string) *Configuration {
 	res.chordNumSuccessors = 3
 	res.chordHashSizeBits = 160
 
-	res.cpuPartitions = []resources.ResourcePartition{{1, 50}, {2, 50}}
-	res.ramPartitions = []resources.ResourcePartition{{256, 50}, {512, 50}}
+	res.cpuPartitions = []resources.ResourcePartition{{Value: 1, Percentage: 50}, {Value: 2, Percentage: 50}}
+	res.ramPartitions = []resources.ResourcePartition{{Value: 256, Percentage: 50}, {Value: 512, Percentage: 50}}
 
-	res.apiPort = APIPort
+	res.apiPort = 8001
 	res.apiTimeout = 2 * time.Second
 	return res
 }
@@ -73,6 +70,10 @@ func (c *Configuration) HostIP() string {
 
 func (c *Configuration) DockerAPIVersion() string {
 	return c.dockerAPIVersion
+}
+
+func (c *Configuration) CheckContainersInterval() time.Duration {
+	return c.checkContainersInterval
 }
 
 func (c *Configuration) SupplyingInterval() time.Duration {

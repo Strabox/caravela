@@ -11,11 +11,12 @@ import (
 	"github.com/strabox/caravela/node/discovery/supplier"
 	"github.com/strabox/caravela/node/discovery/trader"
 	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/util"
 )
 
 type Discovery struct {
-	config       *configuration.Configuration
-	client       remote.Caravela
+	config       *configuration.Configuration // System's configuration
+	client       remote.Caravela              // Remote caravela's client
 	resourcesMap *resources.Mapping
 
 	supplier *supplier.Supplier        // Node supplier offer the node's resources
@@ -41,23 +42,23 @@ func (disc *Discovery) Start() {
 }
 
 func (disc *Discovery) AddTrader(traderGUID guid.Guid) {
-	traderResources, _ := disc.resourcesMap.ResourcesByGuid(traderGUID)
+	traderResources, _ := disc.resourcesMap.ResourcesByGUID(traderGUID)
 	newTrader := trader.NewTrader(disc.config, disc.client, traderGUID, *traderResources)
 	disc.traders[traderGUID.String()] = newTrader
 	newTrader.Start() // Trader starts refreshing offers
-	log.Debugf("[Discovery] New Trader: %s | Resources: %s", (&traderGUID).String(), traderResources.String())
+	log.Debugf(util.LogTag("[Discovery]")+"New Trader: %s | Resources: %s", (&traderGUID).String(), traderResources.String())
 }
 
 func (disc *Discovery) Find(resources resources.Resources) []*common.RemoteNode {
 	return disc.supplier.FindNodes(resources)
 }
 
-func (disc *Discovery) ObtainResourcesSlot(offerID int64) (error, resources.Resources) {
-	return nil, resources.Resources{} //TODO
+func (disc *Discovery) ObtainResourcesSlot(offerID int64) *resources.Resources {
+	return disc.supplier.ObtainOffer(offerID)
 }
 
 func (disc *Discovery) ReturnResourcesSlot(resources resources.Resources) {
-	// TODO
+	disc.supplier.ReturnOffer(resources)
 }
 
 /*============================== DiscoveryExternal Interface ============================== */

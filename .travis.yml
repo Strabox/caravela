@@ -13,7 +13,8 @@ script:
 after_success:
     # Login in the docker daemon
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - make docker-upload OS=linux
+    - make docker-upload
+    - docker logout
 notifications:
     on_success: never
     on_failure: never

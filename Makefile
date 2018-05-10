@@ -1,23 +1,42 @@
+##################### CARAVELA's MAKEFILE #########################
 GOCMD=go
+
+######### Builtin GO tools #########
 GOBUILD=$(GOCMD) build
 GOINSTALL=$(GOCMD) install
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-BINARY_NAME=caravela
-BINARY_NAME_LINUX=$(BINARY_NAME)_linux
-BINARY_NAME_WIN=$(BINARY_NAME)_win
+GOVET=$(GOCMD) vet
 
+GOGET=$(GOCMD) get
+
+######### External GO tools #########
+GOLINT=golint
+GOCOV=gocov
+GOCOVHTML=gocov-html
+GODEPGRAPH=godepgraph
+
+############ Output Files ###########
+EXE=.exe
+BINARY_NAME=caravela$(EXE)
+BINARY_NAME_LINUX=$(BINARY_NAME)_linux$(EXE)
+BINARY_NAME_WIN=$(BINARY_NAME)_win$(EXE)
+
+############################## COMMANDS ############################
 
 all: test build
 
 build:
-	@echo Building...
-	$(GOBUILD) -o $(BINARY_NAME).exe -v
+	@echo Building for the current machine settings...
+	$(GOBUILD) -o $(BINARY_NAME) -v
 
 build-linux:
 	@echo Building for linux...
-	GOOS=linux $(GOBUILD) -o $(BINARY_NAME_LINUX).exe -v
+	env GOOS=linux $(GOBUILD) -o $(BINARY_NAME) -v
+
+build-windows:
+	@echo Building for windows...
+	env GOOS=windows $(GOBUILD) -o $(BINARY_NAME) -v
 
 clean:
 	@echo Cleaning project...
@@ -27,8 +46,8 @@ clean:
 	rm -f $(BINARY_NAME_WIN)
 
 install:
-	@echo Installing CARAVELA in the local Go environment...
-	$(GOINSTALL) -o $(BINARY_NAME).exe -v -gcflags "-N -l" .
+	@echo Installing CARAVELA in the local GO environment...
+	$(GOINSTALL) -v -gcflags "-N -l" .
 
 test:
 	@echo Testing...
@@ -36,23 +55,35 @@ test:
 
 test-cov:
 	@echo Testing and coverage report generation...
-	gocov test ./... | gocov-html > coverage.html
+	$(GOCOV) test ./... | $(GOCOVHTML) > coverage.html
+
+test-verify:
+	$(MAKE) test
+	@echo Running vet tool to static analyze the code
+	$(GOVET) -v ./...
+	@echo Running lint tool to static analyze the code style
 
 dep-graph:
 	@echo Generating package import dependency graph...
-	godepgraph -s -p github.com/docker github.com/strabox/caravela | dot -Tpng -o importsGraph.png
+	$(GODEPGRAPH) -s -p github.com/docker github.com/strabox/caravela | dot -Tpng -o importsGraph.png
 
 docker-build:
 	@echo Building Docker container...
-	docker build --build-arg GOOS=$(OS) --rm -t strabox/caravela:latest .
-	
+	docker build --build-arg exec_file=$(BINARY_NAME) --rm -t strabox/caravela:latest .
+
 docker-upload:
 	@echo Building Docker container and uploading to DockerHub...
-	docker build --build-arg GOOS=$(OS) --rm -t strabox/caravela:latest .
+	docker build --build-arg exec_file=$(BINARY_NAME) --rm -t strabox/caravela:latest .
 	docker push strabox/caravela:latest
 
-install-aux-tools:
-	@echo Installing dependencies necessary for coverage report and import dependencies...
+install-external-tools:
+	@echo Installing external tools...
+	@echo Installing lint - Code style analyzer (from google)
+	$(GOGET) github.com/golang/lint
+	@echo Installing gocov - Code coverage generator
 	$(GOGET) github.com/axw/gocov/gocov
+	@echo Installing gocov-html - Code coverage html generator
 	$(GOGET) -u gopkg.in/matm/v1/gocov-html
+	@echo Installing godepgraph - Code package dependency graph generator
 	$(GOGET) github.com/kisielk/godepgraph
+

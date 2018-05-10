@@ -16,20 +16,24 @@ type offerKey struct {
 }
 
 type traderOffer struct {
-	supplierGUID *guid.Guid   // GUID of the supplier offering these resources
-	supplierIP   string       // IP of the supplier offering these resources
-	offer        common.Offer // Offer resources
+	*common.Offer // Offer resources
+
+	supplierGUID *guid.Guid // GUID of the supplier offering these resources
+	supplierIP   string     // IP of the supplier offering these resources
 
 	lastRefreshTimestamp time.Time // Last time the offer was refreshed with/without success
 	waitingForRefresh    bool      // Marks if there is still a refresh pending for the offer (avoid multiple refreshes)
 	refreshesFailed      int       // Number of times the supplier didn't answer to the refresh message
 }
 
-func newTraderOffer(supplierGUID guid.Guid, supplierIP string, offer common.Offer) *traderOffer {
+func newTraderOffer(supplierGUID guid.Guid, supplierIP string, id common.OfferID, amount int,
+	res resources.Resources) *traderOffer {
+
 	offerRes := &traderOffer{}
+	offerRes.Offer = common.NewOffer(id, amount, res)
+
 	offerRes.supplierGUID = &supplierGUID
 	offerRes.supplierIP = supplierIP
-	offerRes.offer = offer
 
 	offerRes.lastRefreshTimestamp = time.Now()
 	offerRes.waitingForRefresh = false
@@ -39,18 +43,6 @@ func newTraderOffer(supplierGUID guid.Guid, supplierIP string, offer common.Offe
 
 func (offer *traderOffer) SupplierIP() string {
 	return offer.supplierIP
-}
-
-func (offer *traderOffer) ID() common.OfferID {
-	return offer.offer.ID()
-}
-
-func (offer *traderOffer) Amount() int {
-	return offer.offer.Amount()
-}
-
-func (offer *traderOffer) Resources() *resources.Resources {
-	return offer.offer.Resources().Copy()
 }
 
 func (offer *traderOffer) RefreshesFailed() int {

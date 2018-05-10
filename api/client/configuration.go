@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/strabox/caravela/configuration"
 	"time"
 )
 
@@ -9,21 +8,21 @@ import (
 Caravela client configuration struct.
 */
 type Configuration struct {
-	caravelaInstanceIP   string
+	// IP of the Caravela's Daemon that will receive the request
+	caravelaInstanceIP string
+	// Port of the Caravela's Daemon that will receive the request
 	caravelaInstancePort int
 
-	// Http client configuration
-	httpContentType    string
+	// HTTP requests timeout
 	httpRequestTimeout time.Duration
 }
 
 func DefaultConfiguration(caravelaInstanceIP string) *Configuration {
 	res := &Configuration{}
 	res.caravelaInstanceIP = caravelaInstanceIP
-	res.caravelaInstancePort = configuration.APIPort
+	res.caravelaInstancePort = 8001
 
-	res.httpContentType = "application/json"
-	res.httpRequestTimeout = 3 * time.Second
+	res.httpRequestTimeout = 10 * time.Second
 	return res
 }
 
@@ -33,10 +32,6 @@ func (config *Configuration) CaravelaInstanceIP() string {
 
 func (config *Configuration) CaravelaInstancePort() int {
 	return config.caravelaInstancePort
-}
-
-func (config *Configuration) HttpContentType() string {
-	return config.httpContentType
 }
 
 func (config *Configuration) HttpRequestTimeout() time.Duration {

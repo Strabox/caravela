@@ -36,21 +36,27 @@ type OfferRemoveJSON struct {
 }
 
 /*
-Run container struct/JSON used in local REST APIs when a user submit a container o run
-*/
-type RunContainerJSON struct {
-	ContainerImage string   `json:"ContainerImage"` // Container's image key
-	Arguments      []string `json:"Arguments"`      // Arguments for container run
-	CPUs           int      `json:"CPUs"`           // Amount of CPUs necessary
-	RAM            int      `json:"RAM"`            // Amount of RAM necessary
-}
-
-/*
 Get offers struct/JSON used in the REST APIs
 */
 type GetOffersJSON struct {
 	ToTraderGUID string `json:"ToTraderGUID"` // GUID of the destination trader
 }
+
+/*
+Launch container struct/JSON used in the REST APIs
+*/
+type LaunchContainerJSON struct {
+	FromBuyerIP       string   `json:"FromBuyerIP"`
+	OfferID           int64    `json:"OfferID"`
+	ContainerImageKey string   `json:"ContainerImageKey"`
+	ContainerArgs     []string `json:"ContainerArgs"`
+	CPUs              int      `json:"CPUs"`
+	RAM               int      `json:"RAM"`
+}
+
+/* =================================================================================
+									Response Messages
+   ================================================================================= */
 
 /*
 Offer struct/JSON used in the REST APIs
@@ -66,14 +72,3 @@ List of offers struct/JSON used in the REST APIs
 type OffersListJSON struct {
 	Offers []OfferJSON `json:"Offers"` // A list of offers that a trader has
 }
-
-/*
-Launch container struct/JSON used in the REST APIs
-*/
-type LaunchContainerJSON struct {
-	ImageKey string `json:"ImageKey"`
-}
-
-/* =================================================================================
-									Response Messages
-   ================================================================================= */

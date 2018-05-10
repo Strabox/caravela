@@ -7,10 +7,7 @@ import (
 	"time"
 )
 
-const TCPMaxIdleConnections = 10 // TODO: Put in configuration struct?
-// Our HTTP body is always a JSON
-const HTTPContentType = "application/json" // TODO: Put in configuration struct?
-const HTTPRequestTimeout = 2 * time.Second // TODO: Put in configuration struct?
+const HTTPRequestTimeout = 10 * time.Second // TODO: Put in configuration struct?
 
 type HttpClient struct {
 	httpClient *http.Client
@@ -20,12 +17,9 @@ type HttpClient struct {
 func NewHttpClient(config *configuration.Configuration) *HttpClient {
 	res := &HttpClient{}
 	res.config = config
-	transport := &http.Transport{
-		MaxIdleConns: TCPMaxIdleConnections,
-	}
+
 	client := &http.Client{
-		Transport: transport,
-		Timeout:   HTTPRequestTimeout,
+		Timeout: HTTPRequestTimeout,
 	}
 	res.httpClient = client
 	return res
@@ -34,8 +28,8 @@ func NewHttpClient(config *configuration.Configuration) *HttpClient {
 func (client *HttpClient) CreateOffer(fromSupplierIP string, fromSupplierGUID string, toTraderIP string,
 	toTraderGUID string, offerID int64, amount int, cpus int, ram int) *Error {
 
-	offerJSON := rest.CreateOfferJSON{fromSupplierIP, fromSupplierGUID,
-		toTraderGUID, offerID, amount, cpus, ram}
+	offerJSON := rest.CreateOfferJSON{FromSupplierIP: fromSupplierIP, FromSupplierGUID: fromSupplierGUID,
+		ToTraderGUID: toTraderGUID, OfferID: offerID, Amount: amount, CPUs: cpus, RAM: ram}
 
 	url := rest.BuildHttpURL(false, toTraderIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
@@ -48,7 +42,7 @@ func (client *HttpClient) CreateOffer(fromSupplierIP string, fromSupplierGUID st
 }
 
 func (client *HttpClient) RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (*Error, bool) {
-	offerRefreshJSON := rest.RefreshOfferJSON{fromTraderGUID, offerID}
+	offerRefreshJSON := rest.RefreshOfferJSON{FromTraderGUID: fromTraderGUID, OfferID: offerID}
 
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
@@ -67,8 +61,8 @@ func (client *HttpClient) RefreshOffer(toSupplierIP string, fromTraderGUID strin
 func (client *HttpClient) RemoveOffer(fromSupplierIP string, fromSupplierGUID, toTraderIP string,
 	toTraderGUID string, offerID int64) *Error {
 
-	offerRemoveJSON := rest.OfferRemoveJSON{fromSupplierIP, fromSupplierGUID,
-		toTraderGUID, offerID}
+	offerRemoveJSON := rest.OfferRemoveJSON{FromSupplierIP: fromSupplierIP, FromSupplierGUID: fromSupplierGUID,
+		ToTraderGUID: toTraderGUID, OfferID: offerID}
 
 	url := rest.BuildHttpURL(false, toTraderIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
@@ -104,5 +98,21 @@ func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string) (*Er
 		}
 	} else {
 		return NewRemoteClientError(err), nil
+	}
+}
+
+func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64,
+	containerImageKey string, containerArgs []string, cpus int, ram int) *Error {
+
+	launchContainerJSON := rest.LaunchContainerJSON{FromBuyerIP: fromBuyerIP, OfferID: offerID,
+		ContainerImageKey: containerImageKey, ContainerArgs: containerArgs, CPUs: cpus, RAM: ram}
+
+	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.SchedulerContainerBaseEndpoint)
+
+	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerJSON, nil)
+	if err == nil {
+		return nil
+	} else {
+		return NewRemoteClientError(err)
 	}
 }

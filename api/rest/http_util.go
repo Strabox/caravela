@@ -5,26 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/util"
 	"net/http"
 )
 
 /*
 Validate the htpp message content extracting the JSON into a golang structure if necessary
 */
-func ReceiveJSONFromHttp(w http.ResponseWriter, r *http.Request, jsonToFill interface{}) bool {
+func ReceiveJSONFromHttp(w http.ResponseWriter, r *http.Request, jsonToFill interface{}) error {
 	if r.Body != nil { // Verify if HTTP message body is not empty
 		err := json.NewDecoder(r.Body).Decode(jsonToFill)
-		if err == nil { // HTTP message JSON content was decoded with success
-			return true
+		if err == nil { // Verify if JSON was decoded with success
+			return nil
 		} else {
-			log.Errorf("JSON decode error: %s", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return false
+			return err
 		}
 	} else {
-		log.Errorf("HTTP empty body when expecting content")
-		http.Error(w, "empty http body", http.StatusBadRequest)
-		return false
+		return fmt.Errorf("empty http body when JSON was expected")
 	}
 }
 
@@ -36,7 +33,7 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 
 	req, err := http.NewRequest(httpMethod, url, ToJSONBuffer(jsonToSend))
 	if err != nil {
-		log.Errorf("HTTP error building request %s", err)
+		log.Errorf(util.LogTag("[DoHttp]")+"Error building request: %s", err)
 		return err, -1
 	}
 
@@ -52,18 +49,18 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 				if err == nil {
 					return nil, resp.StatusCode
 				} else {
-					log.Errorf("JSON decode error: %s", err)
+					log.Errorf(util.LogTag("[DoHttp]")+"Response JSON decode error: %s", err)
 					return fmt.Errorf("decoding json problems"), resp.StatusCode
 				}
 			} else {
-				log.Errorf("HTTP empty body when expecting content")
+				log.Errorf(util.LogTag("[DoHttp]") + "Empty body when expecting content")
 				return fmt.Errorf("empty http body"), resp.StatusCode
 			}
 		} else {
 			return nil, resp.StatusCode
 		}
 	} else {
-		log.Errorf("HTTP error: %s", err)
+		log.Errorf(util.LogTag("[DoHttp]")+"HTTP error: %s", err)
 		return err, -1
 	}
 }
