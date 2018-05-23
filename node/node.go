@@ -23,7 +23,7 @@ type Node struct {
 	containersManager *containers.Manager
 	config            *configuration.Configuration
 	overlay           overlay.Overlay
-	dockerClient      *docker.Client
+	dockerClient      docker.Client
 }
 
 func NewNode(config *configuration.Configuration) *Node {
@@ -42,7 +42,8 @@ func NewNode(config *configuration.Configuration) *Node {
 	caravelaCli := remote.NewHttpClient(config)
 
 	// Create resources mapping based on the configurations
-	resourcesMap := resources.NewResourcesMap(config.CpuPartitions(), config.RamPartitions())
+	resourcesMap := resources.NewResourcesMap(resources.GetCpuCoresPartitions(config.CpuCoresPartitions()),
+		resources.GetRamPartitions(config.RamPartitions()))
 	resourcesMap.Print()
 
 	// Create Docker client and obtain the maximum resources Docker Engine has available
@@ -73,7 +74,7 @@ func (node *Node) Start(join bool, joinIP string) {
 }
 
 func (node *Node) AddTrader(guidBytes []byte) {
-	guidRes := guid.NewGuidBytes(guidBytes)
+	guidRes := guid.NewGUIDBytes(guidBytes)
 	node.discovery.AddTrader(*guidRes)
 }
 

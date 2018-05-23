@@ -7,7 +7,8 @@ const Email = "pardal.pires@tecnico.ulisboa.pt"
 
 const DockerEngineAPIVersion = "1.35" // TODO: probably pass Docker API version it as an argument
 
-// Default run command values
+// Defaults run flag values
+const Undefined = "UNDEFINED" // Value for an undefined command flag
 const DefaultCaravelaInstanceIP = "127.0.0.1"
 const DefaultNumOfCPUs = 1
 const DefaultAmountOfRAM = 256

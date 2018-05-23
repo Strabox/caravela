@@ -1,0 +1,31 @@
+[Caravela]
+ApiPort = 8001
+ApiTimeout = "2s"
+CheckContainersInterval = "30s"
+SupplyingInterval = "45s"
+RefreshesCheckInterval = "30s"
+RefreshingInterval = "15s"
+MaxRefreshesFailed = 3
+MaxRefreshesMissed = 2
+RefreshMissedTimeout = "20s"
+    # Cpu Cores Partitions
+    [[Caravela.CpuCoresPartitions]]
+    Cores = 1
+    Percentage = 50
+    [[Caravela.CpuCoresPartitions]]
+    Cores = 2
+    Percentage = 50
+    # Ram Partitions
+    [[Caravela.RamPartitions]]
+    Ram = 256
+    Percentage = 50
+    [[Caravela.RamPartitions]]
+    Ram = 512
+    Percentage = 50
+
+[Overlay]
+OverlayPort = 8000
+ChordTimeout = "5s"
+ChordVirtualNodes = 3
+ChordNumSuccessors = 3
+ChordHashSizeBits = 160

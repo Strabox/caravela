@@ -16,12 +16,14 @@ func Run() {
 	app.Author = Author
 	app.Email = Email
 
-	// Application global flags
+	// =============== Application global flags ===================
+
+	// Debug flag (controls the granularity of the log trace)
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "debug, d",
 			Value: "fatal",
-			Usage: "Log traces depending on the granularity level",
+			Usage: "Controls the granularity of the log traces",
 		},
 	}
 
@@ -41,6 +43,7 @@ func Run() {
 		case "panic":
 			log.SetLevel(log.PanicLevel)
 		}
+
 		// Set the format of the log text and the place to write
 		logOutputFormatter := &log.TextFormatter{}
 		logOutputFormatter.DisableColors = true

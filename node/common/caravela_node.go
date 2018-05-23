@@ -9,10 +9,10 @@ Represents a remote CARAVELA node.
 */
 type RemoteNode struct {
 	ipAddress string
-	guid      *guid.Guid
+	guid      *guid.GUID
 }
 
-func NewRemoteNode(ipAddress string, guid guid.Guid) *RemoteNode {
+func NewRemoteNode(ipAddress string, guid guid.GUID) *RemoteNode {
 	res := &RemoteNode{}
 	res.ipAddress = ipAddress
 	res.guid = &guid
@@ -23,6 +23,6 @@ func (rm *RemoteNode) IPAddress() string {
 	return rm.ipAddress
 }
 
-func (rm *RemoteNode) GUID() *guid.Guid {
+func (rm *RemoteNode) GUID() *guid.GUID {
 	return rm.guid.Copy()
 }

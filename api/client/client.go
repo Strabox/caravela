@@ -1,21 +1,26 @@
 package client
 
 import (
+	"fmt"
 	"github.com/strabox/caravela/api/rest"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 /*
-Client that can be used as (Golang SDK) to interact with the Caravela Daemon.
-It is used in the CLI client too.
+Client that can be used as (Golang SDK) to interact with the CARAVELA daemon.
+It is used in the CARAVELA's CLI application.
 */
 type Caravela struct {
-	httpClient *http.Client   // Http client to send requests into Caravela's REST daemon
-	config     *Configuration // Configuration parameters for the CARAVELA client
+	// HTTP client to send requests into Caravela's REST daemon
+	httpClient *http.Client
+	// Configuration parameters for the CARAVELA client
+	config *Configuration
 }
 
 func NewCaravelaLocal() *Caravela {
-	return NewCaravelaIP("localhost")
+	return NewCaravelaIP("127.0.0.1")
 }
 
 func NewCaravelaIP(caravelaHostIP string) *Caravela {
@@ -27,16 +32,31 @@ func NewCaravelaIP(caravelaHostIP string) *Caravela {
 	return res
 }
 
-func (client *Caravela) Run(containerImage string, arguments []string, cpus int, ram int) *Error {
-	runContainerJSON := rest.RunContainerJSON{ContainerImage: containerImage, Arguments: arguments,
-		CPUs: cpus, RAM: ram}
+func (client *Caravela) Run(containerImageKey string, portMappings []string, arguments []string,
+	cpus int, ram int) *Error {
+
+	portMappingsJSON := make([]rest.PortMappingJSON, 0)
+	for _, portMap := range portMappings {
+		portMapping := strings.Split(portMap, ":")
+		resultPortMap := rest.PortMappingJSON{}
+		resultPortMap.HostPort, _ = strconv.Atoi(portMapping[0])
+		resultPortMap.ContainerPort, _ = strconv.Atoi(portMapping[1])
+		portMappingsJSON = append(portMappingsJSON, resultPortMap)
+	}
+
+	runContainerJSON := rest.RunContainerJSON{ContainerImageKey: containerImageKey, Arguments: arguments,
+		PortMappings: portMappingsJSON, CPUs: cpus, RAM: ram}
 
 	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
 		rest.UserContainerBaseEndpoint)
 
-	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, runContainerJSON, nil)
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, runContainerJSON, nil)
 	if err == nil {
-		return nil
+		if httpCode == http.StatusOK {
+			return nil
+		} else {
+			return NewClientError(fmt.Errorf("impossible deploy the container"))
+		}
 	} else {
 		return NewClientError(err)
 	}

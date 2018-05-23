@@ -1,11 +1,13 @@
 package overlay
 
 /*
-Represents an overlay node.
+Represents a generic and abstract overlay node.
 */
 type Node struct {
+	// IP address
 	nodeIP string
-	guid   []byte
+	// System's node identifier
+	guid []byte
 }
 
 func NewNode(nodeIP string, guid []byte) *Node {

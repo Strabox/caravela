@@ -8,13 +8,17 @@ before_script:
     - mv ../${PWD##*/} ../caravela
     - mv ../../Strabox ../../strabox
 script:
+    # Build the project
     - make build
+    # Test the project
     - make test
 after_success:
-    # Login in the docker daemon
+    # Login in the docker daemon (using the credentials stored in travis-ci)
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    # Build the container with the binary generated during the build and uploads it to DockerHub
     - make docker-upload
+    # Logout from the docker daemon
     - docker logout
 notifications:
     on_success: never
-    on_failure: never
+    on_failure: always

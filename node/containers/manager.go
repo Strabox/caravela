@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
+	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/api"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -18,7 +19,7 @@ deployed containers.
 type Manager struct {
 	started      bool                         // Used to know if the manager already started to work
 	config       *configuration.Configuration // CARAVELA node configuration
-	dockerClient *docker.Client               // Docker's client
+	dockerClient docker.Client                // Custom Docker's client
 	supplier     api.DiscoveryInternal        // Node supplier API
 
 	checkContainersTicker <-chan time.Time        // Ticker to check for containers status
@@ -27,7 +28,7 @@ type Manager struct {
 }
 
 func NewManager(config *configuration.Configuration,
-	dockerClient *docker.Client, supplier api.DiscoveryInternal) *Manager {
+	dockerClient docker.Client, supplier api.DiscoveryInternal) *Manager {
 	manager := &Manager{
 		started:               false,
 		config:                config,
@@ -60,7 +61,7 @@ func (man *Manager) checkDeployedContainers() {
 					contStatus, err := man.dockerClient.CheckContainerStatus(man.containersMap[key][i].DockerID())
 					if err == nil && !contStatus.IsRunning() {
 						man.dockerClient.RemoveContainer(containers[i].dockerID)
-						man.supplier.ReturnResourcesSlot(containers[i].resources)
+						man.supplier.ReturnResources(containers[i].resources)
 						man.containersMap[key] = append(man.containersMap[key][:i], man.containersMap[key][i+1:]...)
 					}
 				}
@@ -78,15 +79,16 @@ func (man *Manager) checkDeployedContainers() {
 /*
 Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
 */
-func (man *Manager) StartContainer(buyerIP string, imageKey string, args []string, offerID int64) error {
+func (man *Manager) StartContainer(buyerIP string, imageKey string, args []string, offerID int64,
+	resourcesNecessary resources.Resources) error {
 	man.containersMutex.Lock()
 	defer man.containersMutex.Unlock()
 
-	offerRes := man.supplier.ObtainResourcesSlot(offerID)
-	if offerRes != nil {
-		containerID, err := man.dockerClient.RunContainer(imageKey, args, "0", offerRes.RAM())
+	obtained := man.supplier.ObtainResources(offerID, resourcesNecessary)
+	if obtained {
+		containerID, err := man.dockerClient.RunContainer(imageKey, args, "0", resourcesNecessary.RAM())
 		if err == nil {
-			newContainer := NewContainer(containerID, buyerIP, *offerRes)
+			newContainer := NewContainer(containerID, buyerIP, resourcesNecessary)
 			if man.containersMap[buyerIP] == nil {
 				containersList := make([]*Container, 1)
 				containersList[0] = newContainer
@@ -96,9 +98,10 @@ func (man *Manager) StartContainer(buyerIP string, imageKey string, args []strin
 			}
 			return nil
 		} else {
+			man.supplier.ReturnResources(resourcesNecessary)
 			return err
 		}
 	} else {
-		return fmt.Errorf("invalid offer")
+		return fmt.Errorf("offer couldn't be obtained in the local supplier")
 	}
 }

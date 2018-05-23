@@ -1,20 +1,24 @@
 package guid
 
 import (
-	"fmt"
 	"math/big"
 	"math/rand"
 	"time"
 )
 
-var randomSource = rand.NewSource(time.Now().Unix()) // Random source to generate random GUIDs
-var isGuidInitialized = false                        // Used to allow only one initialization of the GUID size
-var guidSizeBits = 160                               // 160-bits default (To maintain compatibility with chord implementation)
+// Random source to generate random GUIDs
+var randomSource = rand.NewSource(time.Now().Unix())
+
+// Used to allow only one initialization of the GUID module
+var isGuidInitialized = false
+
+// 160-bits default (To maintain compatibility with used chord overlay implementation)
+var guidSizeBits = 160
 
 /*
-GUID Represents a Global Unique IDentifier for a system node
+Represents a Global Unique IDentifier (GUID) for a system's node
 */
-type Guid struct {
+type GUID struct {
 	id *big.Int
 }
 
@@ -28,41 +32,59 @@ func InitializeGUID(guidBitsSize int) {
 	}
 }
 
+/*
+Size of the GUID (in bits).
+*/
 func SizeBits() int {
 	return guidSizeBits
 }
 
+/*
+Size of the GUID (in bytes).
+*/
 func SizeBytes() int {
 	return guidSizeBits / 8
 }
 
-func MaximumGuid() *Guid {
+/*
+Maximum GUID available for the current defined number of bits.
+*/
+func MaximumGUID() *GUID {
 	maxId := big.NewInt(0)
 	maxId.Exp(big.NewInt(2), big.NewInt(int64(guidSizeBits)), nil)
 	maxId = maxId.Sub(maxId, big.NewInt(1))
-	return newGuidBigInt(maxId)
+	return newGUIDBigInt(maxId)
 }
 
-func NewGuidRandom() *Guid {
-	guid := &Guid{}
+/*
+Generate a random GUID in the range [0,MaxGUID).
+*/
+func NewGUIDRandom() *GUID {
+	guid := &GUID{}
 
 	guid.id = big.NewInt(0)
-	guid.id.Rand(rand.New(randomSource), MaximumGuid().id)
+	guid.id.Rand(rand.New(randomSource), MaximumGUID().id)
 
 	return guid
 }
 
-func NewGuidString(stringId string) *Guid {
-	guid := &Guid{}
+/*
+Creates a new GUID based on a string representation (in base 10) of the identifier.
+*/
+func NewGUIDString(stringID string) *GUID {
+	guid := &GUID{}
 
 	guid.id = big.NewInt(0)
-	guid.id.SetString(stringId, 10)
+	guid.id.SetString(stringID, 10)
 
 	return guid
 }
 
-func NewGuidInteger(intId int64) *Guid {
-	guid := &Guid{}
+/*
+Creates a new GUID based on an integer64 representation of the identifier.
+*/
+func NewGUIDInteger(intId int64) *GUID {
+	guid := &GUID{}
 
 	guid.id = big.NewInt(0)
 	guid.id.SetInt64(intId)
@@ -70,43 +92,53 @@ func NewGuidInteger(intId int64) *Guid {
 	return guid
 }
 
-func NewGuidBytes(bytesId []byte) *Guid {
-	guid := &Guid{}
+/*
+Creates a new GUID based on an array of bytes representation of the identifier.
+Array of bytes is a representation of the number using the minimum number of bits.
+*/
+func NewGUIDBytes(bytesID []byte) *GUID {
+	guid := &GUID{}
 
 	guid.id = big.NewInt(0)
-	guid.id.SetBytes(bytesId)
+	guid.id.SetBytes(bytesID)
 	return guid
 }
 
-func newGuidBigInt(intId *big.Int) *Guid {
-	guid := &Guid{}
+/*
+Creates a new GUID based on Golang big.Int representation.
+*/
+func newGUIDBigInt(bytesID *big.Int) *GUID {
+	guid := &GUID{}
 
 	guid.id = big.NewInt(0)
-	guid.id.Set(intId)
+	guid.id.Set(bytesID)
 	return guid
 }
 
-func (guid *Guid) GenerateRandomBetween(nextGuid Guid) (*Guid, error) {
+/*
+Generates a random GUID that belongs to the interval [this, topGUID)
+*/
+func (guid *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
 	dif := big.NewInt(0)
 	randOffset := big.NewInt(0)
 	res := big.NewInt(0)
 
-	dif.Sub(nextGuid.id, guid.id)
+	dif.Sub(topGUID.id, guid.id)
 
 	randOffset.Rand(rand.New(randomSource), dif)
 
 	res.Add(guid.id, randOffset)
 
-	return NewGuidString(res.String()), nil
+	return NewGUIDString(res.String()), nil
 }
 
 /*
 Returns the number of ids (as a string with an integer in base 10) using % offset to higher GUID
 */
-func (guid *Guid) Partitioning(offsetPercentage int, nextGuid Guid) string {
+func (guid *GUID) PercentageOffset(offsetPercentage int, nextGuid GUID) string {
 	offset := big.NewInt(int64(offsetPercentage))
 	dif := big.NewInt(0)
-	dif.Sub(nextGuid.id, guid.id)
+	dif.Sub(nextGuid.id, guid.id) // Dif between nextGuid and receiver
 
 	offset.Mul(offset, dif)
 	offset.Div(offset, big.NewInt(100))
@@ -114,9 +146,9 @@ func (guid *Guid) Partitioning(offsetPercentage int, nextGuid Guid) string {
 }
 
 /*
-Adds an offset of ids to the GUID
+Adds an offset (as a string in base 10) of ids to the GUID.
 */
-func (guid *Guid) AddOffset(offset string) {
+func (guid *GUID) AddOffset(offset string) {
 	toAdd := big.NewInt(0)
 	toAdd.SetString(offset, 10)
 
@@ -126,26 +158,26 @@ func (guid *Guid) AddOffset(offset string) {
 /*
 Compare to see what is the biggest GUID
 */
-func (guid *Guid) Cmp(guid2 Guid) int {
+func (guid *GUID) Cmp(guid2 GUID) int {
 	return guid.id.Cmp(guid2.id)
 }
 
 /*
 Compare if two GUIDs are equal or not.
 */
-func (guid *Guid) Equals(guid2 Guid) bool {
+func (guid *GUID) Equals(guid2 GUID) bool {
 	return guid.id.Cmp(guid2.id) == 0
 }
 
 /*
 Returns an array of bytes (with size of guidSizeBits) with the value of the GUID
 */
-func (guid *Guid) Bytes() []byte {
+func (guid *GUID) Bytes() []byte {
 	numOfBytes := guidSizeBits / 8
 	res := make([]byte, numOfBytes)
 	idBytes := guid.id.Bytes()
 	index := 0
-	for ; index < numOfBytes-cap(idBytes); index++ {
+	for ; index < numOfBytes-cap(idBytes); index++ { // Padding the higher bytes with 0
 		res[index] = 0
 	}
 	for k := 0; index < numOfBytes; k++ {
@@ -156,22 +188,22 @@ func (guid *Guid) Bytes() []byte {
 }
 
 /*
-Creates a copy of the GUID
+Returns an int64 that represents the GUID
 */
-func (guid *Guid) Copy() *Guid {
-	return NewGuidString(guid.String())
+func (guid *GUID) Int64() int64 {
+	return guid.id.Int64()
 }
 
 /*
-Returns the value of the id in a string as an integer in base 10
+Creates a copy of the GUID object.
 */
-func (guid *Guid) String() string {
+func (guid *GUID) Copy() *GUID {
+	return NewGUIDString(guid.String())
+}
+
+/*
+Returns the value of the GUID in a string representation (as an integer in base 10)
+*/
+func (guid *GUID) String() string {
 	return guid.id.String()
-}
-
-/*
-Prints the GUID in a base 10 decimal format
-*/
-func (guid *Guid) PrintDecimal() {
-	fmt.Println(guid.id)
 }

@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
@@ -42,14 +41,12 @@ func refreshOffer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 
 	err := rest.ReceiveJSONFromHttp(w, r, &offerRefresh)
 	if err == nil {
-		log.Debugf("<-- REFRESH OFFER OfferID: %d, FromTrader: %s", offerRefresh.OfferID, offerRefresh.FromTraderGUID)
+		log.Debugf("<-- REFRESH OFFER OfferID: %d, FromTrader: %s", offerRefresh.OfferID,
+			offerRefresh.FromTraderGUID)
 
 		res := discovery.RefreshOffer(offerRefresh.OfferID, offerRefresh.FromTraderGUID)
-		if res {
-			return nil, nil
-		} else {
-			return fmt.Errorf("offer not refreshed"), nil
-		}
+		refreshOfferResponseJSON := rest.RefreshOfferResponseJSON{Refreshed: res}
+		return nil, refreshOfferResponseJSON
 	}
 	return err, nil
 }
@@ -57,11 +54,17 @@ func refreshOffer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 func removeOffer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 	var offerRemove rest.OfferRemoveJSON
 
-	//discovery := thisNode.Discovery()
+	discovery := thisNode.Discovery()
 
 	err := rest.ReceiveJSONFromHttp(w, r, &offerRemove)
 	if err == nil {
-		// TODO
+		log.Debugf("<-- REMOVE OFFER OfferID: %d, FromSupplier: %s", offerRemove.OfferID,
+			offerRemove.FromSupplierIP)
+
+		discovery.RemoveOffer(offerRemove.FromSupplierIP, offerRemove.FromSupplierGUID,
+			offerRemove.ToTraderGUID, offerRemove.OfferID)
+
+		return nil, nil
 	}
 	return err, nil
 }

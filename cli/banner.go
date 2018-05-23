@@ -5,6 +5,9 @@ import (
 	"github.com/urfave/cli"
 )
 
+/*
+Prints the banner of the CARAVELA system into the log.
+*/
 func printBanner(_ *cli.Context) error {
 	log.Infof("##################################################################")
 	log.Infof("#          CARAVELA: A Cloud @ Edge                 000000       #")

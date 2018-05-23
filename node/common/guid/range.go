@@ -1,74 +1,79 @@
 package guid
 
-import log "github.com/Sirupsen/logrus"
+import (
+	"fmt"
+)
 
 /*
-Range represents a range of GUIDs i.e. [startId, endId)
+Represents a range of GUIDs i.e. [lowerGUID, higherGUID)
 */
 type Range struct {
-	startId *Guid //Included in range
-	endId   *Guid //Excluded from the range
+	lowerGUID  *GUID //Included in range
+	higherGUID *GUID //Excluded from the range
 }
 
 /*
-Creates a new GUID range given a start GUID and end GUID
+Creates a new GUID range given a lower GUID and higher GUID.
 */
-func NewGuidRange(startGUID Guid, endGUID Guid) *Range {
-	return &Range{&startGUID, &endGUID}
+func NewGUIDRange(lowerGUID GUID, higherGUID GUID) *Range {
+	return &Range{lowerGUID: &lowerGUID, higherGUID: &higherGUID}
 }
 
 /*
 Generate random GUID inside the range.
 */
-func (gr *Range) GenerateRandomBetween() (*Guid, error) {
-	return gr.startId.GenerateRandomBetween(*gr.endId)
+func (gr *Range) GenerateRandomInside() (*GUID, error) {
+	return gr.lowerGUID.GenerateInnerRandomGUID(*gr.higherGUID)
 }
 
 /*
-Create partitions of the GUID range.
+Create partitions (set of ranges) of the receiver range.
 */
-func (gr *Range) CreatePartitions(partitionsPerc []int) []*Range {
-	res := make([]*Range, cap(partitionsPerc))
+func (gr *Range) CreatePartitions(partitionsPercentage []int) []*Range {
+	res := make([]*Range, 0)
 
-	currentBase := gr.startId.Copy()
-	for index, percentage := range partitionsPerc {
+	currentBase := gr.lowerGUID.Copy()
+	for _, percentage := range partitionsPercentage {
+		if percentage <= 0 || percentage > 100 {
+			continue
+		}
 		nextBase := currentBase.Copy()
-		nextBase.AddOffset(gr.startId.Partitioning(percentage, *gr.endId))
-		res[index] = NewGuidRange(*currentBase, *nextBase)
+		nextBase.AddOffset(gr.lowerGUID.PercentageOffset(percentage, *gr.higherGUID))
+		res = append(res, NewGUIDRange(*currentBase, *nextBase))
 		currentBase = nextBase.Copy()
 	}
 
-	res[cap(partitionsPerc)-1].endId = gr.endId.Copy()
+	res[len(res)-1].higherGUID = gr.higherGUID.Copy()
 	return res
 }
 
 /*
 Verify if the given GUID is inside the range.
 */
-func (gr *Range) Inside(guid Guid) bool {
-	if (gr.startId.Cmp(guid) <= 0) && (gr.endId.Cmp(guid) > 0) {
+func (gr *Range) Inside(guid GUID) bool {
+	if (gr.lowerGUID.Cmp(guid) <= 0) && (gr.higherGUID.Cmp(guid) > 0) {
 		return true
 	}
 	return false
 }
 
 /*
-Get the start GUID of the range.
+Get the lower GUID of the range.
 */
-func (gr *Range) StartGUID() *Guid {
-	return gr.startId.Copy()
+func (gr *Range) LowerGUID() *GUID {
+	return gr.lowerGUID.Copy()
 }
 
 /*
-Get the end GUID of the range.
+Get the higher GUID of the range.
 */
-func (gr *Range) EndGUID() *Guid {
-	return gr.endId.Copy()
+func (gr *Range) HigherGUID() *GUID {
+	return gr.higherGUID.Copy()
 }
 
 /*
 Print the range into the log.
 */
-func (gr *Range) Print() {
-	log.Debugf("[%s, %s)", gr.startId.String(), gr.endId.String())
+func (gr *Range) String() string {
+	return fmt.Sprintf("[%s, %s)", gr.lowerGUID.String(), gr.higherGUID.String())
 }

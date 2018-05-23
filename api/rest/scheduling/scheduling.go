@@ -22,10 +22,9 @@ func launchContainer(w http.ResponseWriter, r *http.Request) (error, interface{}
 	if err == nil {
 		log.Debugf("<-- LAUNCH From: %s , Offer: %d", launchJSON.FromBuyerIP, launchJSON.OfferID)
 
-		thisNode.Scheduler().Launch(launchJSON.FromBuyerIP, launchJSON.OfferID, launchJSON.ContainerImageKey,
+		err := thisNode.Scheduler().Launch(launchJSON.FromBuyerIP, launchJSON.OfferID, launchJSON.ContainerImageKey,
 			launchJSON.ContainerArgs, launchJSON.CPUs, launchJSON.RAM)
-		return nil, nil
+		return err, nil
 	}
-
 	return err, nil
 }

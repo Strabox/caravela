@@ -26,6 +26,13 @@ type RefreshOfferJSON struct {
 }
 
 /*
+Response to a refresh offer message used in remote REST APIs when a supplier acknowledges the refresh message
+*/
+type RefreshOfferResponseJSON struct {
+	Refreshed bool `json:"Refreshed"` // True if the offer was refreshed succeeded and false otherwise
+}
+
+/*
 Remove offer struct/JSON used in remote REST APIs when a supplier remove its offer from a trader
 */
 type OfferRemoveJSON struct {

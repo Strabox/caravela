@@ -20,10 +20,11 @@ func runContainer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
 
 	err := rest.ReceiveJSONFromHttp(w, r, &runContainer)
 	if err == nil {
-		log.Debugf("<-- RUN Image: %s", runContainer.ContainerImage)
+		log.Debugf("<-- RUN Image: %s", runContainer.ContainerImageKey)
 
-		thisNode.Scheduler().Deploy(runContainer.ContainerImage, runContainer.Arguments, runContainer.CPUs, runContainer.RAM)
-		return nil, nil
+		err := thisNode.Scheduler().Deploy(runContainer.ContainerImageKey, runContainer.Arguments,
+			runContainer.CPUs, runContainer.RAM)
+		return err, nil
 	}
 	return err, nil
 }

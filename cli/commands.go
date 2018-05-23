@@ -2,6 +2,9 @@ package cli
 
 import "github.com/urfave/cli"
 
+/*
+List of all commands available to the user.
+*/
 var (
 	commands = []cli.Command{
 		{
@@ -27,6 +30,11 @@ var (
 			Category:  "Caravela node management",
 			Action:    run,
 			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name:  "portMap, p",
+					Value: &cli.StringSlice{}, // No predefined port mapping
+					Usage: "Define a port mapping for a container, HostPort:ContainerPort",
+				},
 				cli.StringFlag{
 					Name:  "ip",
 					Value: DefaultCaravelaInstanceIP,

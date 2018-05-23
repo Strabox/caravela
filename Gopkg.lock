@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
+  version = "v0.3.0"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
@@ -159,6 +165,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f0eb9af630de88f102dde379e696a27b96d31df086a52e8e6da69e08787870e9"
+  inputs-digest = "6b86389d86e3080b04cb42d3f968eaae6dac2552d531f909f1f45880189f09f2"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -12,7 +12,7 @@ import (
 /*
 Validate the htpp message content extracting the JSON into a golang structure if necessary
 */
-func ReceiveJSONFromHttp(w http.ResponseWriter, r *http.Request, jsonToFill interface{}) error {
+func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill interface{}) error {
 	if r.Body != nil { // Verify if HTTP message body is not empty
 		err := json.NewDecoder(r.Body).Decode(jsonToFill)
 		if err == nil { // Verify if JSON was decoded with success

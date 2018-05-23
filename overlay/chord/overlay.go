@@ -13,33 +13,50 @@ import (
 	"time"
 )
 
+/*
+Represents a Chord overlay local (for each node) structure.
+*/
 type Overlay struct {
-	hashSizeBytes   int
-	hostIP          string
-	hostPort        int
+	// Size of the hash (in bytes) produced by the lookup hash function.
+	hashSizeBytes int
+	// IP address of the local node.
+	hostIP string
+	// Port where local node is running the chord overlay daemon.
+	hostPort int
+	// Number of virtual nodes in the local "physical node".
 	numVirtualNodes int
-	numSuccessor    int
-	timeout         time.Duration
-	chordRing       *chord.Ring
+	// Number of successor nodes maintained by the chord.
+	numSuccessor int
+	// Timeout for chord overlay messages (pings, etc).
+	timeout time.Duration
+	// Chord ring structure from the library used (github.com/strabox/go-chord).
+	chordRing *chord.Ring
 }
 
-func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int, numVnode int,
-	numSuccessor int, timeout time.Duration) *Overlay {
+/*
+Create a new Chord overlay structure.
+*/
+func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int,
+	numVirtualNodes int, numSuccessor int, timeout time.Duration) *Overlay {
 	chordOverlay := &Overlay{}
 	chordOverlay.hashSizeBytes = hashSizeBytes
 	chordOverlay.hostIP = hostIP
 	chordOverlay.hostPort = hostPort
-	chordOverlay.numVirtualNodes = numVnode
+	chordOverlay.numVirtualNodes = numVirtualNodes
 	chordOverlay.numSuccessor = numSuccessor
 	chordOverlay.timeout = timeout
 	chordOverlay.chordRing = nil
 	return chordOverlay
 }
 
-func (co *Overlay) init(thisNode nodeAPI.OverlayMembership) (*chord.Config, chord.Transport) {
-	var hostname = co.hostIP + ":" + strconv.Itoa(co.hostPort)
-	var chordListener = &Listener{thisNode}
-	var config = chord.DefaultConfig(hostname)
+/*
+Initialize the chord overlay and its respective inner structures.
+*/
+func (co *Overlay) initialize(thisNode nodeAPI.OverlayMembership) (*chord.Config, chord.Transport) {
+	hostname := co.hostIP + ":" + strconv.Itoa(co.hostPort)
+	chordListener := &Listener{thisNode}
+	config := chord.DefaultConfig(hostname)
+
 	config.Delegate = chordListener
 	config.NumVnodes = co.numVirtualNodes
 	config.NumSuccessors = co.numSuccessor
@@ -52,10 +69,11 @@ func (co *Overlay) init(thisNode nodeAPI.OverlayMembership) (*chord.Config, chor
 	log.Debugf("$Num Successors: %d                                               $", config.NumSuccessors)
 	log.Debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
+	// Initialize the TCP transport stack used in this chord implementation
 	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d", co.hostPort), co.timeout)
 
 	if err != nil {
-		panic(fmt.Errorf(util.LogTag("[Chord]")+"Initializing Transport: %s", err))
+		log.Fatalf(util.LogTag("[Chord]")+"Initializing Transport Stack: %s", err)
 	}
 
 	return config, transport
@@ -64,7 +82,7 @@ func (co *Overlay) init(thisNode nodeAPI.OverlayMembership) (*chord.Config, chor
 /* ============================ Overlay Interface ============================ */
 
 func (co *Overlay) Create(thisNode nodeAPI.OverlayMembership) {
-	config, transport := co.init(thisNode)
+	config, transport := co.initialize(thisNode)
 	log.Debugln(util.LogTag("[Chord]") + "Creating a NEW CARAVELA instance ...")
 	ring, err := chord.Create(config, transport)
 	if err != nil {
@@ -75,7 +93,7 @@ func (co *Overlay) Create(thisNode nodeAPI.OverlayMembership) {
 }
 
 func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, thisNode nodeAPI.OverlayMembership) {
-	config, transport := co.init(thisNode)
+	config, transport := co.initialize(thisNode)
 	log.Debug(util.LogTag("[Chord]") + "Joining a CARAVELA instance ...")
 	var joinHostname = overlayNodeIP + ":" + strconv.Itoa(overlayNodePort)
 	ring, err := chord.Join(config, transport, joinHostname)
@@ -91,7 +109,7 @@ func (co *Overlay) Lookup(key []byte) []*overlay.Node {
 		panic(fmt.Errorf(util.LogTag("[Chord]") + "Lookup failed. Chord not initialized"))
 	}
 	virtualNodes, _ := co.chordRing.Lookup(co.numSuccessor, key)
-	res := make([]*overlay.Node, cap(virtualNodes))
+	res := make([]*overlay.Node, len(virtualNodes))
 	for index := range virtualNodes {
 		res[index] = overlay.NewNode(strings.Split(virtualNodes[index].Host, ":")[0], virtualNodes[index].Id)
 	}

@@ -8,16 +8,16 @@ import (
 func TestNewResources(t *testing.T) {
 	resources := NewResources(2, 256)
 
-	assert.Equal(t, 2, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
 }
 
 func TestSetCPU(t *testing.T) {
 	resources := NewResources(2, 256)
 
-	resources.SetCPU(4)
+	resources.SetCPUs(4)
 
-	assert.Equal(t, 4, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 4, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -26,7 +26,7 @@ func TestSetRAM(t *testing.T) {
 
 	resources.SetRAM(1024)
 
-	assert.Equal(t, 2, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 1024, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -35,7 +35,7 @@ func TestAddCPU(t *testing.T) {
 
 	resources.AddCPU(1)
 
-	assert.Equal(t, 2+1, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 2+1, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -44,7 +44,7 @@ func TestAddRAM(t *testing.T) {
 
 	resources.AddRAM(1024)
 
-	assert.Equal(t, 2, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 1024+256, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -54,7 +54,7 @@ func TestAdd(t *testing.T) {
 
 	resources.Add(*addResources)
 
-	assert.Equal(t, 2+2, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 2+2, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 256+256, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -63,7 +63,7 @@ func TestSetZero(t *testing.T) {
 
 	resources.SetZero()
 
-	assert.Equal(t, 0, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 0, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 0, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -73,7 +73,7 @@ func TestSetTo(t *testing.T) {
 
 	resources.SetTo(*setResources)
 
-	assert.Equal(t, 1, resources.CPU(), "Invalid CPUs value!")
+	assert.Equal(t, 1, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 2046, resources.RAM(), "Invalid RAM value!")
 }
 
@@ -143,6 +143,6 @@ func TestCopy(t *testing.T) {
 
 	res := resources.Copy()
 
-	assert.Equal(t, resources.CPU(), res.CPU(), "CPUs mismatch!")
+	assert.Equal(t, resources.CPUs(), res.CPUs(), "CPUs mismatch!")
 	assert.Equal(t, resources.RAM(), res.RAM(), "RAM mismatch!")
 }

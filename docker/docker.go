@@ -7,20 +7,21 @@ import (
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/strabox/caravela/util"
+	"io/ioutil"
 )
 
 /*
-Client interfaces with docker daemon using the Docker SDK
+DefaultClient that interfaces with docker SDK.
 */
-type Client struct {
+type DefaultClient struct {
 	docker *dockerClient.Client
 }
 
 /*
-Creates a new docker remote to interact with the local Docker Engine.
+Creates a new docker client to interact with the local Docker Engine.
 */
-func NewDockerClient() *Client {
-	res := &Client{}
+func NewDockerClient() *DefaultClient {
+	res := &DefaultClient{}
 	res.docker = nil
 	return res
 }
@@ -28,7 +29,7 @@ func NewDockerClient() *Client {
 /*
 Initialize a Docker client with a corresponding docker daemon API version.
 */
-func (client *Client) Initialize(runningDockerVersion string) {
+func (client *DefaultClient) Initialize(runningDockerVersion string) {
 	var err error
 	client.docker, err = dockerClient.NewClientWithOpts(dockerClient.WithVersion(runningDockerVersion))
 	if err != nil {
@@ -39,7 +40,7 @@ func (client *Client) Initialize(runningDockerVersion string) {
 /*
 Verify if the Docker client is initialized or not.
 */
-func (client *Client) verifyInitialization() {
+func (client *DefaultClient) verifyInitialization() {
 	if client.docker != nil {
 		if _, err := client.docker.Ping(context.Background()); err != nil {
 			// TODO: Shutdown node gracefully in each place where docker calls can fail!!
@@ -52,9 +53,9 @@ func (client *Client) verifyInitialization() {
 }
 
 /*
-Get CPU and RAM dedicated to Docker engine (Decided by the user in Docker configuration).
+Get CPUs and RAM dedicated to Docker engine (Decided by the user in Docker configuration).
 */
-func (client *Client) GetDockerCPUAndRAM() (int, int) {
+func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 	client.verifyInitialization()
 
 	ctx := context.Background()
@@ -70,7 +71,7 @@ func (client *Client) GetDockerCPUAndRAM() (int, int) {
 /*
 Check the container status (running, stopped, etc)
 */
-func (client *Client) CheckContainerStatus(containerID string) (ContainerStatus, error) {
+func (client *DefaultClient) CheckContainerStatus(containerID string) (ContainerStatus, error) {
 	client.verifyInitialization()
 
 	ctx := context.Background()
@@ -89,14 +90,19 @@ func (client *Client) CheckContainerStatus(containerID string) (ContainerStatus,
 /*
 Launches a container from an image in the local Docker Engine.
 */
-func (client *Client) RunContainer(imageKey string, args []string, machineCpus string, ram int) (string, error) {
+func (client *DefaultClient) RunContainer(imageKey string, args []string, machineCpus string, ram int) (string, error) {
 	client.verifyInitialization()
 
 	ctx := context.Background()
 
-	_, err := client.docker.ImagePull(ctx, imageKey, types.ImagePullOptions{})
+	out, err := client.docker.ImagePull(ctx, imageKey, types.ImagePullOptions{})
 	if err != nil { // Error pulling the image from Docker
 		log.Errorf(util.LogTag("[Docker]")+"Pulling: %s", err)
+		return "", err
+	}
+	defer out.Close()
+	if _, err := ioutil.ReadAll(out); err != nil {
+		log.Errorf(util.LogTag("[Docker]")+"Reading: %s", err)
 		return "", err
 	}
 
@@ -106,8 +112,8 @@ func (client *Client) RunContainer(imageKey string, args []string, machineCpus s
 		Tty:   true,
 	}, &container.HostConfig{
 		Resources: container.Resources{
-			Memory:     int64(ram) * 1000000,
-			CpusetCpus: machineCpus,
+			Memory:     int64(ram) * 1000000, // Maximum memory available to container
+			CpusetCpus: machineCpus,          // Number of CPUs available to the container
 		},
 	}, nil, "")
 	if err != nil { // Error creating the container from the given
@@ -137,10 +143,9 @@ func (client *Client) RunContainer(imageKey string, args []string, machineCpus s
 /*
 Remove a container from the Docker image (to avoid filling space in the node).
 */
-func (client *Client) RemoveContainer(containerID string) {
+func (client *DefaultClient) RemoveContainer(containerID string) {
 	client.verifyInitialization()
 
 	ctx := context.Background()
 	client.docker.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{})
-
 }

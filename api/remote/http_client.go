@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"fmt"
 	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
 	"net/http"
@@ -43,16 +44,14 @@ func (client *HttpClient) CreateOffer(fromSupplierIP string, fromSupplierGUID st
 
 func (client *HttpClient) RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (*Error, bool) {
 	offerRefreshJSON := rest.RefreshOfferJSON{FromTraderGUID: fromTraderGUID, OfferID: offerID}
+	var refreshOfferResponseJSON rest.RefreshOfferResponseJSON
 
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPatch, offerRefreshJSON, nil)
+	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPatch, offerRefreshJSON,
+		&refreshOfferResponseJSON)
 	if err == nil {
-		if httpCode == http.StatusOK {
-			return nil, true
-		} else {
-			return nil, false
-		}
+		return nil, refreshOfferResponseJSON.Refreshed
 	} else {
 		return NewRemoteClientError(err), false
 	}
@@ -109,9 +108,13 @@ func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP strin
 
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.SchedulerContainerBaseEndpoint)
 
-	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerJSON, nil)
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerJSON, nil)
 	if err == nil {
-		return nil
+		if httpCode == http.StatusOK {
+			return nil
+		} else {
+			return NewRemoteClientError(fmt.Errorf("impossible launch container"))
+		}
 	} else {
 		return NewRemoteClientError(err)
 	}

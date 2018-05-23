@@ -1,2 +1,4 @@
-ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+interface="$(route | grep '^default' | grep -o '[^ ]*$')"
+echo $interface
+ip=$(ifconfig | grep -w "$interface")
 echo $ip

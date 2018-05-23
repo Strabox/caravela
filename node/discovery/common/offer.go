@@ -2,15 +2,18 @@ package common
 
 import "github.com/strabox/caravela/node/common/resources"
 
+/*
+OfferID is a type for the offer identifier.
+*/
 type OfferID int64
 
 /*
-Represents the basic structure of an offer of resources into the system
+Represents the basic offer of resources into the system
 */
 type Offer struct {
-	id        OfferID
-	amount    int
-	resources *resources.Resources
+	id        OfferID              // Local id (for supplier) of the offer
+	amount    int                  // Amount of times the resource combination we have
+	resources *resources.Resources // Resource combinations of the offer
 }
 
 func NewOffer(id OfferID, amount int, res resources.Resources) *Offer {
