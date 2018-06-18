@@ -8,6 +8,7 @@ RefreshingInterval = "15s"
 MaxRefreshesFailed = 3
 MaxRefreshesMissed = 2
 RefreshMissedTimeout = "20s"
+ResourcesOvercommit = 50
     # Cpu Cores Partitions
     [[Caravela.CpuCoresPartitions]]
     Cores = 1
@@ -22,6 +23,9 @@ RefreshMissedTimeout = "20s"
     [[Caravela.RamPartitions]]
     Ram = 512
     Percentage = 50
+
+[ImagesStorage]
+Backend = "DockerHub"
 
 [Overlay]
 OverlayPort = 8000

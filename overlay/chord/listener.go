@@ -2,10 +2,10 @@ package chord
 
 import (
 	log "github.com/Sirupsen/logrus"
-	nodeAPI "github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
 	"math/big"
+	"github.com/strabox/caravela/overlay"
 )
 
 /*
@@ -14,29 +14,25 @@ The listener let the important events bubble up into Node layer using a provided
 called OverlayMembership.
 */
 type Listener struct {
-	// Caravela Node layer on top of the chord overlay.
-	thisNode nodeAPI.OverlayMembership
+	// Chord's overlay
+	chordOverlay *Overlay
 }
 
 /*
 Fired when the a new predecessor of the local node appears in the overlay.
 */
 func (cl *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *chord.Vnode) {
-	if local != nil {
+	if local != nil && newPredecessor != nil && previousPredecessor == nil {
+		// First time a virtual node is entering in the ring
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(local.Id)
-		cl.thisNode.AddTrader(local.Id)
-		log.Debugf(util.LogTag("[Chord]")+"Local Node: ID: %s IP: %s", idToPrint.String(), local.Host)
-	}
-	if newPredecessor != nil {
-		idToPrint := big.NewInt(0)
-		idToPrint.SetBytes(newPredecessor.Id)
-		log.Debugf(util.LogTag("[Chord]")+"Remote Node: ID: %s IP: %s", idToPrint.String(), newPredecessor.Host)
-	}
-	if previousPredecessor != nil {
-		idToPrint := big.NewInt(0)
-		idToPrint.SetBytes(previousPredecessor.Id)
-		log.Debugf(util.LogTag("[Chord]")+"Previous Remote Node: ID: %s IP: %s", idToPrint.String(), previousPredecessor.Host)
+		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
+		cl.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
+		log.Debugf(util.LogTag("[Chord]")+"New local VNode: ID: %s IP: %s", idToPrint.String(), local.Host)
+	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
+		// New predecessor for a existing node
+		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
+		cl.chordOverlay.predecessorNodeChanged(local.Id, predecessorNode)
 	}
 }
 
@@ -65,7 +61,8 @@ func (cl *Listener) SuccessorLeaving(local, remote *chord.Vnode) {
 }
 
 /*
-Fired when when ?????
+Fired when when one node decided to shutdown the chord ring system.
+Do the shutdown message propagates to all the nodes ??
 */
 func (cl *Listener) Shutdown() {
 	// DO NOTHING FOR NOW

@@ -18,10 +18,11 @@ Discovery module of a CARAVELA node. It is responsible for dealing with the reso
 and finding.
 */
 type Discovery struct {
-	config       *configuration.Configuration // System's configurations
-	client       remote.Caravela              // Remote caravela's client
-	resourcesMap *resources.Mapping           // GUID<->Resources mapping
+	config  *configuration.Configuration // System's configurations
+	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
+	client  remote.Caravela              // Remote caravela's client
 
+	resourcesMap *resources.Mapping           // GUID<->Resources mapping
 	supplier       *supplier.Supplier        // Supplier for managing the offers locally and remotely
 	virtualTraders map[string]*trader.Trader // Node can have multiple "virtual" traders in several places of the overlay
 }
@@ -30,6 +31,7 @@ func NewDiscovery(config *configuration.Configuration, overlay overlay.Overlay,
 	client remote.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
 	res := &Discovery{}
 	res.config = config
+	res.overlay = overlay
 	res.client = client
 	res.resourcesMap = resourcesMap
 	res.supplier = supplier.NewSupplier(config, overlay, client, resourcesMap, maxResources)
@@ -50,7 +52,7 @@ func (disc *Discovery) Start() {
 Adds a new local "virtual" trader when the overlay notifies its presence.
 */
 func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
-	newTrader := trader.NewTrader(disc.config, disc.client, traderGUID, disc.resourcesMap)
+	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap)
 	disc.virtualTraders[traderGUID.String()] = newTrader
 	newTrader.Start() // Start the node's trader module.
 	log.Debugf(util.LogTag("[Discovery]")+"New Trader: %s | Resources: %s",

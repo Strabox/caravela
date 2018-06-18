@@ -24,13 +24,12 @@ type Supplier struct {
 	resourcesMap       *resources.Mapping   // The resources<->GUID mapping
 	maxResources       *resources.Resources // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources // Available resources to offerContent
-
-	supplyingTicker      <-chan time.Time // Timer to supply available resources
-	refreshesCheckTicker <-chan time.Time // Timer to check if the activeOffers are in alive traders
-
 	offersID     common.OfferID                    // Monotonic counter to generate offer's local unique IDs
 	activeOffers map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
 	offersMutex  *sync.Mutex                       // Mutex to handle activeOffers management
+
+	supplyingTicker      <-chan time.Time // Timer to supply available resources
+	refreshesCheckTicker <-chan time.Time // Timer to check if the activeOffers are in alive traders
 }
 
 func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, client remote.Caravela,

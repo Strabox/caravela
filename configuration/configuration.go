@@ -4,17 +4,28 @@ import (
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"time"
+	"net"
+	"fmt"
 )
 
-const configurationFilePath = "configuration.toml"
+/*
+Directory path to where search for the configuration file.
+ */
+const configurationFilePath = "" // Try search in the directory of execution
 
 /*
-CARAVELA system's configurations
+Expected name of the configuration file.
+ */
+const configurationFileName = "configuration.toml"
+
+/*
+CARAVELA system's configurations.
 */
 type Configuration struct {
-	Host     host
-	Caravela caravela
-	Overlay  overlay
+	Host          host
+	Caravela      caravela
+	ImagesStorage imagesStorage
+	Overlay       overlay
 }
 
 /*
@@ -41,6 +52,14 @@ type caravela struct {
 	CpuPowerPartition       []CpuPowerPartition // GUID partitions for CPU power
 	CpuCoresPartitions      []CpuCoresPartition // GUID partitions for the amount of CPU cores
 	RamPartitions           []RamPartition      // GUID partitions for the amount of ram
+	ResourcesOvercommit     int                 // Percentage of overcommit to apply to available resources
+}
+
+/*
+Configuration for the CARAVELA's container image storage
+ */
+type imagesStorage struct {
+	Backend imagesStorageBackend // Type of storage of images used to share them
 }
 
 /*
@@ -78,6 +97,10 @@ func defaultConfig(hostIP string, dockerAPIVersion string) *Configuration {
 		{Cores: 1, Percentage: 50}, {Cores: 2, Percentage: 50}}
 	config.Caravela.RamPartitions = []RamPartition{
 		{Ram: 256, Percentage: 50}, {Ram: 512, Percentage: 50}}
+	config.Caravela.ResourcesOvercommit = 50
+
+	// Images Storage
+	config.ImagesStorage.Backend = imagesStorageBackend{Backend: ImagesStorageDockerHub}
 
 	// Overlay
 	config.Overlay.OverlayPort = 8000
@@ -95,11 +118,33 @@ with the default values
 */
 func ReadConfigurations(hostIP string, dockerAPIVersion string) *Configuration {
 	config := defaultConfig(hostIP, dockerAPIVersion)
-	if _, err := toml.DecodeFile(configurationFilePath, config); err != nil {
+	if _, err := toml.DecodeFile(configurationFilePath+configurationFileName, config); err != nil {
 		log.Errorf("Error reading configuration file: %s", err)
 	}
 	return config
 }
+
+/*
+Briefly validate the configuration to avoid/short-circuit many runtime errors due to
+typos or complete non sense configurations.
+ */
+func (c *Configuration) ValidateConfigurations() error {
+	if net.ParseIP(c.HostIP()) == nil {
+		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
+	}
+	// TODO docker API version with Regex
+	if c.APIPort() < 0 || c.APIPort() > 6553 {
+		return fmt.Errorf("invalid api port: %d", c.APIPort())
+	}
+	if c.MaxRefreshesFailed() < 0 {
+		return fmt.Errorf("maximum number of failed refreshes must be positive")
+	}
+	if c.MaxRefreshesMissed() < 0 {
+		return fmt.Errorf("maximum number of missed refreshes must be positive")
+	}
+	return nil
+}
+
 
 func (c *Configuration) HostIP() string {
 	return c.Host.IP
@@ -157,6 +202,12 @@ func (c *Configuration) RamPartitions() []RamPartition {
 	return c.Caravela.RamPartitions
 }
 
+func (c *Configuration) ResourcesOvercommit() int {
+	return c.Caravela.ResourcesOvercommit
+}
+
+
+
 func (c *Configuration) OverlayPort() int {
 	return c.Overlay.OverlayPort
 }
@@ -175,4 +226,8 @@ func (c *Configuration) ChordNumSuccessors() int {
 
 func (c *Configuration) ChordHashSizeBits() int {
 	return c.Overlay.ChordHashSizeBits
+}
+
+func (c *Configuration) ImagesStorageBackend() string {
+	return c.ImagesStorage.Backend.Backend
 }

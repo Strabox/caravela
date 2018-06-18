@@ -11,6 +11,7 @@ import (
 	"github.com/strabox/caravela/util"
 	"sync"
 	"time"
+	"github.com/strabox/caravela/overlay"
 )
 
 /*
@@ -18,22 +19,24 @@ Trader is responsible for managing offers from multiple suppliers and negotiate 
 The resources combination that the trader can handle is described by its GUID.
 */
 type Trader struct {
-	config           *configuration.Configuration // System's configurations
-	client           remote.Caravela              // Client for the system
+	config  *configuration.Configuration // System's configurations
+	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
+	client  remote.Caravela              // Client for the system
+
 	guid             *guid.GUID                   // Trader's own GUID
 	resourcesMap     *resources.Mapping           // GUID<->Resources mapping
 	handledResources *resources.Resources         // Combination of resources that its responsible for managing (FIXED)
-
-	refreshOffersTicker <-chan time.Time // Time ticker for sending the refreshing offer messages
-
 	offers      map[offerKey]*traderOffer // Map with all the offers that the trader is managing
 	offersMutex *sync.Mutex               // Mutex for managing the offers
+
+	refreshOffersTicker <-chan time.Time // Time ticker for sending the refreshing offer messages
 }
 
-func NewTrader(config *configuration.Configuration, client remote.Caravela, guid guid.GUID,
-	resourcesMapping *resources.Mapping) *Trader {
+func NewTrader(config *configuration.Configuration, overlay overlay.Overlay, client remote.Caravela,
+	guid guid.GUID, resourcesMapping *resources.Mapping) *Trader {
 	res := &Trader{}
 	res.config = config
+	res.overlay = overlay
 	res.client = client
 	res.guid = &guid
 	res.resourcesMap = resourcesMapping
@@ -63,6 +66,10 @@ func (trader *Trader) refreshingOffers() {
 		// Time to refresh all the current offers (verify if the suppliers are alive)
 		case <-trader.refreshOffersTicker:
 			trader.offersMutex.Lock()
+
+			// TEMPORARY
+			trader.overlay.Neighbors(trader.guid.Bytes())
+			trader.overlay.NodeID()
 
 			for _, offer := range trader.offers {
 				if offer.Refresh() {

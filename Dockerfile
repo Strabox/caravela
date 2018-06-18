@@ -6,6 +6,7 @@ ENV PATH="/caravela:"${PATH}
 
 WORKDIR /caravela
 COPY $exec_file /caravela
+COPY configuration.toml /caravela
 
 # Expose the Overlay Port to outside (to other system nodes)
 EXPOSE 8000

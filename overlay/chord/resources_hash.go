@@ -21,11 +21,15 @@ type ResourcesHash struct {
 	sizeBytes int
 	// Current hash value. In our case this is the value generated in the node layer.
 	hash []byte
-	// (Hack) Hostname necessary to intercept hash of hostname strings when a join
-	// join request is issued in the local node.
+	/*
+	(Hack) Hostname necessary to intercept hash of hostname strings when a join
+	join request is issued in the local node.
+	*/
 	hostname string
-	// (Hack) Used to ignore the second call to write after a call issued to generate
-	// the hash/GUID of a joining node ????
+	/*
+	(Hack) Used to ignore the second call to write after a call issued to generate
+	the hash/GUID of a joining node ????
+	*/
 	ignoreChordWrite bool
 }
 
