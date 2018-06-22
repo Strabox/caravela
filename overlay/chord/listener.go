@@ -2,10 +2,10 @@ package chord
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
 	"math/big"
-	"github.com/strabox/caravela/overlay"
 )
 
 /*
@@ -14,8 +14,7 @@ The listener let the important events bubble up into Node layer using a provided
 called OverlayMembership.
 */
 type Listener struct {
-	// Chord's overlay
-	chordOverlay *Overlay
+	chordOverlay *Overlay // Chord's overlay
 }
 
 /*
@@ -28,7 +27,7 @@ func (cl *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *c
 		idToPrint.SetBytes(local.Id)
 		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
 		cl.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
-		log.Debugf(util.LogTag("[Chord]")+"New local VNode: ID: %s IP: %s", idToPrint.String(), local.Host)
+		log.Debugf(util.LogTag("[Chord]")+"New LVNode: ID: %s IP: %s", idToPrint.String(), local.Host)
 	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
 		// New predecessor for a existing node
 		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)

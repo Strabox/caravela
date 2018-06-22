@@ -15,9 +15,12 @@ func create(c *cli.Context) {
 
 	hostIP := c.Args().Get(0)
 	if net.ParseIP(hostIP) == nil {
-		fmt.Println("Invalid host IP address")
+		fmt.Printf("Invalid host IP address: %s\n", hostIP)
 		os.Exit(1)
 	}
 
-	initNode(hostIP, false, "")
+	if err := initNode(hostIP, false, ""); err != nil {
+		fmt.Printf("Problem: %s\n", err.Error())
+		os.Exit(1)
+	}
 }

@@ -1,6 +1,6 @@
 package rest
 
-const DebugEndpoint = "/debug"
+const ConfigurationBaseEndpoint = "/configuration"
 
 const DiscoveryBaseEndpoint = "/discovery"
 const DiscoveryOfferBaseEndpoint = DiscoveryBaseEndpoint + "/offer"
@@ -10,3 +10,4 @@ const SchedulerContainerBaseEndpoint = SchedulerBaseEndpoint + "/container"
 
 const UserBaseEndpoint = "/user"
 const UserContainerBaseEndpoint = UserBaseEndpoint + "/container"
+const UserExitEndpoint = UserBaseEndpoint + "/exit"

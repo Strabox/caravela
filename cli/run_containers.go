@@ -10,18 +10,18 @@ import (
 	"strings"
 )
 
-func run(c *cli.Context) {
+func runContainers(c *cli.Context) {
 	if c.NArg() < 1 {
 		fmt.Println("Please provide at least a container image to launch")
 		os.Exit(1)
 	}
 
 	// Validate port mappings provided
-	var portMappings = make([]rest.PortMappingJSON, 0)
+	var portMappings = make([]rest.PortMapping, 0)
 	fmt.Printf("PortMaps: %v\n", c.StringSlice("p"))
 	for _, portMap := range c.StringSlice("p") {
 		var err error
-		resultPortMap := rest.PortMappingJSON{}
+		resultPortMap := rest.PortMapping{}
 		portMapping := strings.Split(portMap, ":")
 
 		if len(portMapping) != 2 {
@@ -55,7 +55,7 @@ func run(c *cli.Context) {
 	// Create a user client of the CARAVELA system
 	caravelaClient := client.NewCaravelaIP(c.String("ip"))
 
-	err := caravelaClient.Run(c.Args().Get(0), containerArgs, c.StringSlice("p"),
+	err := caravelaClient.RunContainer(c.Args().Get(0), containerArgs, c.StringSlice("p"),
 		int(c.Uint("cpus")), int(c.Uint("ram")))
 
 	if err != nil {

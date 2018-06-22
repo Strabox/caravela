@@ -74,7 +74,7 @@ func NewResourcesMap(cpuPartitionsPerc []ResourcePartition, ramPartitionsPerc []
 	return rm
 }
 
-func GetCpuCoresPartitions(cpuCoresPartitions []configuration.CpuCoresPartition) []ResourcePartition {
+func GetCpuCoresPartitions(cpuCoresPartitions []configuration.CPUCoresPartition) []ResourcePartition {
 	res := make([]ResourcePartition, len(cpuCoresPartitions))
 	for index, partition := range cpuCoresPartitions {
 		res[index].Value = partition.Cores
@@ -83,10 +83,10 @@ func GetCpuCoresPartitions(cpuCoresPartitions []configuration.CpuCoresPartition)
 	return res
 }
 
-func GetRamPartitions(ramPartitions []configuration.RamPartition) []ResourcePartition {
+func GetRamPartitions(ramPartitions []configuration.RAMPartition) []ResourcePartition {
 	res := make([]ResourcePartition, len(ramPartitions))
 	for index, partition := range ramPartitions {
-		res[index].Value = partition.Ram
+		res[index].Value = partition.RAM
 		res[index].Percentage = partition.Percentage
 	}
 	return res
@@ -215,7 +215,7 @@ func (rm *Mapping) ResourcesByGUID(resGUID guid.GUID) (*Resources, error) {
 Prints the resource map into the log.
 */
 func (rm *Mapping) Print() {
-	log.Debug("%%%%%%%%%%%%%%%%% Resource <-> GUID Mapping %%%%%%%%%%%%%%%%%%%%%%")
+	log.Debug("%%%%%%%%%%%%%%%%% Resource <-> GUID Mapping %%%%%%%%%%%%%%%%%%%%%")
 	for indexCPU := range rm.resourcesIDMap {
 		log.Debugf("-> %v CPUs", rm.invertCpuIndexes[indexCPU])
 		for indexRAM := range rm.resourcesIDMap {
@@ -223,5 +223,5 @@ func (rm *Mapping) Print() {
 			log.Debug(rm.resourcesIDMap[indexCPU][indexRAM].String())
 		}
 	}
-	log.Debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+	log.Debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 }

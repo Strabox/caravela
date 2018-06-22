@@ -15,7 +15,7 @@ It is used in the CARAVELA's CLI application.
 type Caravela struct {
 	// HTTP client to send requests into Caravela's REST daemon
 	httpClient *http.Client
-	// Configuration parameters for the CARAVELA client
+	// Configuration parameters for the CARAVELA's client
 	config *Configuration
 }
 
@@ -32,32 +32,84 @@ func NewCaravelaIP(caravelaHostIP string) *Caravela {
 	return res
 }
 
-func (client *Caravela) Run(containerImageKey string, portMappings []string, arguments []string,
+func (client *Caravela) RunContainer(containerImageKey string, portMappings []string, arguments []string,
 	cpus int, ram int) *Error {
 
-	portMappingsJSON := make([]rest.PortMappingJSON, 0)
+	portMappingsList := make([]rest.PortMapping, 0)
 	for _, portMap := range portMappings {
 		portMapping := strings.Split(portMap, ":")
-		resultPortMap := rest.PortMappingJSON{}
+		resultPortMap := rest.PortMapping{}
 		resultPortMap.HostPort, _ = strconv.Atoi(portMapping[0])
 		resultPortMap.ContainerPort, _ = strconv.Atoi(portMapping[1])
-		portMappingsJSON = append(portMappingsJSON, resultPortMap)
+		portMappingsList = append(portMappingsList, resultPortMap)
 	}
 
-	runContainerJSON := rest.RunContainerJSON{ContainerImageKey: containerImageKey, Arguments: arguments,
-		PortMappings: portMappingsJSON, CPUs: cpus, RAM: ram}
+	runContainerMessage := rest.RunContainerMessage{ContainerImageKey: containerImageKey, Arguments: arguments,
+		PortMappings: portMappingsList, CPUs: cpus, RAM: ram}
 
 	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
 		rest.UserContainerBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, runContainerJSON, nil)
-	if err == nil {
-		if httpCode == http.StatusOK {
-			return nil
-		} else {
-			return NewClientError(fmt.Errorf("impossible deploy the container"))
-		}
-	} else {
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, runContainerMessage, nil)
+	if err != nil {
 		return NewClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return nil
+	} else {
+		return NewClientError(fmt.Errorf("impossible deploy the container"))
+	}
+}
+
+func (client *Caravela) StopContainers(containersIDs []string) *Error {
+	stopContainersMessage := rest.StopContainersMessage{ContainersIDs: containersIDs}
+
+	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		rest.UserContainerBaseEndpoint)
+
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodDelete, stopContainersMessage, nil)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return nil
+	} else {
+		return NewClientError(fmt.Errorf("error stopping the containers"))
+	}
+}
+
+func (client *Caravela) ListContainers() (*rest.ContainersList, *Error) {
+	var containersList rest.ContainersList
+
+	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		rest.UserContainerBaseEndpoint)
+
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, &containersList)
+	if err != nil {
+		return nil, NewClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return &containersList, nil
+	} else {
+		return nil, NewClientError(fmt.Errorf("error checking the container"))
+	}
+}
+
+func (client *Caravela) Exit() *Error {
+	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		rest.UserExitEndpoint)
+
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, nil)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return nil
+	} else {
+		return NewClientError(fmt.Errorf("error exiting from the system"))
 	}
 }

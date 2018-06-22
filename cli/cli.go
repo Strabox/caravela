@@ -1,3 +1,5 @@
+// Package that provides a CLI (Command Line Interface) for the CARAVELA system, wrapping
+// up the REST API provided in the package github.com/strabox/caravela/api/client.
 package cli
 
 import (
@@ -16,20 +18,25 @@ func Run() {
 	app.Author = Author
 	app.Email = Email
 
-	// =============== Application global flags ===================
+	// =============== Application Global Flags ===================
 
-	// Debug flag (controls the granularity of the log trace)
+	// Debug flag (controls the granularity of the log's traces)
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "debug, d",
+			Name:  "log, l",
 			Value: "fatal",
 			Usage: "Controls the granularity of the log traces",
+		},
+		cli.StringFlag{
+			Name:  "ip",
+			Value: DefaultCaravelaInstanceIP,
+			Usage: "IP of the caravela instance/daemon to send the request",
 		},
 	}
 
 	// Before running the user's command
 	app.Before = func(context *cli.Context) error {
-		switch context.String("debug") {
+		switch context.String("log") {
 		case "debug":
 			log.SetLevel(log.DebugLevel)
 		case "info":

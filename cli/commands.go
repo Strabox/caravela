@@ -3,7 +3,7 @@ package cli
 import "github.com/urfave/cli"
 
 /*
-List of all commands available to the user.
+List of commands available to the CLI end users.
 */
 var (
 	commands = []cli.Command{
@@ -27,23 +27,18 @@ var (
 			Name:      "run",
 			ShortName: "r",
 			Usage:     "Launch a container in the Caravela instance",
-			Category:  "Caravela node management",
-			Action:    run,
+			Category:  "User's containers management",
+			Action:    runContainers,
 			Flags: []cli.Flag{
 				cli.StringSliceFlag{
 					Name:  "portMap, p",
 					Value: &cli.StringSlice{}, // No predefined port mapping
 					Usage: "Define a port mapping for a container, HostPort:ContainerPort",
 				},
-				cli.StringFlag{
-					Name:  "ip",
-					Value: DefaultCaravelaInstanceIP,
-					Usage: "IP of the caravela instance to send the request",
-				},
 				cli.UintFlag{
 					Name:  "cpus, c",
 					Value: DefaultNumOfCPUs,
-					Usage: "Maximum number of CPUs that the container can use",
+					Usage: "Maximum number of CPUs/Cores that the container need",
 				},
 				cli.UintFlag{
 					Name:  "ram, r",
@@ -51,6 +46,33 @@ var (
 					Usage: "Maximum amount of RAM (in Megabytes) that container can use",
 				},
 			},
+		},
+		{
+			Name:     "container",
+			Aliases:  []string{"c"},
+			Usage:    "Options for managing user's containers",
+			Category: "User's containers management",
+			Before:   printBanner,
+			Subcommands: []cli.Command{
+				{
+					Name:   "ls",
+					Usage:  "List the user's containers in the system",
+					Action: listContainer,
+				},
+				{
+					Name:   "stop",
+					Usage:  "Stop a set of containers",
+					Action: stopContainers,
+				},
+			},
+		},
+		{
+			Name:      "exit",
+			ShortName: "e",
+			Usage:     "Exit from the CARAVELA instance, makes the node leave",
+			Category:  "Caravela system management",
+			Before:    printBanner,
+			Action:    exitFromCaravela,
 		},
 	}
 )

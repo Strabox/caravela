@@ -15,16 +15,19 @@ func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
 	router.Handle(rest.SchedulerContainerBaseEndpoint, rest.AppHandler(launchContainer)).Methods(http.MethodPost)
 }
 
-func launchContainer(w http.ResponseWriter, r *http.Request) (error, interface{}) {
-	var launchJSON rest.LaunchContainerJSON
+func launchContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	var err error
+	var launchJSON rest.LaunchContainerMessage
 
-	err := rest.ReceiveJSONFromHttp(w, r, &launchJSON)
-	if err == nil {
-		log.Debugf("<-- LAUNCH From: %s , Offer: %d", launchJSON.FromBuyerIP, launchJSON.OfferID)
-
-		err := thisNode.Scheduler().Launch(launchJSON.FromBuyerIP, launchJSON.OfferID, launchJSON.ContainerImageKey,
-			launchJSON.ContainerArgs, launchJSON.CPUs, launchJSON.RAM)
-		return err, nil
+	err = rest.ReceiveJSONFromHttp(w, r, &launchJSON)
+	if err != nil {
+		return nil, err
 	}
-	return err, nil
+	log.Infof("<-- LAUNCH FromBuyerIP: %s , OfferID: %d, Image: %s, Args: %v, Resources: <%d,%d>",
+		launchJSON.FromBuyerIP, launchJSON.OfferID, launchJSON.ContainerImageKey, launchJSON.ContainerArgs,
+		launchJSON.CPUs, launchJSON.RAM)
+
+	err = thisNode.Scheduler().Launch(launchJSON.FromBuyerIP, launchJSON.OfferID, launchJSON.ContainerImageKey,
+		launchJSON.ContainerArgs, launchJSON.CPUs, launchJSON.RAM)
+	return nil, err
 }

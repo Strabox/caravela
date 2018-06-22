@@ -8,11 +8,11 @@ import (
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
 	"hash"
+	"math/big"
 	"strconv"
 	"strings"
-	"time"
-	"math/big"
 	"sync"
+	"time"
 )
 
 /*
@@ -28,7 +28,7 @@ type Overlay struct {
 	// Physical node ID (Higher ID of all the virtual nodes)
 	localID []byte
 
-	// ============== CHORD Related Parameters ==================
+	// ============== CHORD Related Fields  ==================
 	// Size of the hash (in bytes) produced by the lookup hash function.
 	hashSizeBytes int
 	// IP address of the local node.
@@ -50,6 +50,7 @@ Create a new Chord overlay structure.
 */
 func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int,
 	numVirtualNodes int, numSuccessors int, timeout time.Duration) *Overlay {
+
 	chordOverlay := &Overlay{
 		appNode:             nil,
 		predecessors:        sync.Map{},
@@ -70,7 +71,7 @@ func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int,
 /*
 Initialize the chord overlay and its respective inner structures.
 */
-func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config, chord.Transport) {
+func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config, chord.Transport, error) {
 	co.appNode = appNode
 	hostname := co.hostIP + ":" + strconv.Itoa(co.hostPort)
 	chordListener := &Listener{chordOverlay: co}
@@ -81,26 +82,19 @@ func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config,
 	config.NumSuccessors = co.numSuccessors
 	config.HashFunc = func() hash.Hash { return NewResourcesHash(co.hashSizeBytes, hostname) }
 
-	log.Debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-	log.Debug("$                    CHORD OVERLAY CONFIGURATION                 $")
-	log.Debugf("$Hostname: %s                                      $", config.Hostname)
-	log.Debugf("$Num Virtual Nodes: %d                                            $", config.NumVnodes)
-	log.Debugf("$Num Successors: %d                                               $", config.NumSuccessors)
-	log.Debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-
-	// Initialize the TCP transport stack used in this chord implementation
+	// Initialize the TCP transport stack used in the chord implementation
 	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d", co.hostPort), co.timeout)
 
 	if err != nil {
-		log.Fatalf(util.LogTag("[Chord]")+"Initialize transport stack error: %s", err)
+		return nil, nil, err
 	}
 
-	return config, transport
+	return config, transport, nil
 }
 
 /*
 Called when a new virtual node of this physical node has joined the chord ring.
- */
+*/
 func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
 	newLocalVirtualNodeID := big.NewInt(0)
 	newLocalVirtualNodeID.SetBytes(localVirtualNodeID)
@@ -121,51 +115,48 @@ func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNod
 /*
 Called when the predecessor of a virtual node of the physical node changes.
 e.g. Due to a crash in the previous predecessor or because he left the chord ring.
- */
+*/
 func (co *Overlay) predecessorNodeChanged(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
 	vNodeID := big.NewInt(0)
 	vNodeID.SetBytes(localVirtualNodeID)
 	co.predecessors.Store(vNodeID.String(), predecessorNode)
 }
 
-/*
-Verify if the chord ring is initialized, if it is not it starts panicking because
-nothing can be done without the chord overlay working.
- */
-func (co *Overlay) initialized() {
-	if co.chordRing == nil {
-		panic(fmt.Errorf(util.LogTag("[Chord]") + "Lookup failed. Chord not initialized"))
-	}
-}
-
 /* ============================ Overlay Interface ============================ */
 
-func (co *Overlay) Create(appNode nodeAPI.OverlayMembership) {
-	config, transport := co.initialize(appNode)
-	log.Debugln(util.LogTag("[Chord]") + "Creating a NEW CARAVELA instance ...")
+func (co *Overlay) Create(appNode nodeAPI.OverlayMembership) error {
+	config, transport, err := co.initialize(appNode)
+	if err != nil {
+		return err
+	}
+
 	ring, err := chord.Create(config, transport)
 	if err != nil {
-		panic(fmt.Errorf(util.LogTag("[Chord]")+"Create error: %s", err))
+		return fmt.Errorf("create chord error: %s", err)
 	}
+
 	co.chordRing = ring
-	log.Debugln(util.LogTag("[Chord]") + "Create SUCCESS")
+	return nil
 }
 
-func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode nodeAPI.OverlayMembership) {
-	config, transport := co.initialize(appNode)
-	log.Debug(util.LogTag("[Chord]") + "Joining a CARAVELA instance ...")
-	var joinHostname = overlayNodeIP + ":" + strconv.Itoa(overlayNodePort)
-	ring, err := chord.Join(config, transport, joinHostname)
+func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode nodeAPI.OverlayMembership) error {
+	config, transport, err := co.initialize(appNode)
 	if err != nil {
-		panic(fmt.Errorf(util.LogTag("[Chord]")+"Join error: %s", err))
+		return err
+	}
+
+	var joinHostname = overlayNodeIP + ":" + strconv.Itoa(overlayNodePort)
+	log.Debugf("''''''''''''''''''''''''''''''''''''''''''''''' %s", joinHostname)
+	ring, err := chord.Join(config, transport, joinHostname)
+	log.Debug("###############################################")
+	if err != nil {
+		return fmt.Errorf("join chord error: %s", err)
 	}
 	co.chordRing = ring
-	log.Debug(util.LogTag("[Chord]") + "Join SUCCESS")
+	return nil
 }
 
 func (co *Overlay) Lookup(key []byte) []*overlay.Node {
-	co.initialized()
-
 	virtualNodes, err := co.chordRing.Lookup(co.numSuccessors, key)
 	if err != nil {
 		log.Errorf(util.LogTag("[Chord]")+"Lookup error: %s", err)
@@ -178,17 +169,15 @@ func (co *Overlay) Lookup(key []byte) []*overlay.Node {
 }
 
 func (co *Overlay) Neighbors(nodeID []byte) []*overlay.Node {
-	co.initialized()
-
 	id := big.NewInt(0)
 	id.SetBytes(nodeID)
-	log.Debugf(util.LogTag("[Chord]")+"Node %s", id.String())
+	//log.Debugf(util.LogTag("[Chord]")+"Node %s", id.String())
 	res := make([]*overlay.Node, 0)
 	nodes := co.Lookup(nodeID)
 	if len(nodes) > 1 {
 		hmm := big.NewInt(0)
 		hmm.SetBytes(nodes[1].GUID())
-		log.Debugf(util.LogTag("[Chord]")+"Successor %s", hmm.String())
+		//log.Debugf(util.LogTag("[Chord]")+"Successor %s", hmm.String())
 		res = append(res, nodes[1]) // The successor of the given node
 	}
 	predecessorNode, exist := co.predecessors.Load(id.String())
@@ -197,7 +186,7 @@ func (co *Overlay) Neighbors(nodeID []byte) []*overlay.Node {
 		if ok {
 			hmm := big.NewInt(0)
 			hmm.SetBytes(node.GUID())
-			log.Debugf(util.LogTag("[Chord]")+"Predecessor %s", hmm.String())
+			//log.Debugf(util.LogTag("[Chord]")+"Predecessor %s", hmm.String())
 			res = append(res, node) // The predecessor of the given node
 		}
 	}
@@ -205,24 +194,21 @@ func (co *Overlay) Neighbors(nodeID []byte) []*overlay.Node {
 }
 
 func (co *Overlay) NodeID() []byte {
-	co.initialized()
-
 	if co.localID != nil && co.virtualNodesRunning == co.numVirtualNodes {
-		hmm := big.NewInt(0)
-		hmm.SetBytes(co.localID)
-		log.Debugf(util.LogTag("[Chord]")+"Node ID %s", hmm.String())
+		temp := big.NewInt(0)
+		temp.SetBytes(co.localID)
+		//log.Debugf(util.LogTag("[Chord]")+"Node ID %s", temp.String())
 		return co.localID
 	} else {
-		log.Debugf(util.LogTag("[Chord]") + "Node ID not fixed yes!!")
+		//log.Debugf(util.LogTag("[Chord]") + "Node ID not fixed yes!!")
 		return nil
 	}
 }
 
-func (co *Overlay) Leave() {
-	co.initialized()
-
+func (co *Overlay) Leave() error {
 	err := co.chordRing.Leave()
 	if err != nil {
-		log.Errorf(util.LogTag("[Chord]")+"Leave error: %s", err)
+		return fmt.Errorf("leave chord error: %s", err)
 	}
+	return nil
 }

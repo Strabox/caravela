@@ -1,6 +1,8 @@
 package remote
 
-import "strings"
+import (
+	"strings"
+)
 
 const Unknown = 1
 const CaravelaInstanceUnavailable = 2

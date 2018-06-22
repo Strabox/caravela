@@ -8,7 +8,6 @@ import (
 )
 
 func join(c *cli.Context) {
-
 	if c.NArg() < 2 {
 		fmt.Println("Please provide the host IP address and the join node IP address")
 		os.Exit(1)
@@ -26,5 +25,8 @@ func join(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	initNode(hostIP, true, joinIP)
+	if err := initNode(hostIP, true, joinIP); err != nil {
+		fmt.Printf("Error: %s\n", err)
+		os.Exit(1)
+	}
 }

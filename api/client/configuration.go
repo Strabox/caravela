@@ -22,7 +22,7 @@ func DefaultConfiguration(caravelaInstanceIP string) *Configuration {
 	res.caravelaInstanceIP = caravelaInstanceIP
 	res.caravelaInstancePort = 8001
 
-	res.httpRequestTimeout = 10 * time.Second
+	res.httpRequestTimeout = 3 * time.Second
 	return res
 }
 

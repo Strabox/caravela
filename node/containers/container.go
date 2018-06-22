@@ -3,10 +3,10 @@ package containers
 import "github.com/strabox/caravela/node/common/resources"
 
 /*
-Represents a container that was submitted and successful running in a CARAVELA's node.
+Represents a container that was submitted into a CARAVELA's node.
 */
 type Container struct {
-	dockerID  string              // Container ID (same of the Docker engine) TODO: Define a different ID at CARAVELA level
+	dockerID  string              // Container ID (same of the Docker engine) TODO: Define a different ID at CARAVELA level ??
 	buyerIP   string              // IP of the node that submitted the container in the system TODO: Try use node's GUID
 	resources resources.Resources // The "real" resources asked by the user to run the container
 }

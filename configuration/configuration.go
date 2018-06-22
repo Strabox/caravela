@@ -1,91 +1,97 @@
 package configuration
 
 import (
+	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
-	"time"
 	"net"
-	"fmt"
+	"strings"
+	"time"
 )
 
 /*
+Default port for the CARAVELA's API endpoints
+*/
+const caravelaAPIPort = 8001
+
+/*
 Directory path to where search for the configuration file.
- */
-const configurationFilePath = "" // Try search in the directory of execution
+*/
+const configurationFilePath = "" // Default: Directory of binary execution
 
 /*
 Expected name of the configuration file.
- */
+*/
 const configurationFileName = "configuration.toml"
 
 /*
 CARAVELA system's configurations.
 */
 type Configuration struct {
-	Host          host
-	Caravela      caravela
-	ImagesStorage imagesStorage
-	Overlay       overlay
+	Host          host          `json:"-"` // Do not marshal host configuration due to security concerns!!
+	Caravela      caravela      `json:"Caravela"`
+	ImagesStorage imagesStorage `json:"ImagesStorage"`
+	Overlay       overlay       `json:"Overlay"`
 }
 
 /*
-Configurations for the local host node
+Configurations for the local host node.
 */
 type host struct {
-	IP               string // Local node host's IP
-	DockerAPIVersion string // API Version of the local node Docker's engine
+	IP               string `json:"IP"`               // Local node host's IP
+	DockerAPIVersion string `json:"DockerAPIVersion"` // API Version of the local node Docker's engine
 }
 
 /*
 Configurations for the CARAVELA's node specific parameters
 */
 type caravela struct {
-	ApiPort                 int                 // Port of API REST endpoints
-	ApiTimeout              duration            // Timeout for API REST requests
-	MaxRefreshesFailed      int                 // Maximum amount of refreshes that a supplier failed to reply
-	MaxRefreshesMissed      int                 // Maximum amount of refreshes a trader failed to send to the supplier
-	CheckContainersInterval duration            // Interval of time to check the containers running in the node
-	SupplyingInterval       duration            // Interval for supplier to check if it is necessary offer resources
-	RefreshesCheckInterval  duration            // Interval to check if the refreshes to its offers are being done
-	RefreshingInterval      duration            // Interval for trader to send refresh messages to suppliers
-	RefreshMissedTimeout    duration            // Timeout for a refresh message
-	CpuPowerPartition       []CpuPowerPartition // GUID partitions for CPU power
-	CpuCoresPartitions      []CpuCoresPartition // GUID partitions for the amount of CPU cores
-	RamPartitions           []RamPartition      // GUID partitions for the amount of ram
-	ResourcesOvercommit     int                 // Percentage of overcommit to apply to available resources
+	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
+	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
+	MaxRefreshesFailed      int                 `json:"MaxRefreshesFailed"`      // Maximum amount of refreshes that a supplier failed to reply
+	MaxRefreshesMissed      int                 `json:"MaxRefreshesMissed"`      // Maximum amount of refreshes a trader failed to send to the supplier
+	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
+	SupplyingInterval       duration            `json:"SupplyingInterval"`       // Interval for supplier to check if it is necessary offer resources
+	RefreshesCheckInterval  duration            `json:"RefreshesCheckInterval"`  // Interval to check if the refreshes to its offers are being done
+	RefreshingInterval      duration            `json:"RefreshingInterval"`      // Interval for trader to send refresh messages to suppliers
+	RefreshMissedTimeout    duration            `json:"RefreshMissedTimeout"`    // Timeout for a refresh message
+	CPUPowerPartition       []CPUPowerPartition `json:"CPUPowerPartition"`       // GUID partitions for CPU power
+	CPUCoresPartitions      []CPUCoresPartition `json:"CPUCoresPartitions"`      // GUID partitions for the amount of CPU cores
+	RAMPartitions           []RAMPartition      `json:"RAMPartitions"`           // GUID partitions for the amount of RAM
+	ResourcesOvercommit     int                 `json:"ResourcesOvercommit"`     // Percentage of overcommit to apply to available resources
 }
 
 /*
 Configuration for the CARAVELA's container image storage
- */
+*/
 type imagesStorage struct {
-	Backend imagesStorageBackend // Type of storage of images used to share them
+	Backend string `json:"Backend"` // Type of storage of images used to share them
 }
 
 /*
 Configurations for the node overlay
 */
 type overlay struct {
-	OverlayPort        int      // Port of the overlay endpoints
-	ChordTimeout       duration // Timeout for the chord messages
-	ChordVirtualNodes  int      // Number of chord virtual nodes per physical node
-	ChordNumSuccessors int      // Number of chord successor nodes for a node
-	ChordHashSizeBits  int      // Number of chord hash size (in bits)
+	OverlayPort        int      `json:"OverlayPort"`        // Port of the overlay endpoints
+	ChordTimeout       duration `json:"ChordTimeout"`       // Timeout for the chord messages
+	ChordVirtualNodes  int      `json:"ChordVirtualNodes"`  // Number of chord virtual nodes per physical node
+	ChordNumSuccessors int      `json:"ChordNumSuccessors"` // Number of chord successor nodes for a node
+	ChordHashSizeBits  int      `json:"ChordHashSizeBits"`  // Number of chord hash size (in bits)
 }
 
 /*
 Produces the configuration structure with all the default values for the system to work.
 */
-func defaultConfig(hostIP string, dockerAPIVersion string) *Configuration {
+func Default(hostIP string, dockerAPIVersion string) *Configuration {
 	config := &Configuration{}
 
-	// Host
+	// Host parameters
 	config.Host.IP = hostIP
 	config.Host.DockerAPIVersion = dockerAPIVersion
 
-	// Caravela
-	config.Caravela.ApiPort = 8000
-	config.Caravela.ApiTimeout = duration{Duration: 2 * time.Second}
+	// Caravela parameters
+	config.Caravela.APIPort = caravelaAPIPort
+	config.Caravela.APITimeout = duration{Duration: 2 * time.Second}
 	config.Caravela.CheckContainersInterval = duration{Duration: 30 * time.Second}
 	config.Caravela.SupplyingInterval = duration{Duration: 45 * time.Second}
 	config.Caravela.RefreshesCheckInterval = duration{Duration: 30 * time.Second}
@@ -93,16 +99,21 @@ func defaultConfig(hostIP string, dockerAPIVersion string) *Configuration {
 	config.Caravela.MaxRefreshesFailed = 2
 	config.Caravela.MaxRefreshesMissed = 2
 	config.Caravela.RefreshMissedTimeout = duration{Duration: config.Caravela.RefreshingInterval.Duration + (5 * time.Second)}
-	config.Caravela.CpuCoresPartitions = []CpuCoresPartition{
-		{Cores: 1, Percentage: 50}, {Cores: 2, Percentage: 50}}
-	config.Caravela.RamPartitions = []RamPartition{
-		{Ram: 256, Percentage: 50}, {Ram: 512, Percentage: 50}}
+	config.Caravela.CPUPowerPartition = []CPUPowerPartition{
+		{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+		{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}}
+	config.Caravela.CPUCoresPartitions = []CPUCoresPartition{
+		{Cores: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+		{Cores: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}}
+	config.Caravela.RAMPartitions = []RAMPartition{
+		{RAM: 256, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+		{RAM: 512, ResourcesPartition: ResourcesPartition{Percentage: 50}}}
 	config.Caravela.ResourcesOvercommit = 50
 
-	// Images Storage
-	config.ImagesStorage.Backend = imagesStorageBackend{Backend: ImagesStorageDockerHub}
+	// Containers images storage
+	config.ImagesStorage.Backend = ImagesStorageDockerHub
 
-	// Overlay
+	// Overlay parameters
 	config.Overlay.OverlayPort = 8000
 	config.Overlay.ChordTimeout = duration{Duration: 5 * time.Second}
 	config.Overlay.ChordVirtualNodes = 3
@@ -116,35 +127,184 @@ func defaultConfig(hostIP string, dockerAPIVersion string) *Configuration {
 Produces configuration structure reading from the configuration file and filling the rest
 with the default values
 */
-func ReadConfigurations(hostIP string, dockerAPIVersion string) *Configuration {
-	config := defaultConfig(hostIP, dockerAPIVersion)
-	if _, err := toml.DecodeFile(configurationFilePath+configurationFileName, config); err != nil {
-		log.Errorf("Error reading configuration file: %s", err)
+func ReadFromFile(hostIP string, dockerAPIVersion string) (*Configuration, error) {
+	config := Default(hostIP, dockerAPIVersion)
+	configurationsFullFileName := configurationFilePath + configurationFileName
+
+	if _, err := toml.DecodeFile(configurationsFullFileName, config); err != nil {
+		return nil, err
 	}
-	return config
+
+	if err := config.validateConfigurations(); err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+/*
+Produces configuration structured based on a given structure that.
+Used to pass the system configurations between nodes, usually during the joining process.
+*/
+func ObtainExternal(hostIP string, dockerAPIVersion string, config *Configuration) (*Configuration, error) {
+	config.Host.IP = hostIP
+	config.Host.DockerAPIVersion = dockerAPIVersion
+
+	if err := config.validateConfigurations(); err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }
 
 /*
 Briefly validate the configuration to avoid/short-circuit many runtime errors due to
 typos or complete non sense configurations.
- */
-func (c *Configuration) ValidateConfigurations() error {
+*/
+func (c *Configuration) validateConfigurations() error {
+	isValidPort := func(port int) bool {
+		if port < 0 || port > 65553 {
+			return false
+		} else {
+			return true
+		}
+	}
+
 	if net.ParseIP(c.HostIP()) == nil {
 		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
 	}
-	// TODO docker API version with Regex
-	if c.APIPort() < 0 || c.APIPort() > 6553 {
+
+	if !isValidPort(c.APIPort()) {
 		return fmt.Errorf("invalid api port: %d", c.APIPort())
 	}
 	if c.MaxRefreshesFailed() < 0 {
-		return fmt.Errorf("maximum number of failed refreshes must be positive")
+		return fmt.Errorf("maximum number of failed refreshes must be a positive integer")
 	}
 	if c.MaxRefreshesMissed() < 0 {
-		return fmt.Errorf("maximum number of missed refreshes must be positive")
+		return fmt.Errorf("maximum number of missed refreshes must be a positive integer")
 	}
+	if c.ResourcesOvercommit() <= 0 {
+		return fmt.Errorf("node's resources overcommit ratio must be a positive integer")
+	}
+
+	percentageAcc := 0
+	for _, value := range c.CPUPowerPartitions() {
+		percentageAcc += value.Percentage
+		if value.Class < 0 {
+			return fmt.Errorf("partitions CPU power class must be a positive integer")
+		}
+	}
+	if percentageAcc != 100 {
+		return fmt.Errorf("the sum of CPU power partitions size must equal to 100")
+	}
+
+	percentageAcc = 0
+	for _, value := range c.CPUCoresPartitions() {
+		percentageAcc += value.Percentage
+		if value.Cores <= 0 {
+			return fmt.Errorf("partitions CPU cores must be a positive integer")
+		}
+	}
+	if percentageAcc != 100 {
+		return fmt.Errorf("the sum of CPU cores partitions size must equal to 100")
+	}
+
+	percentageAcc = 0
+	for _, value := range c.RAMPartitions() {
+		percentageAcc += value.Percentage
+		if value.RAM <= 0 {
+			return fmt.Errorf("partitions RAM amount must be a positive integer")
+		}
+	}
+	if percentageAcc != 100 {
+		return fmt.Errorf("the sum of RAM partitions size must equal to 100")
+	}
+
+	configuredBackend := strings.ToLower(c.ImagesStorage.Backend)
+	if configuredBackend != strings.ToLower(ImagesStorageDockerHub) &&
+		configuredBackend != strings.ToLower(ImagesStorageIPFS) {
+		return fmt.Errorf("invalid storage backend: %s", configuredBackend)
+	}
+
+	if !isValidPort(c.OverlayPort()) {
+		return fmt.Errorf("invalid overlay port: %d", c.OverlayPort())
+	}
+	if c.ChordVirtualNodes() <= 0 {
+		return fmt.Errorf("chord's number of virtual nodes must be a positive integer")
+	}
+	if c.ChordNumSuccessors() <= 0 {
+		return fmt.Errorf("chord's number of successor nodes must be a positive integer")
+	}
+	if c.ChordHashSizeBits() < 56 {
+		return fmt.Errorf("chord's hash size bits nodes must be a positive integer greater or equal to 56")
+	}
+
 	return nil
 }
 
+/*
+Print/log the current configurations in order to debug the programs behavior.
+*/
+func (c *Configuration) Print() {
+	log.Printf("##################################################################")
+	log.Printf("#                       CONFIGURATIONS                           #")
+	log.Printf("##################################################################")
+
+	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$ HOST $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Printf("IP Address:                  %s", c.HostIP())
+	log.Printf("Docker Engine Version:       %s", c.DockerAPIVersion())
+
+	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ CARAVELA $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Printf("Port:                        %d", c.APIPort())
+	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
+	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
+	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
+	log.Printf("Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
+	log.Printf("Refreshes Interval:          %s", c.RefreshingInterval().String())
+	log.Printf("Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
+	log.Printf("Max num of refreshes failed: %d", c.MaxRefreshesFailed())
+	log.Printf("Max num of refreshes missed: %d", c.MaxRefreshesMissed())
+	log.Printf("Resources overcommit:        %d", c.ResourcesOvercommit())
+
+	partitions := ""
+	for i, value := range c.CPUPowerPartitions() {
+		if i > 0 {
+			partitions += ", "
+		}
+		partitions += fmt.Sprintf("<%d,%d>", value.Class, value.Percentage)
+	}
+	log.Printf("CPU Power Partitions:        %s", partitions)
+
+	partitions = ""
+	for i, value := range c.CPUCoresPartitions() {
+		if i > 0 {
+			partitions += ", "
+		}
+		partitions += fmt.Sprintf("<%d,%d>", value.Cores, value.Percentage)
+	}
+	log.Printf("CPU Cores Partitions:        %s", partitions)
+
+	partitions = ""
+	for i, value := range c.RAMPartitions() {
+		if i > 0 {
+			partitions += ", "
+		}
+		partitions += fmt.Sprintf("<%d,%d>", value.RAM, value.Percentage)
+	}
+	log.Printf("RAM Partitions:              %s", partitions)
+
+	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$ IMAGES STORAGE $$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Printf("Backend:                     %s", c.ImagesStorageBackend())
+
+	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ OVERLAY $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Printf("Port:                        %d", c.OverlayPort())
+	log.Printf("Messages Timeout:            %s", c.ChordTimeout().String())
+	log.Printf("Number of Virtual Nodes:     %d", c.ChordVirtualNodes())
+	log.Printf("Number of Successors:        %d", c.ChordNumSuccessors())
+	log.Printf("Hash Size (bits):            %d", c.ChordHashSizeBits())
+
+	log.Printf("##################################################################")
+}
 
 func (c *Configuration) HostIP() string {
 	return c.Host.IP
@@ -154,12 +314,16 @@ func (c *Configuration) DockerAPIVersion() string {
 	return c.Host.DockerAPIVersion
 }
 
+func (c *Configuration) ImagesStorageBackend() string {
+	return c.ImagesStorage.Backend
+}
+
 func (c *Configuration) APIPort() int {
-	return c.Caravela.ApiPort
+	return c.Caravela.APIPort
 }
 
 func (c *Configuration) APITimeout() time.Duration {
-	return c.Caravela.ApiTimeout.Duration
+	return c.Caravela.APITimeout.Duration
 }
 
 func (c *Configuration) CheckContainersInterval() time.Duration {
@@ -190,23 +354,21 @@ func (c *Configuration) RefreshMissedTimeout() time.Duration {
 	return c.Caravela.RefreshMissedTimeout.Duration
 }
 
-func (c *Configuration) CpuPowerPartitions() []CpuPowerPartition {
-	return c.Caravela.CpuPowerPartition
+func (c *Configuration) CPUPowerPartitions() []CPUPowerPartition {
+	return c.Caravela.CPUPowerPartition
 }
 
-func (c *Configuration) CpuCoresPartitions() []CpuCoresPartition {
-	return c.Caravela.CpuCoresPartitions
+func (c *Configuration) CPUCoresPartitions() []CPUCoresPartition {
+	return c.Caravela.CPUCoresPartitions
 }
 
-func (c *Configuration) RamPartitions() []RamPartition {
-	return c.Caravela.RamPartitions
+func (c *Configuration) RAMPartitions() []RAMPartition {
+	return c.Caravela.RAMPartitions
 }
 
 func (c *Configuration) ResourcesOvercommit() int {
 	return c.Caravela.ResourcesOvercommit
 }
-
-
 
 func (c *Configuration) OverlayPort() int {
 	return c.Overlay.OverlayPort
@@ -226,8 +388,4 @@ func (c *Configuration) ChordNumSuccessors() int {
 
 func (c *Configuration) ChordHashSizeBits() int {
 	return c.Overlay.ChordHashSizeBits
-}
-
-func (c *Configuration) ImagesStorageBackend() string {
-	return c.ImagesStorage.Backend.Backend
 }

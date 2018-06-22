@@ -1,25 +1,32 @@
 package configuration
 
 /*
-Partition for cpu power.
+Represents a configuration partition in terms of percentage,
 */
-type CpuPowerPartition struct {
-	Class      int
+type ResourcesPartition struct {
 	Percentage int
 }
 
 /*
-Partition for the number of cpu cores.
+Partition for CPU power.
 */
-type CpuCoresPartition struct {
-	Cores      int
-	Percentage int
+type CPUPowerPartition struct {
+	ResourcesPartition
+	Class int
 }
 
 /*
-Partition for the amount of ram.
+Partition for the number of CPU cores.
 */
-type RamPartition struct {
-	Ram        int
-	Percentage int
+type CPUCoresPartition struct {
+	ResourcesPartition
+	Cores int
+}
+
+/*
+Partition for the amount of RAM.
+*/
+type RAMPartition struct {
+	ResourcesPartition
+	RAM int
 }

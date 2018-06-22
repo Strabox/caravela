@@ -10,7 +10,7 @@ import (
 )
 
 /*
-Validate the htpp message content extracting the JSON into a golang structure if necessary
+Validate the HTTP message content extracting the JSON into a golang structure if necessary
 */
 func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill interface{}) error {
 	if r.Body != nil { // Verify if HTTP message body is not empty
@@ -21,12 +21,12 @@ func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill inte
 			return err
 		}
 	} else {
-		return fmt.Errorf("empty http body when JSON was expected")
+		return fmt.Errorf("empty HTTP body when JSON was expected")
 	}
 }
 
 /*
-Build and execute an Http Request and frees all the resources getting all the data before
+Build and execute an HTTP Request and frees all the resources getting all the data before
 */
 func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, jsonToSend interface{},
 	jsonToGet interface{}) (error, int) {
@@ -38,13 +38,13 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 	}
 
 	resp, err := httpClient.Do(req)
-	if resp != nil && resp.Body != nil { // Closes the http connection to the server freeing the socket files
+	if resp != nil && resp.Body != nil { // Closes the HTTP connection to the server freeing the socket files
 		defer resp.Body.Close()
 	}
 
-	if err == nil { // Http request went well (at least at Http level)
+	if err == nil { // HTTP request went well (at least at Http level)
 		if jsonToGet != nil { // We want to obtain a JSON from Http body
-			if resp.Body != nil { // The Http body HAS content
+			if resp.Body != nil { // The HTTP body HAS content
 				err := json.NewDecoder(resp.Body).Decode(jsonToGet)
 				if err == nil {
 					return nil, resp.StatusCode
@@ -54,7 +54,7 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 				}
 			} else {
 				log.Errorf(util.LogTag("[DoHttp]") + "Empty body when expecting content")
-				return fmt.Errorf("empty http body"), resp.StatusCode
+				return fmt.Errorf("empty HTTP body"), resp.StatusCode
 			}
 		} else {
 			return nil, resp.StatusCode
@@ -70,7 +70,7 @@ Encodes a golang struct into a buffer using JSON format.
 */
 func ToJSONBuffer(jsonToEncode interface{}) *bytes.Buffer {
 	if jsonToEncode == nil {
-		return nil
+		return new(bytes.Buffer) // HACK!!! I should try to tell http that the body should be empty
 	} else {
 		buffer := new(bytes.Buffer)
 		json.NewEncoder(buffer).Encode(jsonToEncode)
@@ -86,7 +86,7 @@ func ToJSONBytes(jsonToEncode interface{}) []byte {
 }
 
 /*
-Build a valid Http/Https URL and returns it as a string.
+Build a valid HTTP/HTTPS URL and returns it as a string.
 */
 func BuildHttpURL(https bool, ip string, port int, uri string) string {
 	var protocol string

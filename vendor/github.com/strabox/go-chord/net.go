@@ -152,8 +152,10 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 	}
 	t.poolLock.Unlock()
 	if out != nil {
+		one := []byte{}
 		// Verify that the socket is valid. Might be closed.
-		if _, err := out.sock.Read(nil); err == nil {
+		out.sock.SetReadDeadline(time.Now())
+		if _, err := out.sock.Read(one); err == nil {
 			return out, nil
 		}
 		out.sock.Close()

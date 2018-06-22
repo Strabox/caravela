@@ -81,6 +81,7 @@ Verify if the offer is valid and alert the supplier and after that start the con
 */
 func (man *Manager) StartContainer(buyerIP string, imageKey string, args []string, offerID int64,
 	resourcesNecessary resources.Resources) error {
+
 	man.containersMutex.Lock()
 	defer man.containersMutex.Unlock()
 

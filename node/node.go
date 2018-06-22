@@ -1,6 +1,7 @@
 package node
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
@@ -12,10 +13,11 @@ import (
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/overlay/chord"
+	"github.com/strabox/caravela/util"
 )
 
 /*
-Top level structure that contains all the modules/objects that manages the Caravela node.
+Top level structure that contains all the modules/objects that manages a CARAVELA node.
 */
 type Node struct {
 	discovery         *discovery.Discovery
@@ -42,8 +44,8 @@ func NewNode(config *configuration.Configuration) *Node {
 	caravelaCli := remote.NewHttpClient(config)
 
 	// Create resources mapping based on the configurations
-	resourcesMap := resources.NewResourcesMap(resources.GetCpuCoresPartitions(config.CpuCoresPartitions()),
-		resources.GetRamPartitions(config.RamPartitions()))
+	resourcesMap := resources.NewResourcesMap(resources.GetCpuCoresPartitions(config.CPUCoresPartitions()),
+		resources.GetRamPartitions(config.RAMPartitions()))
 	resourcesMap.Print()
 
 	// Create Docker client and obtain the maximum resources Docker Engine has available
@@ -62,15 +64,30 @@ func NewNode(config *configuration.Configuration) *Node {
 	return res
 }
 
-func (node *Node) Start(join bool, joinIP string) {
+/*
+Start the node internal working
+*/
+func (node *Node) Start(join bool, joinIP string) error {
+	var err error
+	// Initialize creating/joining an overlay of CARAVELA nodes
 	if join {
-		node.overlay.Join(joinIP, node.config.OverlayPort(), node)
-	} else {
-		node.overlay.Create(node)
-	}
+		log.Debugln(util.LogTag("[Node]") + "Joining a overlay ...")
+		err = node.overlay.Join(joinIP, node.config.OverlayPort(), node)
 
+	} else {
+		log.Debugln(util.LogTag("[Node]") + "Creating an overlay ...")
+		err = node.overlay.Create(node)
+	}
+	if err != nil {
+		return err
+	}
+	log.Debugln(util.LogTag("[Node]") + "Overlay INITIALIZED")
+
+	// Start the discovery module
 	node.discovery.Start()
+	// Start the containers manager module
 	node.containersManager.Start()
+	return nil
 }
 
 func (node *Node) AddTrader(guidBytes []byte) {

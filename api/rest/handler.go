@@ -9,10 +9,10 @@ import (
 /*
 HTTP Generic handler for all of HTTP endpoints
 */
-type AppHandler func(http.ResponseWriter, *http.Request) (error, interface{})
+type AppHandler func(http.ResponseWriter, *http.Request) (interface{}, error)
 
 func (fn AppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err, responseJSON := fn(w, r); err != nil { // Handler returned an error processing the HTTP request
+	if responseJSON, err := fn(w, r); err != nil { // Handler returned an error processing the HTTP request
 		log.Errorf(util.LogTag("[Handler]")+"%s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else { // All fine processing the HTTP request

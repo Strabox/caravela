@@ -7,7 +7,7 @@ package rest
 /*
 Create offer struct/JSON used in REST APIs when a supplier offer resources to be used by others
 */
-type CreateOfferJSON struct {
+type CreateOfferMessage struct {
 	FromSupplierIP   string `json:"FromSupplierIP"`   // IP address of the supplier node responsible for the offer
 	FromSupplierGUID string `json:"FromSupplierGUID"` // GUID of the supplier responsible for the offer
 	ToTraderGUID     string `json:"ToTraderGUID"`     // GUID of the destination trader
@@ -20,7 +20,7 @@ type CreateOfferJSON struct {
 /*
 Refresh offer struct/JSON used in remote REST APIs when a trader refresh an offer
 */
-type RefreshOfferJSON struct {
+type RefreshOfferMessage struct {
 	FromTraderGUID string `json:"FromTraderGUID"` // Trader's GUID that is refreshing the offer
 	OfferID        int64  `json:"OfferID"`        // Offer's ID in the supplier
 }
@@ -28,14 +28,14 @@ type RefreshOfferJSON struct {
 /*
 Response to a refresh offer message used in remote REST APIs when a supplier acknowledges the refresh message
 */
-type RefreshOfferResponseJSON struct {
+type RefreshOfferResponseMessage struct {
 	Refreshed bool `json:"Refreshed"` // True if the offer was refreshed succeeded and false otherwise
 }
 
 /*
 Remove offer struct/JSON used in remote REST APIs when a supplier remove its offer from a trader
 */
-type OfferRemoveJSON struct {
+type OfferRemoveMessage struct {
 	FromSupplierIP   string `json:"FromSupplierIP"`   // IP address of the supplier node responsible for the offer
 	FromSupplierGUID string `json:"FromSupplierGUID"` // GUID of the supplier responsible for the offer
 	ToTraderGUID     string `json:"ToTraderGUID"`     // GUID of the destination trader
@@ -45,14 +45,14 @@ type OfferRemoveJSON struct {
 /*
 Get offers struct/JSON used in the REST APIs
 */
-type GetOffersJSON struct {
+type GetOffersMessage struct {
 	ToTraderGUID string `json:"ToTraderGUID"` // GUID of the destination trader
 }
 
 /*
 Launch container struct/JSON used in the REST APIs
 */
-type LaunchContainerJSON struct {
+type LaunchContainerMessage struct {
 	FromBuyerIP       string   `json:"FromBuyerIP"`
 	OfferID           int64    `json:"OfferID"`
 	ContainerImageKey string   `json:"ContainerImageKey"`
@@ -76,6 +76,6 @@ type OfferJSON struct {
 /*
 List of offers struct/JSON used in the REST APIs
 */
-type OffersListJSON struct {
+type OffersListMessage struct {
 	Offers []OfferJSON `json:"Offers"` // A list of offers that a trader has
 }

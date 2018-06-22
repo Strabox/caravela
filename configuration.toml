@@ -1,10 +1,13 @@
+[ImagesStorage]
+Backend = "DockerHub"
+
 [Caravela]
 ApiPort = 8001
 ApiTimeout = "2s"
 CheckContainersInterval = "30s"
 SupplyingInterval = "45s"
 RefreshesCheckInterval = "30s"
-RefreshingInterval = "15s"
+RefreshingInterval = "30s"
 MaxRefreshesFailed = 3
 MaxRefreshesMissed = 2
 RefreshMissedTimeout = "20s"
@@ -24,12 +27,9 @@ ResourcesOvercommit = 50
     Ram = 512
     Percentage = 50
 
-[ImagesStorage]
-Backend = "DockerHub"
-
 [Overlay]
 OverlayPort = 8000
-ChordTimeout = "5s"
+ChordTimeout = "3s"
 ChordVirtualNodes = 3
 ChordNumSuccessors = 3
 ChordHashSizeBits = 160
