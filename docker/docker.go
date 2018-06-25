@@ -6,35 +6,38 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
+	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/storage"
 	"github.com/strabox/caravela/util"
-	"io/ioutil"
 )
 
 /*
 DefaultClient that interfaces with docker SDK.
 */
 type DefaultClient struct {
-	docker *dockerClient.Client
+	docker        *dockerClient.Client
+	imagesBackend storage.Backend
 }
 
 /*
 Creates a new docker client to interact with the local Docker Engine.
 */
-func NewDockerClient() *DefaultClient {
-	res := &DefaultClient{}
-	res.docker = nil
-	return res
-}
-
-/*
-Initialize a Docker client with a corresponding docker daemon API version.
-*/
-func (client *DefaultClient) Initialize(runningDockerVersion string) {
+func NewDockerClient(config *configuration.Configuration) *DefaultClient {
 	var err error
-	client.docker, err = dockerClient.NewClientWithOpts(dockerClient.WithVersion(runningDockerVersion))
+	res := &DefaultClient{}
+
+	res.docker, err = dockerClient.NewClientWithOpts(dockerClient.WithVersion(config.DockerAPIVersion()))
 	if err != nil {
-		log.Fatalf(util.LogTag("[Docker]")+"Initialize error: %s", err.Error())
+		log.Fatalf(util.LogTag("Docker")+"Initialize error: %s", err)
 	}
+
+	switch imagesBackend := config.ImagesStorageBackend(); imagesBackend {
+	case configuration.ImagesStorageDockerHub:
+		res.imagesBackend = storage.NewDockerHubBackend(res.docker)
+	case configuration.ImagesStorageIPFS:
+		res.imagesBackend = storage.NewIPFSBackend(res.docker)
+	}
+	return res
 }
 
 /*
@@ -44,11 +47,10 @@ func (client *DefaultClient) verifyInitialization() {
 	if client.docker != nil {
 		if _, err := client.docker.Ping(context.Background()); err != nil {
 			// TODO: Shutdown node gracefully in each place where docker calls can fail!!
-			log.Fatalf(util.LogTag("[Docker]") + "Please turn on the Docker Engine")
+			log.Fatalf(util.LogTag("Docker") + "Please turn on the Docker Engine")
 		}
-		return
 	} else {
-		log.Fatalf(util.LogTag("[Docker]") + "Please initialize the Docker client")
+		log.Fatalf(util.LogTag("Docker") + "Please initialize the Docker client")
 	}
 }
 
@@ -61,10 +63,10 @@ func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 	ctx := context.Background()
 	info, err := client.docker.Info(ctx)
 	if err != nil {
-		log.Errorf(util.LogTag("[Docker]")+"Get Info: %s", err)
+		log.Errorf(util.LogTag("Docker")+"Get Info: %s", err)
 	}
 	cpu := info.NCPU
-	ram := info.MemTotal / 1000000 //Return in MB (MegaBytes)
+	ram := info.MemTotal / 1000000 // Return in MB (MegaBytes)
 	return cpu, int(ram)
 }
 
@@ -93,22 +95,17 @@ Launches a container from an image in the local Docker Engine.
 func (client *DefaultClient) RunContainer(imageKey string, args []string, machineCpus string, ram int) (string, error) {
 	client.verifyInitialization()
 
+	dockerImageKey, err := client.imagesBackend.Load(imageKey)
+	if err != nil {
+		log.Errorf(util.LogTag("Docker")+"Loading image error", err)
+		return "", err
+	}
+
 	ctx := context.Background()
 
-	out, err := client.docker.ImagePull(ctx, imageKey, types.ImagePullOptions{})
-	if err != nil { // Error pulling the image from Docker
-		log.Errorf(util.LogTag("[Docker]")+"Pulling: %s", err)
-		return "", err
-	}
-	defer out.Close()
-	if _, err := ioutil.ReadAll(out); err != nil {
-		log.Errorf(util.LogTag("[Docker]")+"Reading: %s", err)
-		return "", err
-	}
-
 	resp, err := client.docker.ContainerCreate(ctx, &container.Config{
-		Image: imageKey, // Image key name
-		Cmd:   args,     // Command arguments to the container
+		Image: dockerImageKey, // Image key name
+		Cmd:   args,           // Command arguments to the container
 		Tty:   true,
 	}, &container.HostConfig{
 		Resources: container.Resources{
@@ -117,12 +114,12 @@ func (client *DefaultClient) RunContainer(imageKey string, args []string, machin
 		},
 	}, nil, "")
 	if err != nil { // Error creating the container from the given
-		log.Errorf(util.LogTag("[Docker]")+"Creating: %s", err)
+		log.Errorf(util.LogTag("Docker")+"Creating container error: %s", err)
 		return "", err
 	}
 
 	if err := client.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		log.Errorf(util.LogTag("[Docker]")+"Starting: %s", err)
+		log.Errorf(util.LogTag("Docker")+"Starting container error: %s", err)
 		return "", err // Error starting the container
 	}
 
@@ -130,12 +127,13 @@ func (client *DefaultClient) RunContainer(imageKey string, args []string, machin
 	select {
 	case err := <-errCh:
 		if err != nil {
-			log.Errorf(util.LogTag("[Docker]")+"Waiting: %s", err)
+			log.Errorf(util.LogTag("Docker")+"Waiting for container to exit error: %s", err)
 			return "", err
 		}
 	case <-statusCh:
 		// Container is finally running!!!
-		log.Debug(util.LogTag("[Docker]") + "Container running")
+		log.Infof(util.LogTag("Docker")+"Container running, Image: %s, Args: %v, Resources: <%d,%d>",
+			imageKey, args, machineCpus, ram)
 	}
 	return resp.ID, nil
 }

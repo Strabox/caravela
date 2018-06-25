@@ -24,19 +24,19 @@ type Overlay interface {
 	/*
 		Get a list of remote nodes using a given key.
 	*/
-	Lookup(key []byte) []*Node
+	Lookup(key []byte) ([]*Node, error)
 
 	/*
 		Get a list of the neighbors nodes of the given node.
 	*/
-	Neighbors(nodeID []byte) []*Node
+	Neighbors(nodeID []byte) ([]*Node, error)
 
 	/*
 		Unique identifier for the physical node where the overlay is running.
 		The overlay can have virtual nodes here we only want return always one ID that is unique
 		in all nodes.
 	*/
-	NodeID() []byte
+	NodeID() ([]byte, error)
 
 	/*
 		Leave the overlay.

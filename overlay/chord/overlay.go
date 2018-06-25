@@ -146,9 +146,7 @@ func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode nodeA
 	}
 
 	var joinHostname = overlayNodeIP + ":" + strconv.Itoa(overlayNodePort)
-	log.Debugf("''''''''''''''''''''''''''''''''''''''''''''''' %s", joinHostname)
 	ring, err := chord.Join(config, transport, joinHostname)
-	log.Debug("###############################################")
 	if err != nil {
 		return fmt.Errorf("join chord error: %s", err)
 	}
@@ -156,28 +154,33 @@ func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode nodeA
 	return nil
 }
 
-func (co *Overlay) Lookup(key []byte) []*overlay.Node {
+func (co *Overlay) Lookup(key []byte) ([]*overlay.Node, error) {
 	virtualNodes, err := co.chordRing.Lookup(co.numSuccessors, key)
 	if err != nil {
-		log.Errorf(util.LogTag("[Chord]")+"Lookup error: %s", err)
+		log.Errorf(util.LogTag("Chord")+"Lookup error: %s", err)
+		return make([]*overlay.Node, 0), fmt.Errorf("lookup error")
 	}
+
 	res := make([]*overlay.Node, len(virtualNodes))
 	for index := range virtualNodes {
 		res[index] = overlay.NewNode(strings.Split(virtualNodes[index].Host, ":")[0], virtualNodes[index].Id)
 	}
-	return res
+	return res, nil
 }
 
-func (co *Overlay) Neighbors(nodeID []byte) []*overlay.Node {
+func (co *Overlay) Neighbors(nodeID []byte) ([]*overlay.Node, error) {
 	id := big.NewInt(0)
 	id.SetBytes(nodeID)
-	//log.Debugf(util.LogTag("[Chord]")+"Node %s", id.String())
+
 	res := make([]*overlay.Node, 0)
-	nodes := co.Lookup(nodeID)
+	nodes, err := co.Lookup(nodeID)
+	if err != nil {
+		return make([]*overlay.Node, 0), err
+	}
+
 	if len(nodes) > 1 {
 		hmm := big.NewInt(0)
 		hmm.SetBytes(nodes[1].GUID())
-		//log.Debugf(util.LogTag("[Chord]")+"Successor %s", hmm.String())
 		res = append(res, nodes[1]) // The successor of the given node
 	}
 	predecessorNode, exist := co.predecessors.Load(id.String())
@@ -186,22 +189,19 @@ func (co *Overlay) Neighbors(nodeID []byte) []*overlay.Node {
 		if ok {
 			hmm := big.NewInt(0)
 			hmm.SetBytes(node.GUID())
-			//log.Debugf(util.LogTag("[Chord]")+"Predecessor %s", hmm.String())
 			res = append(res, node) // The predecessor of the given node
 		}
 	}
-	return res
+	return res, nil
 }
 
-func (co *Overlay) NodeID() []byte {
+func (co *Overlay) NodeID() ([]byte, error) {
 	if co.localID != nil && co.virtualNodesRunning == co.numVirtualNodes {
 		temp := big.NewInt(0)
 		temp.SetBytes(co.localID)
-		//log.Debugf(util.LogTag("[Chord]")+"Node ID %s", temp.String())
-		return co.localID
+		return co.localID, nil
 	} else {
-		//log.Debugf(util.LogTag("[Chord]") + "Node ID not fixed yes!!")
-		return nil
+		return nil, fmt.Errorf("node ID not known yet")
 	}
 }
 

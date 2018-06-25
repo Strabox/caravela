@@ -4,6 +4,8 @@ package api
 All the APIs exposed by the CARAVELA node to the outside (other nodes and user)
 */
 type Node interface {
+	Start(join bool, joinIP string) error
+	Stop()
 	Discovery() Discovery
 	Scheduler() Scheduler
 }
@@ -24,7 +26,7 @@ Interface of the scheduler module for other CARAVELA's nodes (exposed via the RE
 */
 type Scheduler interface {
 	// User<->Node
-	Deploy(containerImageKey string, containerArgs []string, cpus int, ram int) error
+	Run(containerImageKey string, containerArgs []string, cpus int, ram int) error
 	// Node<->Node
 	Launch(fromBuyerIP string, offerId int64, containerImageKey string, containerArgs []string,
 		cpus int, ram int) error

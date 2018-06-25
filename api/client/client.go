@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 /*
@@ -28,6 +29,15 @@ func NewCaravelaIP(caravelaHostIP string) *Caravela {
 	res.config = DefaultConfiguration(caravelaHostIP)
 	res.httpClient = &http.Client{
 		Timeout: res.config.HttpRequestTimeout(),
+	}
+	return res
+}
+
+func NewCaravelaTimeoutIP(caravelaHostIP string, timeout time.Duration) *Caravela {
+	res := &Caravela{}
+	res.config = DefaultConfiguration(caravelaHostIP)
+	res.httpClient = &http.Client{
+		Timeout: timeout,
 	}
 	return res
 }

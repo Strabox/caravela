@@ -1,9 +1,11 @@
 package supplier
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
+	nodeCommon "github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
@@ -17,6 +19,8 @@ import (
 Supplier handles all the logic of managing the node own resources, advertising them into the system.
 */
 type Supplier struct {
+	nodeCommon.SystemSubComponent // Base component
+
 	config  *configuration.Configuration // Configurations of the system
 	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
 	client  remote.Caravela              // Client to collaborate with other CARAVELA's nodes
@@ -28,6 +32,7 @@ type Supplier struct {
 	activeOffers       map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
 	offersMutex        *sync.Mutex                       // Mutex to handle activeOffers management
 
+	quitChan             chan bool        // Channel to alert that the node is stopping
 	supplyingTicker      <-chan time.Time // Timer to supply available resources
 	refreshesCheckTicker <-chan time.Time // Timer to check if the activeOffers are in alive traders
 }
@@ -43,6 +48,7 @@ func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, c
 	resSupplier.maxResources = maxResources.Copy()
 	resSupplier.availableResources = maxResources.Copy()
 
+	resSupplier.quitChan = make(chan bool)
 	resSupplier.supplyingTicker = time.NewTicker(config.SupplyingInterval()).C
 	resSupplier.refreshesCheckTicker = time.NewTicker(config.RefreshesCheckInterval()).C
 
@@ -53,24 +59,17 @@ func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, c
 }
 
 /*
-Starts the supplier operation.
-*/
-func (sup *Supplier) Start() {
-	log.Debug(util.LogTag("[Supplier]") + "STARTED")
-	go sup.startSupplying()
-}
-
-/*
 Controls the time dependant actions like supplying the resources.
 */
 func (sup *Supplier) startSupplying() {
 	for {
 		select {
-		// Offer the available resources into a random trader (responsible for them).
-		case <-sup.supplyingTicker:
+		case <-sup.supplyingTicker: // Offer the available resources into a random trader (responsible for them).
 			go func() {
 				sup.offersMutex.Lock()
 				defer sup.offersMutex.Unlock()
+
+				var overlayNodes []*overlay.Node
 
 				if !sup.availableResources.IsZero() {
 					/*
@@ -88,24 +87,26 @@ func (sup *Supplier) startSupplying() {
 
 					fittestResources := sup.resourcesMap.GetFittestResources(*sup.availableResources)
 					destinationGUID, _ := sup.resourcesMap.RandomGUID(*sup.availableResources)
-					remoteNodes := sup.getLowerCapacityNodes(sup.overlay.Lookup(destinationGUID.Bytes()), *fittestResources)
+					overlayNodes, _ = sup.overlay.Lookup(destinationGUID.Bytes())
+					remoteNodes := sup.getLowerCapacityNodes(overlayNodes, *fittestResources)
 
 					// .. try search nodes in the beginning of the target resource range region
 					if len(remoteNodes) == 0 {
 						targetResourcesFirstGuid := sup.resourcesMap.FirstGUIDofResources(*fittestResources)
-						remoteNodes = sup.getLowerCapacityNodes(sup.overlay.Lookup(targetResourcesFirstGuid.Bytes()),
-							*fittestResources)
+						overlayNodes, _ = sup.overlay.Lookup(targetResourcesFirstGuid.Bytes())
+						remoteNodes = sup.getLowerCapacityNodes(overlayNodes, *fittestResources)
 					}
 
 					// ... try search for random nodes that handle less powerful resource combinations
 					for len(remoteNodes) == 0 {
 						destinationGUID, _ = sup.resourcesMap.PreviousRandomGUID(*destinationGUID, *fittestResources)
 						if destinationGUID == nil {
-							log.Errorf(util.LogTag("[Supplier)")+"No nodes available to handle resources offer: %s",
+							log.Errorf(util.LogTag("Supplier")+"No nodes available to handle resources offer: %s",
 								fittestResources.String())
-							return // Wait fot the next tick to supply resources
+							return // Wait fot the next tick to try supply resources
 						}
-						remoteNodes = sup.getLowerCapacityNodes(sup.overlay.Lookup(destinationGUID.Bytes()), *fittestResources)
+						overlayNodes, _ = sup.overlay.Lookup(destinationGUID.Bytes())
+						remoteNodes = sup.getLowerCapacityNodes(overlayNodes, *fittestResources)
 					}
 
 					// Chose the first node returned by the overlay API
@@ -125,21 +126,27 @@ func (sup *Supplier) startSupplying() {
 				}
 			}()
 		case <-sup.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
-			sup.offersMutex.Lock()
+			go func() {
+				sup.offersMutex.Lock()
+				defer sup.offersMutex.Unlock()
 
-			for offerKey, offer := range sup.activeOffers {
-				offer.VerifyRefreshes(sup.config.RefreshMissedTimeout())
+				for offerKey, offer := range sup.activeOffers {
+					offer.VerifyRefreshes(sup.config.RefreshMissedTimeout())
 
-				if offer.RefreshesMissed() >= sup.config.MaxRefreshesMissed() {
-					log.Debugf(util.LogTag("[Supplier]")+"Offer DOWN, OfferID: %d, ResponsibleTraderIP: %s",
-						offer.ID(), offer.ResponsibleTraderIP())
+					if offer.RefreshesMissed() >= sup.config.MaxRefreshesMissed() {
+						log.Debugf(util.LogTag("Supplier")+"Offer DOWN, OfferID: %d, ResponsibleTraderIP: %s",
+							offer.ID(), offer.ResponsibleTraderIP())
 
-					sup.availableResources.Add(*offer.Resources())
-					delete(sup.activeOffers, offerKey)
+						sup.availableResources.Add(*offer.Resources())
+						delete(sup.activeOffers, offerKey)
+					}
 				}
+			}()
+		case res := <-sup.quitChan: // Stopping the supplier
+			if res {
+				log.Infof(util.LogTag("Supplier") + "STOPPED")
+				return
 			}
-
-			sup.offersMutex.Unlock()
 		}
 	}
 }
@@ -176,6 +183,10 @@ func (sup *Supplier) getHigherCapacityNodes(remoteNodes []*overlay.Node, targetR
 Find a list activeOffers that best suit the target resources given.
 */
 func (sup *Supplier) FindOffers(targetResources resources.Resources) []remote.Offer {
+	if !sup.isWorking() {
+		panic(fmt.Errorf("can't find offers, supplier not working"))
+	}
+
 	var destinationGUID *guid.GUID = nil
 	numOfTradersContacted := 0
 	findPhase := 0
@@ -197,7 +208,8 @@ func (sup *Supplier) FindOffers(targetResources resources.Resources) []remote.Of
 			}
 		}
 
-		remoteNodes := sup.getHigherCapacityNodes(sup.overlay.Lookup(destinationGUID.Bytes()), targetResources)
+		overlayNodes, _ := sup.overlay.Lookup(destinationGUID.Bytes())
+		remoteNodes := sup.getHigherCapacityNodes(overlayNodes, targetResources)
 		for _, node := range remoteNodes {
 			err, offers := sup.client.GetOffers(node.IP(), guid.NewGUIDBytes(node.GUID()).String())
 			if err == nil && (len(offers) != 0) {
@@ -214,22 +226,26 @@ func (sup *Supplier) FindOffers(targetResources resources.Resources) []remote.Of
 Tries refresh an offer. Called when a refresh message was received.
 */
 func (sup *Supplier) RefreshOffer(offerID int64, fromTraderGUID string) bool {
+	if !sup.isWorking() {
+		panic(fmt.Errorf("can't refresh offer, supplier not working"))
+	}
+
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
 	offer, exist := sup.activeOffers[common.OfferID(offerID)]
 
-	if exist {
-		if offer.IsResponsibleTrader(*guid.NewGUIDString(fromTraderGUID)) {
-			offer.Refresh()
-			log.Debugf(util.LogTag("[Supplier]")+"OfferID: %d refresh SUCCESS", offerID)
-			return true
-		} else {
-			log.Debugf(util.LogTag("[Supplier]")+"OfferID: %d refresh FAILED (wrong trader)", offerID)
-			return false
-		}
+	if !exist {
+		log.Debugf(util.LogTag("Supplier")+"OfferID: %d refresh FAILED (Offer does not exist)", offerID)
+		return false
+	}
+
+	if offer.IsResponsibleTrader(*guid.NewGUIDString(fromTraderGUID)) {
+		offer.Refresh()
+		log.Debugf(util.LogTag("Supplier")+"OfferID: %d refresh SUCCESS", offerID)
+		return true
 	} else {
-		log.Debugf(util.LogTag("[Supplier]")+"OfferID: %d refresh FAILED (Offer does not exist)", offerID)
+		log.Debugf(util.LogTag("Supplier")+"OfferID: %d refresh FAILED (wrong trader)", offerID)
 		return false
 	}
 }
@@ -239,6 +255,10 @@ Tries to obtain a subset of the resources represented by the given offer in orde
 It updates the respective trader that manages the offer.
 */
 func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
+	if !sup.isWorking() {
+		panic(fmt.Errorf("can't obtain resources, supplier not working"))
+	}
+
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
@@ -265,8 +285,28 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 Release resources of an used offer into the supplier again in order to offer them again into the system.
 */
 func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
+	if !sup.isWorking() {
+		panic(fmt.Errorf("can't return resources, supplier not working"))
+	}
+
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
 	sup.availableResources.Add(releasedResources)
+}
+
+func (sup *Supplier) Start() {
+	sup.Started(func() {
+		go sup.startSupplying()
+	})
+}
+
+func (sup *Supplier) Stop() {
+	sup.Started(func() {
+		sup.quitChan <- true
+	})
+}
+
+func (sup *Supplier) isWorking() bool {
+	return sup.Working()
 }

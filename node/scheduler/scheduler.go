@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/containers"
 	apiInternal "github.com/strabox/caravela/node/discovery/api"
@@ -17,6 +18,8 @@ running in the system. It takes a request for running a container and decides wh
 in conjunction with the Discovery module.
 */
 type Scheduler struct {
+	common.SystemSubComponent // Base component
+
 	config *configuration.Configuration // System's configuration
 	client remote.Caravela              // Caravela's remote client
 
@@ -39,8 +42,11 @@ func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.
 /*
 Executed when the local user wants to deploy a container in the system.
 */
-func (scheduler *Scheduler) Deploy(containerImageKey string, containerArgs []string, cpus int, ram int) error {
-	log.Debugf(util.LogTag("[Deploy]")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+func (scheduler *Scheduler) Run(containerImageKey string, containerArgs []string, cpus int, ram int) error {
+	if !scheduler.isWorking() {
+		panic(fmt.Errorf("can't run container, scheduler not working"))
+	}
+	log.Debugf(util.LogTag("Deploy")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
 
 	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
 
@@ -48,10 +54,10 @@ func (scheduler *Scheduler) Deploy(containerImageKey string, containerArgs []str
 		err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
 			containerImageKey, containerArgs, cpus, ram)
 		if err == nil {
-			log.Debugf(util.LogTag("[Deploy]")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+			log.Debugf(util.LogTag("Deploy")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
 			return nil
 		} else {
-			log.Debugf(util.LogTag("[Deploy]")+"Deploy error: %v", err)
+			log.Debugf(util.LogTag("Deploy")+"Deploy error: %v", err)
 		}
 	}
 	// TODO: Try more offers because they can exist in the system.
@@ -63,11 +69,27 @@ Executed when a system's node wants to launch a container in this node.
 */
 func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerImageKey string,
 	containerArgs []string, cpus int, ram int) error {
-	log.Debugf(util.LogTag("[Launch]")+"Launching... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+
+	if !scheduler.isWorking() {
+		panic(fmt.Errorf("can't launch container, scheduler not working"))
+	}
+	log.Debugf(util.LogTag("Launch")+"Launching %s , CPUs: %d, RAM: %d ...", containerImageKey, cpus, ram)
 
 	resourcesNecessary := resources.NewResources(cpus, ram)
 	err := scheduler.containersManager.StartContainer(fromBuyerIP, containerImageKey,
 		containerArgs, offerID, *resourcesNecessary)
 
 	return err
+}
+
+func (scheduler *Scheduler) Start() {
+	scheduler.Started(func() {})
+}
+
+func (scheduler *Scheduler) Stop() {
+	scheduler.Stopped(func() {})
+}
+
+func (scheduler *Scheduler) isWorking() bool {
+	return scheduler.Working()
 }

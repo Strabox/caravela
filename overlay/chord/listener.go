@@ -27,7 +27,7 @@ func (cl *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *c
 		idToPrint.SetBytes(local.Id)
 		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
 		cl.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
-		log.Debugf(util.LogTag("[Chord]")+"New LVNode: ID: %s IP: %s", idToPrint.String(), local.Host)
+		log.Debugf(util.LogTag("Chord")+"New LVNode: ID: %s IP: %s", idToPrint.String(), local.Host)
 	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
 		// New predecessor for a existing node
 		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
@@ -40,7 +40,7 @@ Fired when the local node is leaving the chord overlay.
 */
 func (cl *Listener) Leaving(local, predecessor, successor *chord.Vnode) {
 	// DO NOTHING FOR NOW
-	log.Debug(util.LogTag("[Chord]") + "I am leaving!!")
+	log.Debug(util.LogTag("Chord") + "I am leaving!!")
 }
 
 /*
@@ -48,7 +48,7 @@ Fired when the current predecessor of the local node is leaving the chord overla
 */
 func (cl *Listener) PredecessorLeaving(local, remote *chord.Vnode) {
 	// DO NOTHING FOR NOW
-	log.Debug(util.LogTag("[Chord]") + "Current predecessor is leaving!!")
+	log.Debug(util.LogTag("Chord") + "Current predecessor is leaving!!")
 }
 
 /*
@@ -56,7 +56,7 @@ Fired when a current successor of the local node is leaving the chord overlay.
 */
 func (cl *Listener) SuccessorLeaving(local, remote *chord.Vnode) {
 	// DO NOTHING FOR NOW
-	log.Debug(util.LogTag("[Chord]") + "A successor is leaving!!")
+	log.Debug(util.LogTag("Chord") + "A successor is leaving!!")
 }
 
 /*
@@ -65,5 +65,5 @@ Do the shutdown message propagates to all the nodes ??
 */
 func (cl *Listener) Shutdown() {
 	// DO NOTHING FOR NOW
-	log.Debug(util.LogTag("[Chord]") + "Shutting Down!!")
+	log.Debug(util.LogTag("Chord") + "Shutting Down!!")
 }

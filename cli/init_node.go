@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node"
@@ -34,15 +33,9 @@ func initNode(hostIP string, join bool, joinIP string) error {
 	// Print/log the systemConfigurations values
 	systemConfigurations.Print()
 
-	// Create a CARAVELA node structure and start it functions
+	// Create a CARAVELA Node and start it functions initializing all the necessary components
 	thisNode := node.NewNode(systemConfigurations)
 	err = thisNode.Start(join, joinIP)
-	if err != nil {
-		return err
-	}
-
-	// RunContainer CARAVELA REST API Server
-	err = api.Initialize(systemConfigurations, thisNode)
 	if err != nil {
 		return err
 	}

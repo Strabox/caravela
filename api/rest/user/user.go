@@ -30,7 +30,7 @@ func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		runContainer.ContainerImageKey, runContainer.Arguments, runContainer.PortMappings, runContainer.CPUs,
 		runContainer.RAM)
 
-	err = thisNode.Scheduler().Deploy(runContainer.ContainerImageKey, runContainer.Arguments,
+	err = thisNode.Scheduler().Run(runContainer.ContainerImageKey, runContainer.Arguments,
 		runContainer.CPUs, runContainer.RAM)
 	return nil, err
 }
@@ -59,6 +59,6 @@ func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error)
 func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	log.Infof("<-- EXIT System")
 
-	// TODO: Forward the call to node
+	thisNode.Stop()
 	return nil, nil
 }
