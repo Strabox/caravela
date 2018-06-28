@@ -53,12 +53,13 @@ type GetOffersMessage struct {
 Launch container struct/JSON used in the REST APIs
 */
 type LaunchContainerMessage struct {
-	FromBuyerIP       string   `json:"FromBuyerIP"`
-	OfferID           int64    `json:"OfferID"`
-	ContainerImageKey string   `json:"ContainerImageKey"`
-	ContainerArgs     []string `json:"ContainerArgs"`
-	CPUs              int      `json:"CPUs"`
-	RAM               int      `json:"RAM"`
+	FromBuyerIP       string        `json:"FromBuyerIP"`
+	OfferID           int64         `json:"OfferID"`
+	ContainerImageKey string        `json:"ContainerImageKey"`
+	PortMappings      []PortMapping `json:"PortMappings"`
+	ContainerArgs     []string      `json:"ContainerArgs"`
+	CPUs              int           `json:"CPUs"`
+	RAM               int           `json:"RAM"`
 }
 
 /* =================================================================================

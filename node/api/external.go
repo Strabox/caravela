@@ -1,5 +1,7 @@
 package api
 
+import "github.com/strabox/caravela/api/rest"
+
 /*
 All the APIs exposed by the CARAVELA node to the outside (other nodes and user)
 */
@@ -26,10 +28,10 @@ Interface of the scheduler module for other CARAVELA's nodes (exposed via the RE
 */
 type Scheduler interface {
 	// User<->Node
-	Run(containerImageKey string, containerArgs []string, cpus int, ram int) error
+	Run(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error
 	// Node<->Node
-	Launch(fromBuyerIP string, offerId int64, containerImageKey string, containerArgs []string,
-		cpus int, ram int) error
+	Launch(fromBuyerIP string, offerId int64, containerImageKey string, portMappings []rest.PortMapping,
+		containerArgs []string, cpus int, ram int) error
 }
 
 /*

@@ -54,8 +54,13 @@ func (client *Caravela) RunContainer(containerImageKey string, portMappings []st
 		portMappingsList = append(portMappingsList, resultPortMap)
 	}
 
-	runContainerMessage := rest.RunContainerMessage{ContainerImageKey: containerImageKey, Arguments: arguments,
-		PortMappings: portMappingsList, CPUs: cpus, RAM: ram}
+	runContainerMessage := rest.RunContainerMessage{
+		ContainerImageKey: containerImageKey,
+		Arguments:         arguments,
+		PortMappings:      portMappingsList,
+		CPUs:              cpus,
+		RAM:               ram,
+	}
 
 	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
 		rest.UserContainerBaseEndpoint)

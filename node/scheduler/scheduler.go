@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/remote"
+	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
@@ -42,7 +43,9 @@ func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.
 /*
 Executed when the local user wants to deploy a container in the system.
 */
-func (scheduler *Scheduler) Run(containerImageKey string, containerArgs []string, cpus int, ram int) error {
+func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
+	cpus int, ram int) error {
+
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
@@ -52,7 +55,7 @@ func (scheduler *Scheduler) Run(containerImageKey string, containerArgs []string
 
 	for _, offer := range offers {
 		err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
-			containerImageKey, containerArgs, cpus, ram)
+			containerImageKey, portMappings, containerArgs, cpus, ram)
 		if err == nil {
 			log.Debugf(util.LogTag("Deploy")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
 			return nil
@@ -68,7 +71,7 @@ func (scheduler *Scheduler) Run(containerImageKey string, containerArgs []string
 Executed when a system's node wants to launch a container in this node.
 */
 func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerImageKey string,
-	containerArgs []string, cpus int, ram int) error {
+	portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error {
 
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
@@ -76,7 +79,7 @@ func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerI
 	log.Debugf(util.LogTag("Launch")+"Launching %s , CPUs: %d, RAM: %d ...", containerImageKey, cpus, ram)
 
 	resourcesNecessary := resources.NewResources(cpus, ram)
-	err := scheduler.containersManager.StartContainer(fromBuyerIP, containerImageKey,
+	err := scheduler.containersManager.StartContainer(fromBuyerIP, containerImageKey, portMappings,
 		containerArgs, offerID, *resourcesNecessary)
 
 	return err

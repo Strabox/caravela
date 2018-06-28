@@ -108,13 +108,19 @@ func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string) (err
 }
 
 func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64,
-	containerImageKey string, containerArgs []string, cpus int, ram int) error {
+	containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error {
 
-	log.Infof("--> LAUNCH FromBuyerIP: %s, OfferID: %d, Image: %s, Args: %v, Resources: <%d,%d>, ToSuppIP: %s",
-		fromBuyerIP, offerID, containerImageKey, containerArgs, cpus, ram, toSupplierIP)
+	log.Infof("--> LAUNCH FromBuyerIP: %s, OfferID: %d, Image: %s, PortMappings: %v, Args: %v, Resources: <%d,%d>, ToSuppIP: %s",
+		fromBuyerIP, offerID, containerImageKey, portMappings, containerArgs, cpus, ram, toSupplierIP)
 
-	launchContainerJSON := rest.LaunchContainerMessage{FromBuyerIP: fromBuyerIP, OfferID: offerID,
-		ContainerImageKey: containerImageKey, ContainerArgs: containerArgs, CPUs: cpus, RAM: ram}
+	launchContainerJSON := rest.LaunchContainerMessage{
+		FromBuyerIP:       fromBuyerIP,
+		OfferID:           offerID,
+		ContainerImageKey: containerImageKey,
+		PortMappings:      portMappings,
+		ContainerArgs:     containerArgs,
+		CPUs:              cpus,
+		RAM:               ram}
 
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.SchedulerContainerBaseEndpoint)
 

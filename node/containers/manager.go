@@ -3,6 +3,7 @@ package containers
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
 	"github.com/strabox/caravela/node/common"
@@ -82,22 +83,20 @@ func (man *Manager) checkDeployedContainers() {
 /*
 Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
 */
-func (man *Manager) StartContainer(buyerIP string, imageKey string, args []string, offerID int64,
-	resourcesNecessary resources.Resources) error {
+func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings []rest.PortMapping,
+	args []string, offerID int64, resourcesNecessary resources.Resources) error {
 
 	if !man.isWorking() {
 		panic(fmt.Errorf("can't start container, container manager not working"))
 	}
+
 	man.containersMutex.Lock()
 	defer man.containersMutex.Unlock()
 
-	if !man.isWorking() {
-		panic(fmt.Errorf("can't start container, containers manager not working"))
-	}
-
 	obtained := man.supplier.ObtainResources(offerID, resourcesNecessary)
 	if obtained {
-		containerID, err := man.dockerClient.RunContainer(imageKey, args, "0", resourcesNecessary.RAM())
+		containerID, err := man.dockerClient.RunContainer(imageKey, portMappings, args, "0",
+			resourcesNecessary.RAM())
 		if err == nil {
 			log.Debugf(util.LogTag("ContManager")+"Container %s RUNNING, Image: %s , Args: %v, Resources: <%d,%d>",
 				containerID, imageKey, args, resourcesNecessary.CPUs(), resourcesNecessary.RAM())

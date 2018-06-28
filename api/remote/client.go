@@ -1,6 +1,9 @@
 package remote
 
-import "github.com/strabox/caravela/configuration"
+import (
+	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/configuration"
+)
 
 /*
 Client for remote CARAVELA's nodes in order to trade/coordinate messages with each other.
@@ -28,7 +31,7 @@ type Caravela interface {
 
 	/* Sends a launch container message to a supplier in order to deploy the container */
 	LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64, containerImageKey string,
-		containerArgs []string, cpus int, ram int) error
+		portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error
 
 	// ============================== Configuration ==============================
 

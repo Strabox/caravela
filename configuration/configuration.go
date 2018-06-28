@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/util"
 	"net"
 	"strings"
 	"time"
@@ -162,19 +163,11 @@ Briefly validate the configuration to avoid/short-circuit many runtime errors du
 typos or complete non sense configurations.
 */
 func (c *Configuration) validateConfigurations() error {
-	isValidPort := func(port int) bool {
-		if port < 0 || port > 65553 {
-			return false
-		} else {
-			return true
-		}
-	}
-
 	if net.ParseIP(c.HostIP()) == nil {
 		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
 	}
 
-	if !isValidPort(c.APIPort()) {
+	if !util.IsValidPort(c.APIPort()) {
 		return fmt.Errorf("invalid api port: %d", c.APIPort())
 	}
 	if c.MaxRefreshesFailed() < 0 {
@@ -226,7 +219,7 @@ func (c *Configuration) validateConfigurations() error {
 		return fmt.Errorf("invalid storage backend: %s", configuredBackend)
 	}
 
-	if !isValidPort(c.OverlayPort()) {
+	if !util.IsValidPort(c.OverlayPort()) {
 		return fmt.Errorf("invalid overlay port: %d", c.OverlayPort())
 	}
 	if c.ChordVirtualNodes() <= 0 {

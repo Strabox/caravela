@@ -20,18 +20,18 @@ func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
 
 func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var runContainer rest.RunContainerMessage
+	var runContainerMsg rest.RunContainerMessage
 
-	err = rest.ReceiveJSONFromHttp(w, r, &runContainer)
+	err = rest.ReceiveJSONFromHttp(w, r, &runContainerMsg)
 	if err != nil {
 		return nil, err
 	}
 	log.Infof("<-- RUN Image: %s, Args: %v, PortMappings: %v, CPUs: %d, RAM: %d",
-		runContainer.ContainerImageKey, runContainer.Arguments, runContainer.PortMappings, runContainer.CPUs,
-		runContainer.RAM)
+		runContainerMsg.ContainerImageKey, runContainerMsg.Arguments, runContainerMsg.PortMappings,
+		runContainerMsg.CPUs, runContainerMsg.RAM)
 
-	err = thisNode.Scheduler().Run(runContainer.ContainerImageKey, runContainer.Arguments,
-		runContainer.CPUs, runContainer.RAM)
+	err = thisNode.Scheduler().Run(runContainerMsg.ContainerImageKey, runContainerMsg.PortMappings,
+		runContainerMsg.Arguments, runContainerMsg.CPUs, runContainerMsg.RAM)
 	return nil, err
 }
 

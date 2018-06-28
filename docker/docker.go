@@ -2,13 +2,17 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
+	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/storage"
 	"github.com/strabox/caravela/util"
+	"strconv"
 )
 
 /*
@@ -92,7 +96,9 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (Container
 /*
 Launches a container from an image in the local Docker Engine.
 */
-func (client *DefaultClient) RunContainer(imageKey string, args []string, machineCpus string, ram int) (string, error) {
+func (client *DefaultClient) RunContainer(imageKey string, portMappings []rest.PortMapping,
+	args []string, machineCpus string, ram int) (string, error) {
+
 	client.verifyInitialization()
 
 	dockerImageKey, err := client.imagesBackend.Load(imageKey)
@@ -103,17 +109,33 @@ func (client *DefaultClient) RunContainer(imageKey string, args []string, machin
 
 	ctx := context.Background()
 
+	// Port mappings creation
+	containerPortSet := nat.PortSet{}
+	hostPortMap := nat.PortMap{}
+	for _, portMap := range portMappings {
+		containerPort := strconv.Itoa(portMap.ContainerPort)
+		hostPort := strconv.Itoa(portMap.HostPort)
+		port, _ := nat.NewPort(fmt.Sprintf("%d/tcp", portMap), containerPort)
+		hostPortMap[port] = []nat.PortBinding{{
+			HostIP:   "0.0.0.0",
+			HostPort: hostPort,
+		}}
+		containerPortSet[port] = struct{}{}
+	}
+
 	resp, err := client.docker.ContainerCreate(ctx, &container.Config{
-		Image: dockerImageKey, // Image key name
-		Cmd:   args,           // Command arguments to the container
-		Tty:   true,
+		Image:        dockerImageKey, // Image key name
+		Cmd:          args,           // Command arguments to the container
+		Tty:          true,
+		ExposedPorts: containerPortSet, // Container's exposed ports
 	}, &container.HostConfig{
 		Resources: container.Resources{
 			Memory:     int64(ram) * 1000000, // Maximum memory available to container
 			CpusetCpus: machineCpus,          // Number of CPUs available to the container
 		},
+		PortBindings: hostPortMap, // Port mappings between container' port and host ports
 	}, nil, "")
-	if err != nil { // Error creating the container from the given
+	if err != nil { // Error creating the container
 		log.Errorf(util.LogTag("Docker")+"Creating container error: %s", err)
 		return "", err
 	}
