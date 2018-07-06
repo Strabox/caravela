@@ -54,9 +54,10 @@
     "api/types/time",
     "api/types/versions",
     "api/types/volume",
-    "client"
+    "client",
+    "errdefs"
   ]
-  revision = "f238bfda902d8193dd2d33bb334cd2419ffa5578"
+  revision = "b711437bbd8596312c962d4189e9ad4d2108c2dc"
 
 [[projects]]
   name = "github.com/docker/go-connections"
@@ -122,8 +123,8 @@
 [[projects]]
   name = "github.com/strabox/go-chord"
   packages = ["."]
-  revision = "2fa66deca1a27f6e24ddfaa86b3cf3a783c94ff5"
-  version = "v1.0.0"
+  revision = "e38adb6cc4ddbf5d819b066ee8ceda0302e4fda1"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -165,6 +166,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6b86389d86e3080b04cb42d3f968eaae6dac2552d531f909f1f45880189f09f2"
+  inputs-digest = "2569d1b6f1f5388196d0c38e367a97ba9d8ab3b57ecbbc6f6781aa0ed49bd3bb"
   solver-name = "gps-cdcl"
   solver-version = 1

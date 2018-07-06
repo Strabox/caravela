@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func runContainers(c *cli.Context) {
@@ -19,7 +20,6 @@ func runContainers(c *cli.Context) {
 
 	// Validate port mappings provided
 	var portMappings = make([]rest.PortMapping, 0)
-	fmt.Printf("Port Mappings: %v\n", c.StringSlice("p"))
 	for _, portMap := range c.StringSlice("p") {
 		var err error
 		resultPortMap := rest.PortMapping{}
@@ -58,13 +58,12 @@ func runContainers(c *cli.Context) {
 	if c.NArg() > 1 {
 		containerArgs = make([]string, c.NArg()-1)
 		for i := 1; i < c.NArg(); i++ {
-			fmt.Printf("Aarg %d: %v\n", i, c.Args().Get(i))
 			containerArgs[i-1] = c.Args().Get(i)
 		}
 	}
 
 	// Create a user client of the CARAVELA system
-	caravelaClient := client.NewCaravelaIP(c.String("ip"))
+	caravelaClient := client.NewCaravelaTimeoutIP(c.String("ip"), 20*time.Second)
 
 	err := caravelaClient.RunContainer(c.Args().Get(0), c.StringSlice("p"), containerArgs,
 		int(c.Uint("cpus")), int(c.Uint("ram")))

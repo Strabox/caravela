@@ -91,7 +91,7 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 		(&traderGUID).String(), newTrader.HandledResources().String())
 }
 
-func (disc *Discovery) FindOffers(resources resources.Resources) []remote.Offer {
+func (disc *Discovery) FindOffers(resources resources.Resources) []api.Offer {
 	return disc.supplier.FindOffers(resources)
 }
 
@@ -127,11 +127,20 @@ func (disc *Discovery) RemoveOffer(fromSupplierIP string, fromSupplierGUID strin
 	}
 }
 
-func (disc *Discovery) GetOffers(toTraderGUID string) []api.Offer {
+func (disc *Discovery) GetOffers(toTraderGUID string, relay bool, fromNodeGUID string) []api.Offer {
 	t, exist := disc.virtualTraders[toTraderGUID]
 	if exist {
-		return t.GetOffers()
+		return t.GetOffers(relay, fromNodeGUID)
 	} else {
 		return nil
+	}
+}
+
+func (disc *Discovery) AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID string, traderOfferingIP string,
+	traderOfferingGUID string) {
+
+	t, exist := disc.virtualTraders[toTraderGUID]
+	if exist {
+		t.AdvertiseNeighborOffer(fromTraderGUID, traderOfferingIP, traderOfferingGUID)
 	}
 }

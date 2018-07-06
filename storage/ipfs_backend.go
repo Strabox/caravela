@@ -15,6 +15,6 @@ func NewIPFSBackend(dockerCli *dockerClient.Client) *IPFSBackend {
 }
 
 func (ipfs *IPFSBackend) Load(imageKey string) (string, error) {
-	// TODO: Implement the IPFS backend
+	// To be Implemented by the next brave one :)
 	return "", nil
 }

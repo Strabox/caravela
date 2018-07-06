@@ -29,7 +29,7 @@ const configurationFileName = "configuration.toml"
 CARAVELA system's configurations.
 */
 type Configuration struct {
-	Host          host          `json:"-"` // Do not marshal host configuration due to security concerns!!
+	Host          host          `json:"-"` // Do not encode host configuration due to security concerns!!
 	Caravela      caravela      `json:"Caravela"`
 	ImagesStorage imagesStorage `json:"ImagesStorage"`
 	Overlay       overlay       `json:"Overlay"`
@@ -53,6 +53,7 @@ type caravela struct {
 	MaxRefreshesMissed      int                 `json:"MaxRefreshesMissed"`      // Maximum amount of refreshes a trader failed to send to the supplier
 	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
 	SupplyingInterval       duration            `json:"SupplyingInterval"`       // Interval for supplier to check if it is necessary offer resources
+	SpreadOffersInterval    duration            `json:"SpreadOffersInterval"`    // Interval for the trader to spread offer information into neighbors
 	RefreshesCheckInterval  duration            `json:"RefreshesCheckInterval"`  // Interval to check if the refreshes to its offers are being done
 	RefreshingInterval      duration            `json:"RefreshingInterval"`      // Interval for trader to send refresh messages to suppliers
 	RefreshMissedTimeout    duration            `json:"RefreshMissedTimeout"`    // Timeout for a refresh message
@@ -92,7 +93,7 @@ func Default(hostIP string, dockerAPIVersion string) *Configuration {
 
 	// Caravela parameters
 	config.Caravela.APIPort = caravelaAPIPort
-	config.Caravela.APITimeout = duration{Duration: 2 * time.Second}
+	config.Caravela.APITimeout = duration{Duration: 3 * time.Second}
 	config.Caravela.CheckContainersInterval = duration{Duration: 30 * time.Second}
 	config.Caravela.SupplyingInterval = duration{Duration: 45 * time.Second}
 	config.Caravela.RefreshesCheckInterval = duration{Duration: 30 * time.Second}
@@ -132,7 +133,7 @@ func ReadFromFile(hostIP string, dockerAPIVersion string) (*Configuration, error
 	config := Default(hostIP, dockerAPIVersion)
 	configurationsFullFileName := configurationFilePath + configurationFileName
 
-	if _, err := toml.DecodeFile(configurationsFullFileName, config); err != nil {
+	if _, err := toml.DecodeFile(configurationsFullFileName, config); err != nil && !strings.Contains(err.Error(), "cannot find the file") {
 		return nil, err
 	}
 
@@ -160,7 +161,7 @@ func ObtainExternal(hostIP string, dockerAPIVersion string, config *Configuratio
 
 /*
 Briefly validate the configuration to avoid/short-circuit many runtime errors due to
-typos or complete non sense configurations.
+typos or completely non sense configurations, like negative ports.
 */
 func (c *Configuration) validateConfigurations() error {
 	if net.ParseIP(c.HostIP()) == nil {
@@ -321,6 +322,10 @@ func (c *Configuration) APITimeout() time.Duration {
 
 func (c *Configuration) CheckContainersInterval() time.Duration {
 	return c.Caravela.CheckContainersInterval.Duration
+}
+
+func (c *Configuration) SpreadOffersInterval() time.Duration {
+	return c.Caravela.SpreadOffersInterval.Duration
 }
 
 func (c *Configuration) SupplyingInterval() time.Duration {

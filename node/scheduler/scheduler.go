@@ -31,13 +31,12 @@ type Scheduler struct {
 func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.DiscoveryInternal,
 	containersManager *containers.Manager, client remote.Caravela) *Scheduler {
 
-	res := &Scheduler{}
-	res.config = config
-	res.client = client
-
-	res.discovery = internalDisc
-	res.containersManager = containersManager
-	return res
+	return &Scheduler{
+		config:            config,
+		client:            client,
+		discovery:         internalDisc,
+		containersManager: containersManager,
+	}
 }
 
 /*
@@ -49,21 +48,20 @@ func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.Po
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("Deploy")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+	log.Debugf(util.LogTag("Run")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
 
 	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
 
 	for _, offer := range offers {
 		err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
 			containerImageKey, portMappings, containerArgs, cpus, ram)
-		if err == nil {
-			log.Debugf(util.LogTag("Deploy")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
-			return nil
-		} else {
-			log.Debugf(util.LogTag("Deploy")+"Deploy error: %v", err)
+		if err != nil {
+			log.Debugf(util.LogTag("Run")+"Deploy error: %v", err)
 		}
+
+		log.Debugf(util.LogTag("Run")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+		return nil
 	}
-	// TODO: Try more offers because they can exist in the system.
 	return fmt.Errorf("no offers found to deploy the container")
 }
 
@@ -76,7 +74,7 @@ func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerI
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("Launch")+"Launching %s , CPUs: %d, RAM: %d ...", containerImageKey, cpus, ram)
+	log.Debugf(util.LogTag("Launch")+"Launching %s , Resources: <%d,%d> ...", containerImageKey, cpus, ram)
 
 	resourcesNecessary := resources.NewResources(cpus, ram)
 	err := scheduler.containersManager.StartContainer(fromBuyerIP, containerImageKey, portMappings,
@@ -85,12 +83,18 @@ func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerI
 	return err
 }
 
+/*
+===============================================================================
+							SubComponent Interface
+===============================================================================
+*/
+
 func (scheduler *Scheduler) Start() {
-	scheduler.Started(func() {})
+	scheduler.Started(func() { /* Do Nothing */ })
 }
 
 func (scheduler *Scheduler) Stop() {
-	scheduler.Stopped(func() {})
+	scheduler.Stopped(func() { /* Do Nothing */ })
 }
 
 func (scheduler *Scheduler) isWorking() bool {

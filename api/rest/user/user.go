@@ -26,7 +26,7 @@ func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("<-- RUN Image: %s, Args: %v, PortMappings: %v, CPUs: %d, RAM: %d",
+	log.Infof("<-- RUN Img: %s, Args: %v, PortMaps: %v, Res: <%d;%d>",
 		runContainerMsg.ContainerImageKey, runContainerMsg.Arguments, runContainerMsg.PortMappings,
 		runContainerMsg.CPUs, runContainerMsg.RAM)
 
@@ -57,7 +57,7 @@ func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error)
 }
 
 func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
-	log.Infof("<-- EXIT System")
+	log.Infof("<-- EXITING CARAVELA")
 
 	thisNode.Stop()
 	return nil, nil

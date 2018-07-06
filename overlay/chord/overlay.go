@@ -10,7 +10,6 @@ import (
 	"hash"
 	"math/big"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -96,6 +95,10 @@ func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config,
 Called when a new virtual node of this physical node has joined the chord ring.
 */
 func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
+	if co.virtualNodesRunning == co.numVirtualNodes {
+		return
+	}
+
 	newLocalVirtualNodeID := big.NewInt(0)
 	newLocalVirtualNodeID.SetBytes(localVirtualNodeID)
 	if co.localID == nil {
@@ -163,7 +166,8 @@ func (co *Overlay) Lookup(key []byte) ([]*overlay.Node, error) {
 
 	res := make([]*overlay.Node, len(virtualNodes))
 	for index := range virtualNodes {
-		res[index] = overlay.NewNode(strings.Split(virtualNodes[index].Host, ":")[0], virtualNodes[index].Id)
+		nodeIP, nodePort := util.ObtainIpPort(virtualNodes[index].Host)
+		res[index] = overlay.NewNode(nodeIP, nodePort, virtualNodes[index].Id)
 	}
 	return res, nil
 }

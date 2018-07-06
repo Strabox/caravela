@@ -20,7 +20,8 @@ type Discovery interface {
 		id int64, amount int, cpus int, ram int)
 	RefreshOffer(offerID int64, fromTraderGUID string) bool
 	RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64)
-	GetOffers(toTraderGUID string) []Offer
+	GetOffers(toTraderGUID string, relay bool, fromNodeGUID string) []Offer
+	AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID string, traderOfferingIP string, traderOfferingGUID string)
 }
 
 /*

@@ -35,16 +35,17 @@ type Mapping struct {
 Creates a new resource map given the CPUs and RAM partitions and the respective GUID distributions.
 */
 func NewResourcesMap(cpuPartitionsPerc []ResourcePartition, ramPartitionsPerc []ResourcePartition) *Mapping {
-	rm := &Mapping{}
-	rm.numOfCPUPartitions = cap(cpuPartitionsPerc)
-	rm.numOfRAMPartitions = cap(ramPartitionsPerc)
-	rm.resourcesIDMap = make([][]*guid.Range, rm.numOfCPUPartitions)
-	rm.cpuIndexes = make(map[int]int)
-	rm.ramIndexes = make(map[int]int)
-	rm.invertCpuIndexes = make(map[int]int)
-	rm.invertRamIndexes = make(map[int]int)
-	rm.cpuPartitions = make([]int, rm.numOfCPUPartitions)
-	rm.ramPartitions = make([]int, rm.numOfRAMPartitions)
+	rm := &Mapping{
+		numOfCPUPartitions: len(cpuPartitionsPerc),
+		numOfRAMPartitions: len(ramPartitionsPerc),
+		resourcesIDMap:     make([][]*guid.Range, len(cpuPartitionsPerc)),
+		cpuIndexes:         make(map[int]int),
+		ramIndexes:         make(map[int]int),
+		invertCpuIndexes:   make(map[int]int),
+		invertRamIndexes:   make(map[int]int),
+		cpuPartitions:      make([]int, len(cpuPartitionsPerc)),
+		ramPartitions:      make([]int, len(ramPartitionsPerc)),
+	}
 
 	cpuPartitionsPercentage := make([]int, rm.numOfCPUPartitions)
 	ramPartitionsPercentage := make([]int, rm.numOfRAMPartitions)
@@ -93,9 +94,109 @@ func GetRamPartitions(ramPartitions []configuration.RAMPartition) []ResourcePart
 }
 
 /*
+Returns a random GUID in the range of the respective "fittest" target resource combination.
+*/
+func (rm *Mapping) RandGUID(targetResources Resources) (*guid.GUID, error) {
+	indexesRes := rm.getFittestResources(targetResources)
+	cpuIndex := rm.cpuIndexes[indexesRes.CPUs()]
+	ramIndex := rm.ramIndexes[indexesRes.RAM()]
+	return rm.resourcesIDMap[cpuIndex][ramIndex].GenerateRandomInside()
+}
+
+/*
+Returns a random GUID in the next range of resources.
+First it tries the GUIDs that represent the SAME cpus and MORE ram.
+Second it tries the GUIDs that represent the MORE cpus and SAME ram.
+Lastly it will try the GUIDs that represent the MORE cpus and MORE ram.
+*/
+func (rm *Mapping) HigherRandGUID(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
+	targetFittestRes := rm.getFittestResources(targetResources)
+	currentGuidResources, _ := rm.ResourcesByGUID(currentGUID)
+	currentCpuIndex := rm.cpuIndexes[currentGuidResources.CPUs()]
+	currentRamIndex := rm.ramIndexes[currentGuidResources.RAM()]
+	if currentRamIndex == (rm.numOfRAMPartitions - 1) {
+		if currentCpuIndex == (rm.numOfCPUPartitions - 1) {
+			return nil, fmt.Errorf("no more resources combination available")
+		} else {
+			targetRamIndex := rm.ramIndexes[targetFittestRes.RAM()]
+			return rm.resourcesIDMap[currentCpuIndex+1][targetRamIndex].GenerateRandomInside()
+		}
+	} else {
+		return rm.resourcesIDMap[currentCpuIndex][currentRamIndex+1].GenerateRandomInside()
+	}
+}
+
+/*
+Returns a random GUID in the previous range of resources.
+First it tries the GUIDs that represent the SAME cpus and LESS ram.
+Second it tries the GUIDs that represent the LESS cpus and SAME ram.
+Lastly it will try the GUIDs that represent the LESS cpus and LESS ram.
+*/
+func (rm *Mapping) LowerRandGUID(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
+	targetFittestRes := rm.getFittestResources(targetResources)
+	currentGuidResources, _ := rm.ResourcesByGUID(currentGUID)
+	cpuIndex := rm.cpuIndexes[currentGuidResources.CPUs()]
+	ramIndex := rm.ramIndexes[currentGuidResources.RAM()]
+	if ramIndex == 0 {
+		if cpuIndex == 0 {
+			return nil, fmt.Errorf("no more resources combination available")
+		} else {
+			targetRamIndex := rm.ramIndexes[targetFittestRes.RAM()]
+			return rm.resourcesIDMap[cpuIndex-1][targetRamIndex].GenerateRandomInside()
+		}
+	} else {
+		return rm.resourcesIDMap[cpuIndex][ramIndex-1].GenerateRandomInside()
+	}
+}
+
+/*
+Verify if the given GUID belongs to a resource combination that is contained inside the
+target resource combination.
+TODO: DEPRECATED(NOT USED)
+*/
+func (rm *Mapping) IsContainedInTargetResources(guid guid.GUID, targetResources Resources) bool {
+	guidResources, _ := rm.ResourcesByGUID(guid)
+	return rm.getFittestResources(targetResources).Contains(*guidResources)
+}
+
+/*
+Verify if the given target resources belongs to a resource combination that is contained inside the
+resource combination of the given GUID.
+TODO: DEPRECATED(NOT USED)
+*/
+func (rm *Mapping) IsTargetResourcesContained(guid guid.GUID, targetResources Resources) bool {
+	guidResources, _ := rm.ResourcesByGUID(guid)
+	return guidResources.Contains(*rm.getFittestResources(targetResources))
+}
+
+/*
+Returns the first GUID that represents the given resources.
+*/
+func (rm *Mapping) FirstGUID(resources Resources) *guid.GUID {
+	res := rm.getFittestResources(resources)
+	cpuIndex := rm.cpuIndexes[res.CPUs()]
+	ramIndex := rm.ramIndexes[res.RAM()]
+	return rm.resourcesIDMap[cpuIndex][ramIndex].LowerGUID()
+}
+
+/*
+Returns the resources combination that maps to the given GUID.
+*/
+func (rm *Mapping) ResourcesByGUID(resGUID guid.GUID) (*Resources, error) {
+	for indexCPU := range rm.resourcesIDMap {
+		for indexRAM := range rm.resourcesIDMap {
+			if rm.resourcesIDMap[indexCPU][indexRAM].Inside(resGUID) {
+				return NewResources(rm.invertCpuIndexes[indexCPU], rm.invertRamIndexes[indexRAM]), nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("invalid GUID %s", resGUID.String())
+}
+
+/*
 Obtains the fittest resources combination that is contained inside the resources given.
 */
-func (rm *Mapping) GetFittestResources(resources Resources) *Resources {
+func (rm *Mapping) getFittestResources(resources Resources) *Resources {
 	res := NewResources(0, 0)
 
 	for _, v := range rm.cpuPartitions {
@@ -114,101 +215,6 @@ func (rm *Mapping) GetFittestResources(resources Resources) *Resources {
 		}
 	}
 	return res
-}
-
-/*
-Returns a random GUID in the range of the respective "fittest" target resource combination.
-*/
-func (rm *Mapping) RandomGUID(targetResources Resources) (*guid.GUID, error) {
-	indexesRes := rm.GetFittestResources(targetResources)
-	cpuIndex := rm.cpuIndexes[indexesRes.CPUs()]
-	ramIndex := rm.ramIndexes[indexesRes.RAM()]
-	return rm.resourcesIDMap[cpuIndex][ramIndex].GenerateRandomInside()
-}
-
-/*
-Returns a random GUID in the next range of resources.
-First it tries the GUIDs that represent the SAME cpus and MORE ram.
-Second it tries the GUIDs that represent the MORE cpus and SAME ram.
-Lastly it will try the GUIDs that represent the MORE cpus and MORE ram.
-*/
-func (rm *Mapping) NextRandomGUID(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
-	resources, _ := rm.ResourcesByGUID(currentGUID)
-	currentCpuIndex := rm.cpuIndexes[resources.CPUs()]
-	currentRamIndex := rm.ramIndexes[resources.RAM()]
-	if currentRamIndex == (rm.numOfRAMPartitions - 1) {
-		if currentCpuIndex == (rm.numOfCPUPartitions - 1) {
-			return nil, fmt.Errorf("no more resources combination available")
-		} else {
-			targetRamIndex := rm.ramIndexes[targetResources.RAM()]
-			return rm.resourcesIDMap[currentCpuIndex+1][targetRamIndex].GenerateRandomInside()
-		}
-	} else {
-		return rm.resourcesIDMap[currentCpuIndex][currentRamIndex+1].GenerateRandomInside()
-	}
-}
-
-/*
-Returns a random GUID in the previous range of resources.
-First it tries the GUIDs that represent the SAME cpus and LESS ram.
-Second it tries the GUIDs that represent the LESS cpus and SAME ram.
-Lastly it will try the GUIDs that represent the LESS cpus and LESS ram.
-*/
-func (rm *Mapping) PreviousRandomGUID(guid guid.GUID, targetResources Resources) (*guid.GUID, error) {
-	resources, _ := rm.ResourcesByGUID(guid)
-	cpuIndex := rm.cpuIndexes[resources.CPUs()]
-	ramIndex := rm.ramIndexes[resources.RAM()]
-	if ramIndex == 0 {
-		if cpuIndex == 0 {
-			return nil, fmt.Errorf("no more resources combination available")
-		} else {
-			targetRamIndex := rm.ramIndexes[targetResources.RAM()]
-			return rm.resourcesIDMap[cpuIndex-1][targetRamIndex].GenerateRandomInside()
-		}
-	} else {
-		return rm.resourcesIDMap[cpuIndex][ramIndex-1].GenerateRandomInside()
-	}
-}
-
-/*
-Verify if the given GUID belongs to a resource combination that is contained inside the
-target resource combination.
-*/
-func (rm *Mapping) IsContainedInTargetResources(guid guid.GUID, targetResources Resources) bool {
-	guidResources, _ := rm.ResourcesByGUID(guid)
-	return rm.GetFittestResources(targetResources).Contains(*guidResources)
-}
-
-/*
-TODO
-*/
-func (rm *Mapping) IsTargetResourcesContained(guid guid.GUID, targetResources Resources) bool {
-	guidResources, _ := rm.ResourcesByGUID(guid)
-	return guidResources.Contains(*rm.GetFittestResources(targetResources))
-}
-
-/*
-Returns the first GUID that represents the given resources.
-*/
-func (rm *Mapping) FirstGUIDofResources(resources Resources) *guid.GUID {
-	res := rm.GetFittestResources(resources)
-	cpuIndex := rm.cpuIndexes[res.CPUs()]
-	ramIndex := rm.ramIndexes[res.RAM()]
-	return rm.resourcesIDMap[cpuIndex][ramIndex].LowerGUID()
-}
-
-/*
-Returns the resources combination that maps to the given GUID.
-*/
-func (rm *Mapping) ResourcesByGUID(resGUID guid.GUID) (*Resources, error) {
-	for indexCPU := range rm.resourcesIDMap {
-		for indexRAM := range rm.resourcesIDMap {
-			if rm.resourcesIDMap[indexCPU][indexRAM].Inside(resGUID) {
-				return NewResources(rm.invertCpuIndexes[indexCPU], rm.invertRamIndexes[indexRAM]), nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("invalid GUID %s", resGUID.String())
 }
 
 /*

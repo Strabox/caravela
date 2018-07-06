@@ -33,7 +33,7 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 
 	req, err := http.NewRequest(httpMethod, url, ToJSONBuffer(jsonToSend))
 	if err != nil {
-		log.Errorf(util.LogTag("[DoHttp]")+"Error building request: %s", err)
+		log.Errorf(util.LogTag("DoHttp")+"Error building request: %s", err)
 		return err, -1
 	}
 
@@ -49,18 +49,18 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 				if err == nil {
 					return nil, resp.StatusCode
 				} else {
-					log.Errorf(util.LogTag("[DoHttp]")+"Response JSON decode error: %s", err)
+					log.Errorf(util.LogTag("DoHttp")+"Response JSON decode error: %s", err)
 					return fmt.Errorf("decoding json problems"), resp.StatusCode
 				}
 			} else {
-				log.Errorf(util.LogTag("[DoHttp]") + "Empty body when expecting content")
+				log.Errorf(util.LogTag("DoHttp") + "Empty body when expecting content")
 				return fmt.Errorf("empty HTTP body"), resp.StatusCode
 			}
 		} else {
 			return nil, resp.StatusCode
 		}
 	} else {
-		log.Errorf(util.LogTag("[DoHttp]")+"HTTP error: %s", err)
+		log.Errorf(util.LogTag("DoHttp")+"HTTP error: %s", err)
 		return err, -1
 	}
 }

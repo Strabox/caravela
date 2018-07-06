@@ -25,12 +25,13 @@ func (cl *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *c
 		// First time a virtual node is entering in the ring
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(local.Id)
-		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
+		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
+		predecessorNode := overlay.NewNode(nodeIP, nodePort, newPredecessor.Id)
 		cl.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
-		log.Debugf(util.LogTag("Chord")+"New LVNode: ID: %s IP: %s", idToPrint.String(), local.Host)
 	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
 		// New predecessor for a existing node
-		predecessorNode := overlay.NewNode(newPredecessor.Host, newPredecessor.Id)
+		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
+		predecessorNode := overlay.NewNode(nodeIP, nodePort, newPredecessor.Id)
 		cl.chordOverlay.predecessorNodeChanged(local.Id, predecessorNode)
 	}
 }

@@ -26,14 +26,17 @@ type Trader struct {
 	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
 	client  remote.Caravela              // Client for the system
 
-	guid             *guid.GUID                // Trader's own GUID
-	resourcesMap     *resources.Mapping        // GUID<->Resources mapping
-	handledResources *resources.Resources      // Combination of resources that its responsible for managing (FIXED)
-	offers           map[offerKey]*traderOffer // Map with all the offers that the trader is managing
-	offersMutex      *sync.Mutex               // Mutex for managing the offers
+	guid             *guid.GUID           // Trader's own GUID
+	resourcesMap     *resources.Mapping   // GUID<->Resources mapping
+	handledResources *resources.Resources // Combination of resources that its responsible for managing (FIXED)
+
+	nearbyTradersOffering *NearbyTradersOffering    // Nearby traders that might have offers available
+	offers                map[offerKey]*traderOffer // Map with all the offers that the trader is managing
+	offersMutex           *sync.Mutex               // Mutex for managing the offers
 
 	quitChan            chan bool        // Channel to alert that the node is stopping
 	refreshOffersTicker <-chan time.Time // Time ticker for sending the refreshing offer messages
+	spreadOffersTimer   <-chan time.Time // Time ticker to spread offer information into the neighbors
 }
 
 func NewTrader(config *configuration.Configuration, overlay overlay.Overlay, client remote.Caravela,
@@ -46,16 +49,18 @@ func NewTrader(config *configuration.Configuration, overlay overlay.Overlay, cli
 	res.resourcesMap = resourcesMapping
 	res.handledResources, _ = res.resourcesMap.ResourcesByGUID(*res.guid)
 
-	res.quitChan = make(chan bool)
-	res.refreshOffersTicker = time.NewTicker(config.RefreshingInterval()).C
-
+	res.nearbyTradersOffering = NewNeighborTradersOffering()
 	res.offers = make(map[offerKey]*traderOffer)
 	res.offersMutex = &sync.Mutex{}
+
+	res.quitChan = make(chan bool)
+	res.refreshOffersTicker = time.NewTicker(config.RefreshingInterval()).C
+	res.spreadOffersTimer = time.NewTicker(config.SpreadOffersInterval()).C
 	return res
 }
 
 /*
-Runs in an individual goroutine and refreshes the trader's offers from time to time.
+Runs a endless loop goroutine that dispatches timer events into other goroutines.
 */
 func (trader *Trader) refreshingOffers() {
 	for {
@@ -67,12 +72,12 @@ func (trader *Trader) refreshingOffers() {
 
 				for _, offer := range trader.offers {
 					if offer.Refresh() {
-						go func() {
+						go func(offer *traderOffer) {
+							refreshed, err := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(),
+								int64(offer.ID())) // Sends refresh message
+
 							trader.offersMutex.Lock()
 							defer trader.offersMutex.Unlock()
-
-							err, refreshed := trader.client.RefreshOffer(offer.supplierIP, trader.guid.String(),
-								int64(offer.ID()))
 
 							offerKEY := offerKey{supplierIP: offer.supplierIP, id: common.OfferID(offer.ID())}
 							offer, exist := trader.offers[offerKEY]
@@ -95,12 +100,35 @@ func (trader *Trader) refreshingOffers() {
 									delete(trader.offers, offerKEY)
 								}
 							}
-						}()
+						}(offer)
 					}
 				}
 			}()
-		case res := <-trader.quitChan: // Stopping the trader
-			if res {
+		case <-trader.spreadOffersTimer: // Advertise offers (if any) into the neighbors traders
+			go func() {
+				if !trader.haveOffers() {
+					return
+				} // If trader has no offer don't advertise to neighbors
+
+				// TODO: Verify if necessary cause this makes a lookup happen in Chord?
+				overlayNeighbors, err := trader.overlay.Neighbors(trader.guid.Bytes())
+				if err != nil {
+					return
+				}
+
+				for _, overlayNeighbor := range overlayNeighbors { // Advertise to the lower and higher GUID's node (inside partition)
+					go func(overlayNeighbor *overlay.Node) {
+						nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
+						nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+						if trader.handledResources.Equals(*nodeResourcesHandled) {
+							trader.client.AdvertiseOffersNeighbor(overlayNeighbor.IP(), nodeGUID.String(),
+								trader.guid.String(), trader.guid.String(), trader.config.Host.IP) // Sends advertise local offers message
+						}
+					}(overlayNeighbor)
+				}
+			}()
+		case quit := <-trader.quitChan: // Stopping the trader (returning the goroutine)
+			if quit {
 				log.Infof(util.LogTag("Trader")+"Trader %s STOPPED", trader.guid.String())
 				return
 			}
@@ -111,14 +139,12 @@ func (trader *Trader) refreshingOffers() {
 /*
 Returns all the offers that the trader is managing.
 */
-func (trader *Trader) GetOffers() []api.Offer {
-	trader.offersMutex.Lock()
-	defer trader.offersMutex.Unlock()
+func (trader *Trader) GetOffers(relay bool, fromNodeGUID string) []api.Offer {
+	if trader.haveOffers() { // Trader has offers so return them immediately
+		trader.offersMutex.Lock()
+		defer trader.offersMutex.Unlock()
 
-	availableOffers := len(trader.offers)
-	if len(trader.offers) <= 0 {
-		return nil
-	} else {
+		availableOffers := len(trader.offers)
 		resOffers := make([]api.Offer, availableOffers)
 		index := 0
 		for _, offer := range trader.offers {
@@ -127,6 +153,40 @@ func (trader *Trader) GetOffers() []api.Offer {
 			index++
 		}
 		return resOffers
+	} else { // Ask for offers in the nearby neighbors that we think they have offers (via offer advertise relaying)
+		res := make([]api.Offer, 0)
+		fromNodeGuid := guid.NewGUIDString(fromNodeGUID)
+
+		// Ask the successor (higher GUID)
+		successor := trader.nearbyTradersOffering.Successor()
+		if successor != nil && (relay || (!relay && (trader.guid.Cmp(*fromNodeGuid) > 0))) {
+			successorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
+			if trader.handledResources.Equals(*successorResourcesHandled) {
+				offers, err := trader.client.GetOffers(successor.IP(), successor.GUID().String(),
+					false, trader.guid.String()) // Sends the get offers message
+				if err == nil && offers != nil {
+					res = append(res, offers...)
+				}
+			}
+
+		}
+
+		// Ask the predecessor (lower GUID)
+		predecessor := trader.nearbyTradersOffering.Predecessor()
+		if predecessor != nil && (relay || (!relay && (trader.guid.Cmp(*fromNodeGuid) < 0))) {
+			predecessorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
+			if trader.handledResources.Equals(*predecessorResourcesHandled) {
+				offers, err := trader.client.GetOffers(predecessor.IP(), predecessor.GUID().String(),
+					false, trader.guid.String()) // Sends the get offers message
+				if err == nil && offers != nil {
+					res = append(res, offers...)
+				}
+			}
+
+		}
+
+		// TODO: OPTIONAl make the calls in parallel (2 goroutines) and wait here for both, then join the results.
+		return res
 	}
 }
 
@@ -147,7 +207,7 @@ func (trader *Trader) CreateOffer(id int64, amount int, cpus int, ram int, suppl
 		offerKey := offerKey{supplierIP: supplierIP, id: common.OfferID(id)}
 
 		trader.offers[offerKey] = offer
-		log.Debugf(util.LogTag("Trader")+"%s Offer CREATED %dX(CPUs: %d, RAM: %d) from: %s",
+		log.Debugf(util.LogTag("Trader")+"%s OFFER CREATED %dX<%d;%d>, From: %s",
 			trader.guid.String(), amount, cpus, ram, supplierIP)
 	}
 }
@@ -160,8 +220,85 @@ func (trader *Trader) RemoveOffer(fromSupplierIP string, fromSupplierGUID string
 	defer trader.offersMutex.Unlock()
 
 	delete(trader.offers, offerKey{supplierIP: fromSupplierIP, id: common.OfferID(offerID)})
-	log.Debugf(util.LogTag("Trader")+"Removing offer of supplier: %s offer: %d", fromSupplierIP, offerID)
+	log.Debugf(util.LogTag("Trader")+"OFFER REMOVED %d, Supp: %s", offerID, fromSupplierIP)
 }
+
+/*
+Relay the offering advertise for the overlay neighbors if the trader doesn't have any available offers
+*/
+func (trader *Trader) AdvertiseNeighborOffer(fromTraderGUID string, traderOfferingIP string, traderOfferingGUID string) {
+	if trader.haveOffers() {
+		return
+	}
+	fromTraderGuid := guid.NewGUIDString(fromTraderGUID)
+	traderOfferingGuid := guid.NewGUIDString(traderOfferingGUID)
+
+	// TODO: OPTIONAL try refactor this two ifs (due to code duplication)
+	if trader.guid.Cmp(*fromTraderGuid) > 0 { // Message comes from a lower GUID's node
+		trader.nearbyTradersOffering.SetPredecessor(nodeCommon.NewRemoteNode(traderOfferingIP, *traderOfferingGuid))
+
+		// TODO: Verify if necessary cause this makes a lookup happen in Chord?
+		overlayNeighbors, err := trader.overlay.Neighbors(trader.guid.Bytes())
+		if err != nil {
+			return
+		}
+
+		for _, overlayNeighbor := range overlayNeighbors {
+			go func(overlayNeighbor *overlay.Node) {
+				nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
+				nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+				//log.Debugf(util.LogTag("Trader")+"AdvertiseNeighbor: %s", nodeGUID.String())
+				if nodeGUID.Cmp(*trader.guid) > 0 && trader.handledResources.Equals(*nodeResourcesHandled) {
+					// Relay the advertise to a higher GUID's node (inside partition)
+					trader.client.AdvertiseOffersNeighbor(overlayNeighbor.IP(), nodeGUID.String(), trader.guid.String(),
+						traderOfferingIP, traderOfferingGUID)
+				}
+			}(overlayNeighbor)
+		}
+	} else { // Message comes from a higher GUID's node
+		trader.nearbyTradersOffering.SetSuccessor(nodeCommon.NewRemoteNode(traderOfferingIP, *traderOfferingGuid))
+
+		// TODO: Verify if necessary cause this makes a lookup happen in Chord?
+		overlayNeighbors, err := trader.overlay.Neighbors(trader.guid.Bytes())
+		if err != nil {
+			return
+		}
+
+		for _, overlayNeighbor := range overlayNeighbors {
+			go func(overlayNeighbor *overlay.Node) {
+				nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
+				nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+				//log.Debugf(util.LogTag("Trader")+"AdvertiseNeighbor: %s", nodeGUID.String())
+				if nodeGUID.Cmp(*trader.guid) < 0 && trader.handledResources.Equals(*nodeResourcesHandled) {
+					// Relay the advertise to a lower GUID's node (inside partition)
+					trader.client.AdvertiseOffersNeighbor(overlayNeighbor.IP(), nodeGUID.String(), trader.guid.String(),
+						traderOfferingIP, traderOfferingGUID)
+				}
+			}(overlayNeighbor)
+		}
+	}
+}
+
+func (trader *Trader) GUID() *guid.GUID {
+	return trader.guid.Copy()
+}
+
+func (trader *Trader) HandledResources() *resources.Resources {
+	return trader.handledResources.Copy()
+}
+
+func (trader *Trader) haveOffers() bool {
+	trader.offersMutex.Lock()
+	defer trader.offersMutex.Unlock()
+
+	return len(trader.offers) != 0
+}
+
+/*
+===============================================================================
+							SubComponent Interface
+===============================================================================
+*/
 
 func (trader *Trader) Start() {
 	trader.Started(func() {
@@ -177,12 +314,4 @@ func (trader *Trader) Stop() {
 
 func (trader *Trader) isWorking() bool {
 	return trader.Working()
-}
-
-func (trader *Trader) Guid() *guid.GUID {
-	return trader.guid.Copy()
-}
-
-func (trader *Trader) HandledResources() *resources.Resources {
-	return trader.handledResources.Copy()
 }

@@ -33,11 +33,11 @@ func NewCaravelaIP(caravelaHostIP string) *Caravela {
 	return res
 }
 
-func NewCaravelaTimeoutIP(caravelaHostIP string, timeout time.Duration) *Caravela {
+func NewCaravelaTimeoutIP(caravelaHostIP string, requestTimeout time.Duration) *Caravela {
 	res := &Caravela{}
 	res.config = DefaultConfiguration(caravelaHostIP)
 	res.httpClient = &http.Client{
-		Timeout: timeout,
+		Timeout: requestTimeout,
 	}
 	return res
 }

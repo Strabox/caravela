@@ -67,8 +67,9 @@ func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 	ctx := context.Background()
 	info, err := client.docker.Info(ctx)
 	if err != nil {
-		log.Errorf(util.LogTag("Docker")+"Get Info: %s", err)
+		log.Errorf(util.LogTag("Docker")+"Get Docker Info error: %s", err)
 	}
+
 	cpu := info.NCPU
 	ram := info.MemTotal / 1000000 // Return in MB (MegaBytes)
 	return cpu, int(ram)
@@ -82,14 +83,14 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (Container
 
 	ctx := context.Background()
 	status, err := client.docker.ContainerInspect(ctx, containerID)
-	if err == nil {
-		if status.State.Running {
-			return NewContainerStatus(Running), nil
-		} else {
-			return NewContainerStatus(Finished), nil
-		}
-	} else {
+	if err != nil {
 		return NewContainerStatus(Unknown), err
+	}
+
+	if status.State.Running {
+		return NewContainerStatus(Running), nil
+	} else {
+		return NewContainerStatus(Finished), nil
 	}
 }
 
@@ -97,7 +98,7 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (Container
 Launches a container from an image in the local Docker Engine.
 */
 func (client *DefaultClient) RunContainer(imageKey string, portMappings []rest.PortMapping,
-	args []string, machineCpus string, ram int) (string, error) {
+	args []string, cpus int64, ram int) (string, error) {
 
 	client.verifyInitialization()
 
@@ -115,7 +116,7 @@ func (client *DefaultClient) RunContainer(imageKey string, portMappings []rest.P
 	for _, portMap := range portMappings {
 		containerPort := strconv.Itoa(portMap.ContainerPort)
 		hostPort := strconv.Itoa(portMap.HostPort)
-		port, _ := nat.NewPort(fmt.Sprintf("%d/tcp", portMap), containerPort)
+		port, _ := nat.NewPort(fmt.Sprintf("tcp"), containerPort)
 		hostPortMap[port] = []nat.PortBinding{{
 			HostIP:   "0.0.0.0",
 			HostPort: hostPort,
@@ -130,42 +131,51 @@ func (client *DefaultClient) RunContainer(imageKey string, portMappings []rest.P
 		ExposedPorts: containerPortSet, // Container's exposed ports
 	}, &container.HostConfig{
 		Resources: container.Resources{
-			Memory:     int64(ram) * 1000000, // Maximum memory available to container
-			CpusetCpus: machineCpus,          // Number of CPUs available to the container
+			Memory:   int64(ram) * 1000000, // Maximum memory available to container
+			CPUCount: cpus,                 // Number of CPUs available to the container
 		},
 		PortBindings: hostPortMap, // Port mappings between container' port and host ports
 	}, nil, "")
 	if err != nil { // Error creating the container
+		client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
 		log.Errorf(util.LogTag("Docker")+"Creating container error: %s", err)
 		return "", err
 	}
 
 	if err := client.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+		client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
 		log.Errorf(util.LogTag("Docker")+"Starting container error: %s", err)
 		return "", err // Error starting the container
 	}
 
+	/* THIS CODE MAKES ONLY WORKS IF THE CONTAINER EXITS, I GUESS :)
 	statusCh, errCh := client.docker.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
-	case err := <-errCh:
+	case err := <- errCh:
 		if err != nil {
-			log.Errorf(util.LogTag("Docker")+"Waiting for container to exit error: %s", err)
+			client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})	// Remove the container (avoid filling space)
+			log.Errorf(util.LogTag("Docker") + "Waiting for container to exit error: %s", err)
 			return "", err
 		}
-	case <-statusCh:
+	case <- statusCh:
 		// Container is finally running!!!
-		log.Infof(util.LogTag("Docker")+"Container running, Image: %s, Args: %v, Resources: <%d,%d>",
-			imageKey, args, machineCpus, ram)
+		log.Infof(util.LogTag("Docker") + "Container RUNNING, Image: %s, Args: %v, Resources: <%d,%d>",
+			imageKey, args, cpus, ram)
 	}
+	*/
+
+	log.Infof(util.LogTag("Docker")+"Container RUNNING, Image: %s, Args: %v, Resources: <%d,%d>",
+		imageKey, args, cpus, ram)
+
 	return resp.ID, nil
 }
 
 /*
-Remove a container from the Docker image (to avoid filling space in the node).
+Remove a container from the Docker engine (to avoid filling space in the node).
 */
 func (client *DefaultClient) RemoveContainer(containerID string) {
 	client.verifyInitialization()
 
 	ctx := context.Background()
-	client.docker.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{})
+	client.docker.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{Force: true})
 }

@@ -3,6 +3,7 @@ package remote
 import (
 	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/api"
 )
 
 /*
@@ -16,7 +17,7 @@ type Caravela interface {
 		amount int, cpus int, ram int) error
 
 	/* Sends a refresh message from a trader to a supplier. It is used to mutually know that both are alive. */
-	RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (error, bool)
+	RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (bool, error)
 
 	/*
 		Sends a remove offer message from a supplier to a trader.
@@ -25,7 +26,11 @@ type Caravela interface {
 	RemoveOffer(fromSupplierIP string, fromSupplierGUID, toTraderIP string, toTraderGUID string, offerID int64) error
 
 	/* Sends a get message to obtain all the available offers in a trader. */
-	GetOffers(toTraderIP string, toTraderGUID string) (error, []Offer)
+	GetOffers(toTraderIP string, toTraderGUID string, relay bool, fromNodeGUID string) ([]api.Offer, error)
+
+	/* Sends a message to a neighbor trader saying that a given trader has offers available */
+	AdvertiseOffersNeighbor(toNeighborTraderIP string, toNeighborTraderGUID string,
+		fromTraderGUID string, traderOfferingGUID string, traderOfferingIP string) error
 
 	// =============================== Scheduling ===============================
 
@@ -40,12 +45,4 @@ type Caravela interface {
 		the system configuration parameters and the respective values.
 	*/
 	ObtainConfiguration(systemsNodeIP string) (*configuration.Configuration, error)
-}
-
-/*
-Client's offer struct/DAO.
-*/
-type Offer struct {
-	ID         int64
-	SupplierIP string
 }

@@ -5,7 +5,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/api"
 	"net/http"
+	"time"
 )
 
 type HttpClient struct {
@@ -25,15 +27,15 @@ func NewHttpClient(config *configuration.Configuration) *HttpClient {
 func (client *HttpClient) CreateOffer(fromSupplierIP string, fromSupplierGUID string, toTraderIP string,
 	toTraderGUID string, offerID int64, amount int, cpus int, ram int) error {
 
-	log.Infof("--> CREATE OFFER FromSuppIP: %s, OfferID: %d, Amount: %d, Resources: <%d,%d>, ToTraderIP: %s, ToTraderGUID: %s",
+	log.Infof("--> CREATE OFFER From: %s, ID: %d, Amt: %d, Res: <%d;%d>, To: <%s;%s>",
 		fromSupplierIP, offerID, amount, cpus, ram, toTraderIP, toTraderGUID)
 
-	offerJSON := rest.CreateOfferMessage{FromSupplierIP: fromSupplierIP, FromSupplierGUID: fromSupplierGUID,
+	createOfferMsg := rest.CreateOfferMessage{FromSupplierIP: fromSupplierIP, FromSupplierGUID: fromSupplierGUID,
 		ToTraderGUID: toTraderGUID, OfferID: offerID, Amount: amount, CPUs: cpus, RAM: ram}
 
 	url := rest.BuildHttpURL(false, toTraderIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
-	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, offerJSON, nil)
+	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, createOfferMsg, nil)
 	if err != nil {
 		return NewRemoteClientError(err)
 	}
@@ -41,36 +43,36 @@ func (client *HttpClient) CreateOffer(fromSupplierIP string, fromSupplierGUID st
 	return nil
 }
 
-func (client *HttpClient) RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (error, bool) {
-	log.Infof("--> REFRESH OFFER FromTraderGUID: %s, OfferID: %d, ToSupplierIP: %s",
+func (client *HttpClient) RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (bool, error) {
+	log.Infof("--> REFRESH OFFER From: %s, ID: %d, To: %s",
 		fromTraderGUID, offerID, toSupplierIP)
 
-	offerRefreshJSON := rest.RefreshOfferMessage{FromTraderGUID: fromTraderGUID, OfferID: offerID}
-	var refreshOfferResponseJSON rest.RefreshOfferResponseMessage
+	offerRefreshMsg := rest.RefreshOfferMessage{FromTraderGUID: fromTraderGUID, OfferID: offerID}
+	var refreshOfferResp rest.RefreshOfferResponseMessage
 
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
-	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPatch, offerRefreshJSON,
-		&refreshOfferResponseJSON)
+	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPatch, offerRefreshMsg,
+		&refreshOfferResp)
 	if err != nil {
-		return NewRemoteClientError(err), false
+		return false, NewRemoteClientError(err)
 	}
 
-	return nil, refreshOfferResponseJSON.Refreshed
+	return refreshOfferResp.Refreshed, nil
 }
 
 func (client *HttpClient) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderIP string,
 	toTraderGUID string, offerID int64) error {
 
-	log.Infof("--> REMOVE OFFER FromSuppIP: %s, FromSuppGUID: %s, OfferID: %d, ToTraderIP: %s, ToTraderGUID: %s",
+	log.Infof("--> REMOVE OFFER From: <%s;%s>, ID: %d, To: <%s;%s>",
 		fromSupplierIP, fromSupplierGUID, offerID, toTraderIP, toTraderGUID)
 
-	offerRemoveJSON := rest.OfferRemoveMessage{FromSupplierIP: fromSupplierIP, FromSupplierGUID: fromSupplierGUID,
+	offerRemoveMsg := rest.OfferRemoveMessage{FromSupplierIP: fromSupplierIP, FromSupplierGUID: fromSupplierGUID,
 		ToTraderGUID: toTraderGUID, OfferID: offerID}
 
 	url := rest.BuildHttpURL(false, toTraderIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
-	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodDelete, offerRemoveJSON, nil)
+	err, _ := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodDelete, offerRemoveMsg, nil)
 	if err != nil {
 		return NewRemoteClientError(err)
 	}
@@ -78,27 +80,32 @@ func (client *HttpClient) RemoveOffer(fromSupplierIP string, fromSupplierGUID st
 	return nil
 }
 
-func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string) (error, []Offer) {
-	log.Infof("--> GET OFFERS ToTraderIP: %s, ToTraderGUID: %s", toTraderIP, toTraderGUID)
+func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string, relay bool, fromNodeGUID string) ([]api.Offer, error) {
+	log.Infof("--> GET OFFERS To: <%s;%s>, Relay: %t, From: %s", toTraderIP, toTraderGUID, relay, fromNodeGUID)
 
-	getOffersJSON := rest.GetOffersMessage{ToTraderGUID: toTraderGUID}
-	var offersJSON rest.OffersListMessage
+	getOffersMsg := rest.GetOffersMessage{
+		ToTraderGUID: toTraderGUID,
+		Relay:        relay,
+		FromNodeGUID: fromNodeGUID,
+	}
+	var offersResp rest.OffersListMessage
 
 	url := rest.BuildHttpURL(false, toTraderIP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, getOffersJSON, &offersJSON)
+	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, getOffersMsg, &offersResp)
 	if err != nil {
-		return NewRemoteClientError(err), nil
+		return nil, NewRemoteClientError(err)
 	}
 
 	if httpCode == http.StatusOK {
-		if offersJSON.Offers != nil {
-			res := make([]Offer, len(offersJSON.Offers))
-			for i, v := range offersJSON.Offers {
+		if offersResp.Offers != nil {
+			res := make([]api.Offer, len(offersResp.Offers))
+			for i, v := range offersResp.Offers {
 				res[i].ID = v.ID
 				res[i].SupplierIP = v.SupplierIP
 			}
-			return nil, res
+			return res, nil
 		} else {
 			return nil, nil
 		}
@@ -110,21 +117,23 @@ func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string) (err
 func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64,
 	containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error {
 
-	log.Infof("--> LAUNCH FromBuyerIP: %s, OfferID: %d, Image: %s, PortMappings: %v, Args: %v, Resources: <%d,%d>, ToSuppIP: %s",
+	log.Infof("--> LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
 		fromBuyerIP, offerID, containerImageKey, portMappings, containerArgs, cpus, ram, toSupplierIP)
 
-	launchContainerJSON := rest.LaunchContainerMessage{
+	launchContainerMsg := rest.LaunchContainerMessage{
 		FromBuyerIP:       fromBuyerIP,
 		OfferID:           offerID,
 		ContainerImageKey: containerImageKey,
 		PortMappings:      portMappings,
 		ContainerArgs:     containerArgs,
 		CPUs:              cpus,
-		RAM:               ram}
+		RAM:               ram,
+	}
 
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.SchedulerContainerBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerJSON, nil)
+	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerMsg, nil)
 	if err != nil {
 		return NewRemoteClientError(err)
 	}
@@ -137,20 +146,47 @@ func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP strin
 }
 
 func (client *HttpClient) ObtainConfiguration(systemsNodeIP string) (*configuration.Configuration, error) {
-	log.Infof("--> OBTAIN CONFIGS ToNodeIP: %s", systemsNodeIP)
+	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNodeIP)
 
-	var systemsNodeConfiguration configuration.Configuration
+	var systemsNodeConfigsResp configuration.Configuration
 
 	url := rest.BuildHttpURL(false, systemsNodeIP, client.config.APIPort(), rest.ConfigurationBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, &systemsNodeConfiguration)
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
 	if err != nil {
 		return nil, NewRemoteClientError(err)
 	}
 
 	if httpCode == http.StatusOK {
-		return &systemsNodeConfiguration, nil
+		return &systemsNodeConfigsResp, nil
 	} else {
 		return nil, NewRemoteClientError(fmt.Errorf("impossible obtain node's configurations"))
+	}
+}
+
+func (client *HttpClient) AdvertiseOffersNeighbor(toNeighborTraderIP string, toNeighborTraderGUID string,
+	fromTraderGUID string, traderOfferingGUID string, traderOfferingIP string) error {
+
+	log.Infof("--> NEIGHBOR OFFERS To: <%s;%s> TraderOffering: <%s;%s>", toNeighborTraderIP, toNeighborTraderGUID,
+		traderOfferingIP, traderOfferingGUID)
+
+	neighborOfferMsg := rest.NeighborOffersMessage{
+		ToNeighborGUID:       toNeighborTraderGUID,
+		FromNeighborGUID:     fromTraderGUID,
+		NeighborOfferingIP:   traderOfferingIP,
+		NeighborOfferingGUID: traderOfferingGUID,
+	}
+
+	url := rest.BuildHttpURL(false, toNeighborTraderIP, client.config.APIPort(), rest.DiscoveryNeighborOfferBaseEndpoint)
+
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPatch, neighborOfferMsg, nil)
+	if err != nil {
+		return NewRemoteClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return nil
+	} else {
+		return NewRemoteClientError(fmt.Errorf("impossible advertise neighbor's offers"))
 	}
 }

@@ -71,6 +71,13 @@ func (r *Resources) IsZero() bool {
 }
 
 /*
+Return true if all resources are greater than 0
+*/
+func (r *Resources) Available() bool {
+	return r.cpus > 0 && r.ram > 0
+}
+
+/*
 Returns true if the given resources are contained inside the receiver.
 */
 func (r *Resources) Contains(contained Resources) bool {

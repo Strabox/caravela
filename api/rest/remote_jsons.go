@@ -47,6 +47,8 @@ Get offers struct/JSON used in the REST APIs
 */
 type GetOffersMessage struct {
 	ToTraderGUID string `json:"ToTraderGUID"` // GUID of the destination trader
+	Relay        bool   `json:"Relay"`        // True if trader that receives the message should be the relay of the message
+	FromNodeGUID string `json:"FromNodeGUID"` // Node's GUID that sent the request
 }
 
 /*
@@ -60,6 +62,16 @@ type LaunchContainerMessage struct {
 	ContainerArgs     []string      `json:"ContainerArgs"`
 	CPUs              int           `json:"CPUs"`
 	RAM               int           `json:"RAM"`
+}
+
+/*
+Neighbor offer's message struct/JSON used in the REST APIs
+*/
+type NeighborOffersMessage struct {
+	ToNeighborGUID       string `json:"ToNeighborGUID"`
+	FromNeighborGUID     string `json:"FromNeighborGUID"`
+	NeighborOfferingIP   string `json:"NeighborOfferingIP"`
+	NeighborOfferingGUID string `json:"NeighborOfferingGUID"`
 }
 
 /* =================================================================================

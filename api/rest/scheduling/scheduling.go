@@ -23,7 +23,7 @@ func launchContainer(w http.ResponseWriter, r *http.Request) (interface{}, error
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("<-- LAUNCH FromBuyerIP: %s, OfferID: %d, Image: %s, PortMappings: %v, Args: %v, Resources: <%d,%d>",
+	log.Infof("<-- LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>",
 		launchContainerMsg.FromBuyerIP, launchContainerMsg.OfferID, launchContainerMsg.ContainerImageKey,
 		launchContainerMsg.PortMappings, launchContainerMsg.ContainerArgs, launchContainerMsg.CPUs,
 		launchContainerMsg.RAM)

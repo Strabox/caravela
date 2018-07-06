@@ -19,6 +19,6 @@ func Initialize(router *mux.Router, selfNode nodeAPI.Node, thisConfigs *configur
 }
 
 func obtainConfiguration(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
-	log.Infof("<-- OBTAIN System Configs")
+	log.Infof("<-- OBTAIN CONFIGS")
 	return thisNodeConfigs, nil
 }

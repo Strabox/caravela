@@ -25,6 +25,10 @@
 #   unused-packages = true
 
 [[override]]
+  name = "github.com/strabox/go-chord"
+  version = "1.0.1"
+
+[[override]]
   branch = "master"
   name = "github.com/docker/distribution"
 

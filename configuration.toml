@@ -2,10 +2,11 @@
 Backend = "DockerHub"
 
 [Caravela]
-ApiPort = 8001
-ApiTimeout = "2s"
+APIPort = 8001
+APITimeout = "5s"
 CheckContainersInterval = "30s"
-SupplyingInterval = "45s"
+SupplyingInterval = "30s"
+SpreadOffersInterval = "30s"
 RefreshesCheckInterval = "30s"
 RefreshingInterval = "30s"
 MaxRefreshesFailed = 3
@@ -30,6 +31,6 @@ ResourcesOvercommit = 50
 [Overlay]
 OverlayPort = 8000
 ChordTimeout = "3s"
-ChordVirtualNodes = 3
-ChordNumSuccessors = 3
-ChordHashSizeBits = 160
+ChordVirtualNodes = 12
+ChordNumSuccessors = 4
+ChordHashSizeBits = 128
