@@ -1,4 +1,4 @@
-# Caravela: A Cloud @ Edge [![Build Status](https://travis-ci.com/Strabox/CARAVELA-A-Cloud-at-Edge.svg?token=8iyx88Q98Rgp5aaUbkKN&branch=master)](https://travis-ci.com/Strabox/CARAVELA-A-Cloud-at-Edge) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) ![](https://img.shields.io/badge/awesome-%E2%9C%93-ff69b4.svg?style=flat-square)
+# Caravela: A Cloud @ Edge [![Build Status](https://travis-ci.com/Strabox/caravela.svg?token=8iyx88Q98Rgp5aaUbkKN&branch=master)](https://travis-ci.com/Strabox/caravela) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) ![](https://img.shields.io/badge/awesome-%E2%9C%93-ff69b4.svg?style=flat-square)
 
 ## Table of Contents
 

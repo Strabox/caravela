@@ -5,7 +5,6 @@ go:
 services:
     - docker
 before_script:
-    - mv ../${PWD##*/} ../caravela
     - mv ../../Strabox ../../strabox
 script:
     # Build the project
