@@ -5,7 +5,6 @@ import (
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/util"
-	"net"
 	"strings"
 	"time"
 )
@@ -164,10 +163,11 @@ Briefly validate the configuration to avoid/short-circuit many runtime errors du
 typos or completely non sense configurations, like negative ports.
 */
 func (c *Configuration) validateConfigurations() error {
+	/* TODO: Undo this when simulator generates valid unique IPs
 	if net.ParseIP(c.HostIP()) == nil {
 		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
 	}
-
+	*/
 	if !util.IsValidPort(c.APIPort()) {
 		return fmt.Errorf("invalid api port: %d", c.APIPort())
 	}

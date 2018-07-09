@@ -1,7 +1,6 @@
 package node
 
 import (
-	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
@@ -14,60 +13,48 @@ import (
 	"github.com/strabox/caravela/node/discovery"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/overlay"
-	"github.com/strabox/caravela/overlay/chord"
 	"github.com/strabox/caravela/util"
-	"net/http"
 )
 
 /*
 Top level structure that contains all the modules/objects that manages a CARAVELA node.
 */
 type Node struct {
-	config    *configuration.Configuration // System's configuration
-	apiServer *http.Server                 // HTTP server to to handle API requests
+	config   *configuration.Configuration // System's configuration
+	stopChan chan bool                    // Channel to stop the node functions
 
+	apiServer         *api.Server          // HTTP server to to handle API requests
 	discovery         *discovery.Discovery // Discovery component
 	scheduler         *scheduler.Scheduler // Scheduler component
 	containersManager *containers.Manager  // Containers Manager component
 	overlay           overlay.Overlay      // Overlay component
-
-	stopChan chan bool // Channel to stop the node functions
 }
 
-func NewNode(config *configuration.Configuration) *Node {
-	res := &Node{}
-	res.config = config
-	res.stopChan = make(chan bool)
+func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli remote.Caravela,
+	dockerClient docker.Client) *Node {
 
-	// Global GUID size initialization
-	guid.InitializeGUID(config.ChordHashSizeBits())
-
-	// Create Overlay Component (Chord overlay initial)
-	res.overlay = chord.NewChordOverlay(guid.SizeBytes(), config.HostIP(), config.OverlayPort(),
-		config.ChordVirtualNodes(), config.ChordNumSuccessors(), config.ChordTimeout())
-
-	// Create CARAVELA's Remote Client
-	caravelaCli := remote.NewHttpClient(config)
+	// Obtain the maximum resources Docker Engine has available
+	maxCPUs, maxRAM := dockerClient.GetDockerCPUAndRAM()
+	maxResources := resources.NewResources(maxCPUs, maxRAM)
 
 	// Create Resources Mapping (based on the configurations)
 	resourcesMap := resources.NewResourcesMap(resources.GetCpuCoresPartitions(config.CPUCoresPartitions()),
 		resources.GetRamPartitions(config.RAMPartitions()))
 	resourcesMap.Print()
 
-	// Create Docker client and obtain the maximum resources Docker Engine has available
-	dockerClient := docker.NewDockerClient(res.config)
-	maxCPUs, maxRAM := dockerClient.GetDockerCPUAndRAM()
-	maxResources := resources.NewResources(maxCPUs, maxRAM)
+	discovery := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxResources)
+	containersManager := containers.NewManager(config, dockerClient, discovery)
 
-	// Create the Resources Discovery component
-	res.discovery = discovery.NewDiscovery(config, res.overlay, caravelaCli, resourcesMap, *maxResources)
+	return &Node{
+		config:   config,
+		stopChan: make(chan bool),
 
-	// Create the Containers Manager component
-	res.containersManager = containers.NewManager(config, dockerClient, res.discovery)
-
-	// Create the Scheduler component
-	res.scheduler = scheduler.NewScheduler(config, res.discovery, res.containersManager, caravelaCli)
-	return res
+		apiServer:         api.NewServer(),
+		overlay:           overlay,
+		discovery:         discovery,
+		containersManager: containersManager,
+		scheduler:         scheduler.NewScheduler(config, discovery, containersManager, caravelaCli),
+	}
 }
 
 /*
@@ -80,7 +67,6 @@ func (node *Node) Start(join bool, joinIP string) error {
 	if join {
 		log.Debugln(util.LogTag("Node") + "Joining a overlay ...")
 		err = node.overlay.Join(joinIP, node.config.OverlayPort(), node)
-
 	} else {
 		log.Debugln(util.LogTag("Node") + "Creating an overlay ...")
 		err = node.overlay.Create(node)
@@ -94,7 +80,7 @@ func (node *Node) Start(join bool, joinIP string) error {
 	node.containersManager.Start()
 	node.scheduler.Start()
 
-	node.apiServer, err = api.Start(node.config, node) // Start CARAVELA REST API Server
+	err = node.apiServer.Start(node.config, node) // Start CARAVELA REST API Server
 	if err != nil {
 		return err
 	}
@@ -117,7 +103,7 @@ Stop the node internal working
 */
 func (node *Node) Stop() {
 	log.Debug(util.LogTag("Node") + "STOPPING...")
-	go node.apiServer.Shutdown(context.Background())
+	node.apiServer.Stop()
 	log.Debug(util.LogTag("Node") + "-> API SERVER STOPPED")
 	node.scheduler.Stop()
 	log.Debug(util.LogTag("Node") + "-> SCHEDULER STOPPED")
@@ -127,6 +113,7 @@ func (node *Node) Stop() {
 	log.Debug(util.LogTag("Node") + "-> DISCOVERY STOPPED")
 	node.overlay.Leave()
 	log.Debug(util.LogTag("Node") + "-> OVERLAY STOPPED")
+	// Used to make the main goroutine quit and exit the process
 	node.stopChan <- true
 	log.Debug(util.LogTag("Node") + "-> STOPPED")
 }

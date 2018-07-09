@@ -266,15 +266,15 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 }
 
 /*
-Remove nodes that do not belong to that target GUID partition. (Probably because we were tarted a frontier node)
+Remove nodes that do not belong to that target GUID partition. (Probably because we were target a frontier node)
 */
 func (sup *Supplier) removeNonTargetNodes(remoteNodes []*overlay.Node, targetGuid guid.GUID) []*overlay.Node {
 	resultNodes := make([]*overlay.Node, 0)
 	targetGuidResources, _ := sup.resourcesMap.ResourcesByGUID(targetGuid)
-	for _, v := range remoteNodes {
-		remoteNodeResources, _ := sup.resourcesMap.ResourcesByGUID(*guid.NewGUIDBytes(v.GUID()))
+	for _, remoteNode := range remoteNodes {
+		remoteNodeResources, _ := sup.resourcesMap.ResourcesByGUID(*guid.NewGUIDBytes(remoteNode.GUID()))
 		if targetGuidResources.Equals(*remoteNodeResources) {
-			resultNodes = append(resultNodes, v)
+			resultNodes = append(resultNodes, remoteNode)
 		}
 	}
 	return resultNodes
