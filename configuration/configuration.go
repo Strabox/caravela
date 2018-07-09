@@ -84,44 +84,45 @@ type overlay struct {
 Produces the configuration structure with all the default values for the system to work.
 */
 func Default(hostIP string, dockerAPIVersion string) *Configuration {
-	config := &Configuration{}
+	refreshingInterval := duration{Duration: 15 * time.Second}
 
-	// Host parameters
-	config.Host.IP = hostIP
-	config.Host.DockerAPIVersion = dockerAPIVersion
-
-	// Caravela parameters
-	config.Caravela.APIPort = caravelaAPIPort
-	config.Caravela.APITimeout = duration{Duration: 3 * time.Second}
-	config.Caravela.CheckContainersInterval = duration{Duration: 30 * time.Second}
-	config.Caravela.SupplyingInterval = duration{Duration: 45 * time.Second}
-	config.Caravela.RefreshesCheckInterval = duration{Duration: 30 * time.Second}
-	config.Caravela.RefreshingInterval = duration{Duration: 15 * time.Second}
-	config.Caravela.MaxRefreshesFailed = 2
-	config.Caravela.MaxRefreshesMissed = 2
-	config.Caravela.RefreshMissedTimeout = duration{Duration: config.Caravela.RefreshingInterval.Duration + (5 * time.Second)}
-	config.Caravela.CPUPowerPartition = []CPUPowerPartition{
-		{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-		{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}}
-	config.Caravela.CPUCoresPartitions = []CPUCoresPartition{
-		{Cores: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-		{Cores: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}}
-	config.Caravela.RAMPartitions = []RAMPartition{
-		{RAM: 256, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-		{RAM: 512, ResourcesPartition: ResourcesPartition{Percentage: 50}}}
-	config.Caravela.ResourcesOvercommit = 50
-
-	// Containers images storage
-	config.ImagesStorage.Backend = ImagesStorageDockerHub
-
-	// Overlay parameters
-	config.Overlay.OverlayPort = 8000
-	config.Overlay.ChordTimeout = duration{Duration: 5 * time.Second}
-	config.Overlay.ChordVirtualNodes = 3
-	config.Overlay.ChordNumSuccessors = 3
-	config.Overlay.ChordHashSizeBits = 160
-
-	return config
+	return &Configuration{
+		Host: host{
+			IP:               hostIP,
+			DockerAPIVersion: dockerAPIVersion,
+		},
+		Caravela: caravela{
+			APIPort:                 caravelaAPIPort,
+			APITimeout:              duration{Duration: 3 * time.Second},
+			CheckContainersInterval: duration{Duration: 30 * time.Second},
+			SupplyingInterval:       duration{Duration: 45 * time.Second},
+			RefreshesCheckInterval:  duration{Duration: 30 * time.Second},
+			RefreshingInterval:      refreshingInterval,
+			MaxRefreshesFailed:      2,
+			MaxRefreshesMissed:      2,
+			RefreshMissedTimeout:    duration{Duration: refreshingInterval.Duration + (5 * time.Second)},
+			CPUPowerPartition: []CPUPowerPartition{
+				{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}},
+			CPUCoresPartitions: []CPUCoresPartition{
+				{Cores: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+				{Cores: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}},
+			RAMPartitions: []RAMPartition{
+				{RAM: 256, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+				{RAM: 512, ResourcesPartition: ResourcesPartition{Percentage: 50}}},
+			ResourcesOvercommit: 50,
+		},
+		ImagesStorage: imagesStorage{
+			Backend: ImagesStorageDockerHub,
+		},
+		Overlay: overlay{
+			OverlayPort:        8000,
+			ChordTimeout:       duration{Duration: 5 * time.Second},
+			ChordVirtualNodes:  3,
+			ChordNumSuccessors: 3,
+			ChordHashSizeBits:  160,
+		},
+	}
 }
 
 /*

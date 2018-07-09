@@ -86,6 +86,7 @@ func (sup *Supplier) startSupplying() {
 						sup.availableResources.Add(*offer.Resources())
 					}
 
+					var err error
 					var overlayNodes []*overlay.Node = nil
 					destinationGUID, _ := sup.resourcesMap.RandGUID(*sup.availableResources)
 					overlayNodes, _ = sup.overlay.Lookup(destinationGUID.Bytes())
@@ -93,14 +94,14 @@ func (sup *Supplier) startSupplying() {
 
 					// .. try search nodes in the beginning of the original target resource range region
 					if len(overlayNodes) == 0 {
-						targetResourcesFirstGuid := sup.resourcesMap.FirstGUID(*sup.availableResources)
-						overlayNodes, _ = sup.overlay.Lookup(targetResourcesFirstGuid.Bytes())
-						overlayNodes = sup.removeNonTargetNodes(overlayNodes, *targetResourcesFirstGuid)
+						destinationGUID := sup.resourcesMap.FirstGUID(*sup.availableResources)
+						overlayNodes, _ = sup.overlay.Lookup(destinationGUID.Bytes())
+						overlayNodes = sup.removeNonTargetNodes(overlayNodes, *destinationGUID)
 					}
 
 					// ... try search for random nodes that handle less powerful resource combinations
 					for len(overlayNodes) == 0 {
-						_, err := sup.resourcesMap.LowerRandGUID(*destinationGUID, *sup.availableResources)
+						destinationGUID, err = sup.resourcesMap.LowerRandGUID(*destinationGUID, *sup.availableResources)
 						if err != nil {
 							log.Errorf(util.LogTag("Supplier")+"NO NODES to handle resources offer: %s, error: %s",
 								sup.availableResources.String(), err)
@@ -114,7 +115,7 @@ func (sup *Supplier) startSupplying() {
 					chosenNode := overlayNodes[0]
 					chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
-					err := sup.client.CreateOffer(sup.config.HostIP(), "", chosenNode.IP(),
+					err = sup.client.CreateOffer(sup.config.HostIP(), "", chosenNode.IP(),
 						chosenNodeGUID.String(), int64(sup.offersID), 1, sup.availableResources.CPUs(),
 						sup.availableResources.RAM())
 

@@ -59,9 +59,8 @@ func (man *Manager) checkDeployedContainers() {
 					for i := len(containers) - 1; i >= 0; i-- {
 						containerID := man.containersMap[key][i].DockerID()
 						contStatus, err := man.dockerClient.CheckContainerStatus(containerID)
-						log.Debugf("ContainerManage errr %s", err)
 						if err == nil && !contStatus.IsRunning() {
-							log.Debugf(util.LogTag("ContManager")+"Container, %s STOPPED and REMOVED", containerID)
+							log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", containerID)
 							man.dockerClient.RemoveContainer(containers[i].dockerID)
 							man.supplier.ReturnResources(containers[i].resources)
 							man.containersMap[key] = append(man.containersMap[key][:i], man.containersMap[key][i+1:]...)
@@ -143,7 +142,7 @@ func (man *Manager) Stop() {
 		for key, containers := range man.containersMap {
 			for _, container := range containers {
 				man.dockerClient.RemoveContainer(container.dockerID)
-				log.Debugf(util.LogTag("ContManager")+"Container, %s STOPPED and REMOVED", container.dockerID)
+				log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", container.dockerID)
 			}
 			delete(man.containersMap, key)
 		}

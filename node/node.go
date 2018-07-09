@@ -42,8 +42,8 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 		resources.GetRamPartitions(config.RAMPartitions()))
 	resourcesMap.Print()
 
-	discovery := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxResources)
-	containersManager := containers.NewManager(config, dockerClient, discovery)
+	discoveryComp := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxResources)
+	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)
 
 	return &Node{
 		config:   config,
@@ -51,9 +51,9 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 
 		apiServer:         apiServer,
 		overlay:           overlay,
-		discovery:         discovery,
-		containersManager: containersManager,
-		scheduler:         scheduler.NewScheduler(config, discovery, containersManager, caravelaCli),
+		discovery:         discoveryComp,
+		containersManager: containersManagerComp,
+		scheduler:         scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli),
 	}
 }
 
