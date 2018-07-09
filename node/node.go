@@ -23,7 +23,7 @@ type Node struct {
 	config   *configuration.Configuration // System's configuration
 	stopChan chan bool                    // Channel to stop the node functions
 
-	apiServer         *api.Server          // API server to to handle requests
+	apiServer         api.Server           // API server to to handle requests
 	discovery         *discovery.Discovery // Discovery component
 	scheduler         *scheduler.Scheduler // Scheduler component
 	containersManager *containers.Manager  // Containers Manager component
@@ -31,7 +31,7 @@ type Node struct {
 }
 
 func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli remote.Caravela,
-	dockerClient docker.Client, apiServer *api.Server) *Node {
+	dockerClient docker.Client, apiServer api.Server) *Node {
 
 	// Obtain the maximum resources Docker Engine has available
 	maxCPUs, maxRAM := dockerClient.GetDockerCPUAndRAM()
@@ -80,7 +80,7 @@ func (node *Node) Start(join bool, joinIP string) error {
 	node.containersManager.Start()
 	node.scheduler.Start()
 
-	err = node.apiServer.Start(node.config, node) // Start CARAVELA REST API Server
+	err = node.apiServer.Start(node.config, node) // Start CARAVELA REST API HttpServer
 	if err != nil {
 		return err
 	}

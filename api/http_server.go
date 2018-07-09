@@ -18,20 +18,20 @@ import (
 /*
 Represents the server (HTTP server) that handle the API requests in each node.
 */
-type Server struct {
+type HttpServer struct {
 	router     *mux.Router
 	httpServer *http.Server
 }
 
-func NewServer() *Server {
-	return &Server{
+func NewServer() *HttpServer {
+	return &HttpServer{
 		router:     mux.NewRouter(), // HTTP request endpoint router
 		httpServer: nil,             // Filled when server is started
 	}
 }
 
-func (server *Server) Start(config *configuration.Configuration, thisNode nodeAPI.Node) error {
-	log.Debug(util.LogTag("[API]") + "Starting REST API Server ...")
+func (server *HttpServer) Start(config *configuration.Configuration, thisNode nodeAPI.Node) error {
+	log.Debug(util.LogTag("[API]") + "Starting REST API HttpServer ...")
 
 	// Start all the API rest endpoints and the respective endpoint routing
 	configEndpoint.Initialize(server.router, thisNode, config)
@@ -50,6 +50,6 @@ func (server *Server) Start(config *configuration.Configuration, thisNode nodeAP
 	return nil
 }
 
-func (server *Server) Stop() {
+func (server *HttpServer) Stop() {
 	go server.httpServer.Shutdown(context.Background())
 }
