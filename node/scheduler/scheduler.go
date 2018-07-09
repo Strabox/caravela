@@ -62,6 +62,7 @@ func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.Po
 		log.Debugf(util.LogTag("Run")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
 		return nil
 	}
+	log.Debugf(util.LogTag("Run") + "No offers found")
 	return fmt.Errorf("no offers found to deploy the container")
 }
 
