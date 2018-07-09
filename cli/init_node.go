@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
@@ -49,8 +50,11 @@ func initNode(hostIP string, join bool, joinIP string) error {
 	// Create Docker client
 	dockerClient := docker.NewDockerClient(systemConfigurations)
 
+	// Create the API server
+	apiServer := api.NewServer()
+
 	// Create a CARAVELA Node passing all the external components and start it functions
-	thisNode := node.NewNode(systemConfigurations, overlay, caravelaCli, dockerClient)
+	thisNode := node.NewNode(systemConfigurations, overlay, caravelaCli, dockerClient, apiServer)
 	err = thisNode.Start(join, joinIP)
 	if err != nil {
 		return err
