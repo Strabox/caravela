@@ -12,30 +12,20 @@ import (
 var randomGenerator = rand.New(rand.NewSource(time.Now().UnixNano()))
 var randomGeneratorMutex = sync.Mutex{}
 
-/*
-It is used to pass to the Chord implementation and it does a pass-through hash
-because we generate our hash in the node layer depending on the resources for a request.
-*/
+// It is used to pass to the Chord implementation and it does a pass-through hash
+// because we generate our hash in the node layer depending on the resources for a request.
 type ResourcesHash struct {
 	// Hash size (in bytes).
 	sizeBytes int
 	// Current hash value. In our case this is the value generated in the node layer.
 	hash []byte
-	/*
-		(Hack) Hostname necessary to intercept hash of hostname strings when a join
-		join request is issued in the local node.
-	*/
+	//(Hack) Hostname necessary to intercept hash of hostname strings when a join join request is issued in the local node.
 	hostname string
-	/*
-		(Hack) Used to ignore the second call to write after a call issued to generate
-		the hash/GUID of a joining node ????
-	*/
+	// (Hack) Used to ignore the second call to write after a call issued to generate the hash/GUID of a joining node ????
 	ignoreChordWrite bool
 }
 
-/*
-Creates a new hash.
-*/
+// NewResourcesHash creates a new hash.
 func NewResourcesHash(bytesSize int, hostname string) *ResourcesHash {
 	hash := &ResourcesHash{}
 	hash.hash = make([]byte, bytesSize, bytesSize)
@@ -45,9 +35,7 @@ func NewResourcesHash(bytesSize int, hostname string) *ResourcesHash {
 	return hash
 }
 
-/*
-Generate a random hash. Used to generate random GUIDs for the joining nodes.
-*/
+// Generate a random hash. Used to generate random GUIDs for the joining nodes.
 func (rh *ResourcesHash) generateRandomHash(hashToFill []byte) {
 	randomGeneratorMutex.Lock()
 	defer randomGeneratorMutex.Unlock()

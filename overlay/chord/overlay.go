@@ -14,9 +14,7 @@ import (
 	"time"
 )
 
-/*
-Represents a Chord overlay local (for each node) structure.
-*/
+// Represents a Chord overlay local (for each node) structure.
 type Overlay struct {
 	// Used to communicate interesting events to the application.
 	appNode nodeAPI.OverlayMembership
@@ -44,9 +42,7 @@ type Overlay struct {
 	chordRing *chord.Ring
 }
 
-/*
-Create a new Chord overlay structure.
-*/
+// Create a new Chord overlay structure.
 func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int,
 	numVirtualNodes int, numSuccessors int, timeout time.Duration) *Overlay {
 
@@ -67,9 +63,7 @@ func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int,
 	return chordOverlay
 }
 
-/*
-Initialize the chord overlay and its respective inner structures.
-*/
+// Initialize the chord overlay and its respective inner structures.
 func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config, chord.Transport, error) {
 	co.appNode = appNode
 	hostname := co.hostIP + ":" + strconv.Itoa(co.hostPort)
@@ -91,9 +85,7 @@ func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config,
 	return config, transport, nil
 }
 
-/*
-Called when a new virtual node of this physical node has joined the chord ring.
-*/
+// Called when a new virtual node of this physical node has joined the chord ring.
 func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
 	if co.virtualNodesRunning == co.numVirtualNodes {
 		return
@@ -115,10 +107,8 @@ func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNod
 	co.appNode.AddTrader(localVirtualNodeID) // Alert the node for the new virtual node/trader
 }
 
-/*
-Called when the predecessor of a virtual node of the physical node changes.
-e.g. Due to a crash in the previous predecessor or because he left the chord ring.
-*/
+// Called when the predecessor of a virtual node of the physical node changes.
+// e.g. Due to a crash in the previous predecessor or because he left the chord ring.
 func (co *Overlay) predecessorNodeChanged(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
 	vNodeID := big.NewInt(0)
 	vNodeID.SetBytes(localVirtualNodeID)

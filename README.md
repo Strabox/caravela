@@ -17,7 +17,7 @@ This work is being developed in the context of my Masters Degree Thesis in Compu
 ## Getting Started
 
 This project is a standalone middleware to orchestrate Docker containers but it is highly inspired in the
-Docker, Swarm and Kubernetes projects so the APIs and the CLI mimic a small subset of commands/features from
+Docker, Swarm and Kubernetes projects so the APIs and the CLI try to mimic a small subset of commands/features from
 that platforms. So it is easily migrate container's deployment for a CARAVELA instance.
 
 ### Compile From Source
@@ -49,7 +49,7 @@ already participating in a CARAVELA instance.
 
 `caravela join <machine_ip> <caravela_machine_ip>`
 
-### Run, Stop and Check containers in CARAVELA
+### Run, Stop Containers and more
 
 #### Run
 
@@ -58,6 +58,8 @@ already participating in a CARAVELA instance.
 #### Stop
 
 ## Contributing
+
+TODO
 
 ## License
 

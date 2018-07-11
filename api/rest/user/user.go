@@ -4,14 +4,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
-	nodeAPI "github.com/strabox/caravela/node/api"
 	"net/http"
 )
 
-var thisNode nodeAPI.Node = nil
+var userNodeAPI User = nil
 
-func Initialize(router *mux.Router, selfNode nodeAPI.Node) {
-	thisNode = selfNode
+func Init(router *mux.Router, userNode User) {
+	userNodeAPI = userNode
 	router.Handle(rest.UserContainerBaseEndpoint, rest.AppHandler(runContainer)).Methods(http.MethodPost)
 	router.Handle(rest.UserContainerBaseEndpoint, rest.AppHandler(stopContainers)).Methods(http.MethodDelete)
 	router.Handle(rest.UserContainerBaseEndpoint, rest.AppHandler(listContainers)).Methods(http.MethodGet)
@@ -30,20 +29,20 @@ func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		runContainerMsg.ContainerImageKey, runContainerMsg.Arguments, runContainerMsg.PortMappings,
 		runContainerMsg.CPUs, runContainerMsg.RAM)
 
-	err = thisNode.Scheduler().Run(runContainerMsg.ContainerImageKey, runContainerMsg.PortMappings,
+	err = userNodeAPI.SubmitContainers(runContainerMsg.ContainerImageKey, runContainerMsg.PortMappings,
 		runContainerMsg.Arguments, runContainerMsg.CPUs, runContainerMsg.RAM)
 	return nil, err
 }
 
 func stopContainers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var stopContainers rest.StopContainersMessage
+	var stopContainersMsg rest.StopContainersMessage
 
-	err = rest.ReceiveJSONFromHttp(w, r, &stopContainers)
+	err = rest.ReceiveJSONFromHttp(w, r, &stopContainersMsg)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("<-- STOP Containers: %v", stopContainers.ContainersIDs)
+	log.Infof("<-- STOP Containers: %v", stopContainersMsg.ContainersIDs)
 
 	// TODO: Forward the call to node
 	return nil, nil
@@ -59,6 +58,6 @@ func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error)
 func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	log.Infof("<-- EXITING CARAVELA")
 
-	thisNode.Stop()
+	userNodeAPI.Stop()
 	return nil, nil
 }

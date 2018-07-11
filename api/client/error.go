@@ -5,17 +5,16 @@ import "strings"
 const Unknown = 1
 const CaravelaInstanceUnavailable = 2
 
-/*
-Error struct returned by the Caravela's client
-*/
+// Error returned by the CARAVELA's client
 type Error struct {
 	err  error
 	Code int
 }
 
 func NewClientError(err error) *Error {
-	res := &Error{}
-	res.err = err
+	res := &Error{
+		err: err,
+	}
 	if strings.Contains(err.Error(), "No connection") {
 		res.Code = CaravelaInstanceUnavailable
 	} else {

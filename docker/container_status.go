@@ -4,9 +4,7 @@ const Running = 0
 const Finished = 1
 const Unknown = 2
 
-/*
-Simple execution status of a docker container.
-*/
+// Simple execution status of a docker container.
 type ContainerStatus struct {
 	statusCode int
 }

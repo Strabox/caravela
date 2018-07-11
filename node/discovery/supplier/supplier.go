@@ -29,7 +29,7 @@ type Supplier struct {
 	resourcesMap       *resources.Mapping                // The resources<->GUID mapping
 	maxResources       *resources.Resources              // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources              // CURRENT Available resources to offer
-	offersID           common.OfferID                    // Monotonic counter to generate offer's local unique IDs
+	offersIDGen        common.OfferID                    // Monotonic counter to generate offer's local unique IDs
 	activeOffers       map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
 	offersMutex        *sync.Mutex                       // Mutex to handle active offers management
 
@@ -40,22 +40,22 @@ type Supplier struct {
 
 func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, client remote.Caravela,
 	resourcesMap *resources.Mapping, maxResources resources.Resources) *Supplier {
-	resSupplier := &Supplier{}
-	resSupplier.config = config
-	resSupplier.overlay = overlay
-	resSupplier.client = client
+	return &Supplier{
+		config:  config,
+		overlay: overlay,
+		client:  client,
 
-	resSupplier.resourcesMap = resourcesMap
-	resSupplier.maxResources = maxResources.Copy()
-	resSupplier.availableResources = maxResources.Copy()
-	resSupplier.offersID = 0
-	resSupplier.activeOffers = make(map[common.OfferID]*supplierOffer)
-	resSupplier.offersMutex = &sync.Mutex{}
+		resourcesMap:       resourcesMap,
+		maxResources:       maxResources.Copy(),
+		availableResources: maxResources.Copy(),
+		offersIDGen:        0,
+		activeOffers:       make(map[common.OfferID]*supplierOffer),
+		offersMutex:        &sync.Mutex{},
 
-	resSupplier.quitChan = make(chan bool)
-	resSupplier.supplyingTicker = time.NewTicker(config.SupplyingInterval()).C
-	resSupplier.refreshesCheckTicker = time.NewTicker(config.RefreshesCheckInterval()).C
-	return resSupplier
+		quitChan:             make(chan bool),
+		supplyingTicker:      time.NewTicker(config.SupplyingInterval()).C,
+		refreshesCheckTicker: time.NewTicker(config.RefreshesCheckInterval()).C,
+	}
 }
 
 /*
@@ -70,7 +70,7 @@ func (sup *Supplier) startSupplying() {
 				sup.offersMutex.Lock()
 				defer sup.offersMutex.Unlock()
 
-				if sup.availableResources.Available() {
+				if sup.availableResources.IsValid() {
 					/*
 						What?: Remove all active offers from the traders in order to gather all available resources.
 						Goal: This is used to try offer the maximum amount of resources the node has available between
@@ -116,14 +116,14 @@ func (sup *Supplier) startSupplying() {
 					chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
 					err = sup.client.CreateOffer(sup.config.HostIP(), "", chosenNode.IP(),
-						chosenNodeGUID.String(), int64(sup.offersID), 1, sup.availableResources.CPUs(),
+						chosenNodeGUID.String(), int64(sup.offersIDGen), 1, sup.availableResources.CPUs(),
 						sup.availableResources.RAM())
 
 					if err == nil {
-						sup.activeOffers[sup.offersID] = newSupplierOffer(common.OfferID(sup.offersID),
+						sup.activeOffers[sup.offersIDGen] = newSupplierOffer(common.OfferID(sup.offersIDGen),
 							1, *sup.availableResources, chosenNode.IP(), *chosenNodeGUID)
 						sup.availableResources.SetZero()
-						sup.offersID++
+						sup.offersIDGen++
 					}
 				}
 			}()
@@ -159,6 +159,10 @@ Find a list active Offers that best suit the target resources given.
 func (sup *Supplier) FindOffers(targetResources resources.Resources) []api.Offer {
 	if !sup.isWorking() {
 		panic(fmt.Errorf("can't find offers, supplier not working"))
+	}
+
+	if !targetResources.IsValid() { // If the resource combination is not valid we will search for the lowest one
+		targetResources = *sup.resourcesMap.LowestResources()
 	}
 
 	var destinationGUID *guid.GUID = nil

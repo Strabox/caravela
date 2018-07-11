@@ -6,35 +6,27 @@ import (
 	"time"
 )
 
-/*
-Auxiliary data that represents the golang time.Duration
-*/
+// Auxiliary data that represents the golang time.Duration
 type duration struct {
 	time.Duration
 }
 
-/*
-Implementation of encoding.TextUnmarshal interface for the duration type.
-Used to deserialize durations from the configuration file (TOML).
-*/
+// Implementation of encoding.TextUnmarshal interface for the duration type.
+// Used to deserialize durations from the configuration file (TOML).
 func (d *duration) UnmarshalText(text []byte) error {
 	var err error
 	d.Duration, err = time.ParseDuration(string(text))
 	return err
 }
 
-/*
-Implementation of json.encoding interface for the duration type.
-Used to serialize/deserialize durations during HTTP requests.
-*/
+// Implementation of json.encoding interface for the duration type.
+// Used to serialize/deserialize durations during HTTP requests.
 func (d *duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.String())
 }
 
-/*
-Implementation of json.decoding interface for the duration type.
-Used to serialize/deserialize durations during HTTP requests.
-*/
+// Implementation of json.decoding interface for the duration type.
+// Used to serialize/deserialize durations during HTTP requests.
 func (d *duration) UnmarshalJSON(b []byte) error {
 	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {

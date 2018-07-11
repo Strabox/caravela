@@ -5,9 +5,7 @@ import "strings"
 // Max size for a log's entry tag
 const maxTagSize = 12
 
-/*
-Builds a tag for the log entries with indentation in order to align the log entries.
-*/
+// Builds a tag for the log entries with indentation in order to align the log entries.
 func LogTag(tag string) string {
 	tag = "[" + tag + "]"
 	sizeOfIndentation := maxTagSize - len(tag)

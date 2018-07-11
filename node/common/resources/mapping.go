@@ -150,26 +150,6 @@ func (rm *Mapping) LowerRandGUID(currentGUID guid.GUID, targetResources Resource
 }
 
 /*
-Verify if the given GUID belongs to a resource combination that is contained inside the
-target resource combination.
-TODO: DEPRECATED(NOT USED)
-*/
-func (rm *Mapping) IsContainedInTargetResources(guid guid.GUID, targetResources Resources) bool {
-	guidResources, _ := rm.ResourcesByGUID(guid)
-	return rm.getFittestResources(targetResources).Contains(*guidResources)
-}
-
-/*
-Verify if the given target resources belongs to a resource combination that is contained inside the
-resource combination of the given GUID.
-TODO: DEPRECATED(NOT USED)
-*/
-func (rm *Mapping) IsTargetResourcesContained(guid guid.GUID, targetResources Resources) bool {
-	guidResources, _ := rm.ResourcesByGUID(guid)
-	return guidResources.Contains(*rm.getFittestResources(targetResources))
-}
-
-/*
 Returns the first GUID that represents the given resources.
 */
 func (rm *Mapping) FirstGUID(resources Resources) *guid.GUID {
@@ -191,6 +171,11 @@ func (rm *Mapping) ResourcesByGUID(resGUID guid.GUID) (*Resources, error) {
 		}
 	}
 	return nil, fmt.Errorf("invalid GUID %s", resGUID.String())
+}
+
+// Obtain the lowest resource combination available.
+func (rm *Mapping) LowestResources() *Resources {
+	return NewResources(rm.cpuPartitions[0], rm.ramPartitions[0])
 }
 
 /*

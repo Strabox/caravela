@@ -2,9 +2,7 @@ package cli
 
 import "github.com/urfave/cli"
 
-/*
-List of commands available to the CLI end users.
-*/
+// List of commands available to the CLI end users.
 var (
 	commands = []cli.Command{
 		{
@@ -37,12 +35,12 @@ var (
 				},
 				cli.UintFlag{
 					Name:  "cpus, c",
-					Value: DefaultNumOfCPUs,
+					Value: 0,
 					Usage: "Maximum number of CPUs/Cores that the container need",
 				},
 				cli.UintFlag{
 					Name:  "ram, r",
-					Value: DefaultAmountOfRAM,
+					Value: 0,
 					Usage: "Maximum amount of RAM (in Megabytes) that container can use",
 				},
 			},

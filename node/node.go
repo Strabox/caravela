@@ -4,6 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
+	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
 	nodeAPI "github.com/strabox/caravela/node/api"
@@ -12,22 +13,22 @@ import (
 	"github.com/strabox/caravela/node/containers"
 	"github.com/strabox/caravela/node/discovery"
 	"github.com/strabox/caravela/node/scheduler"
+	"github.com/strabox/caravela/node/user"
 	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 )
 
-/*
-Top level structure that contains all the modules/objects that manages a CARAVELA node.
-*/
+// Node is the top level (Entry) structure for all the functionality.
 type Node struct {
 	config   *configuration.Configuration // System's configuration
 	stopChan chan bool                    // Channel to stop the node functions
 
-	apiServer         api.Server           // API server to to handle requests
+	apiServer         api.Server           // API server component
 	discovery         *discovery.Discovery // Discovery component
 	scheduler         *scheduler.Scheduler // Scheduler component
 	containersManager *containers.Manager  // Containers Manager component
-	overlay           overlay.Overlay      // Overlay component
+	userManager       *user.Manager
+	overlay           overlay.Overlay // Overlay component
 }
 
 func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli remote.Caravela,
@@ -43,7 +44,12 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 	resourcesMap.Print()
 
 	discoveryComp := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxResources)
+
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)
+
+	schedulerComp := scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli)
+
+	userManagerComp := user.NewManager(schedulerComp)
 
 	return &Node{
 		config:   config,
@@ -53,13 +59,17 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 		overlay:           overlay,
 		discovery:         discoveryComp,
 		containersManager: containersManagerComp,
-		scheduler:         scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli),
+		scheduler:         schedulerComp,
+		userManager:       userManagerComp,
 	}
 }
 
-/*
-Start the node internal working
-*/
+func (node *Node) Configuration() *configuration.Configuration {
+	return node.config
+}
+
+/* ========================= SubComponent Interface ====================== */
+
 func (node *Node) Start(join bool, joinIP string) error {
 	var err error
 
@@ -80,27 +90,22 @@ func (node *Node) Start(join bool, joinIP string) error {
 	node.containersManager.Start()
 	node.scheduler.Start()
 
-	err = node.apiServer.Start(node.config, node) // Start CARAVELA REST API HttpServer
+	err = node.apiServer.Start(node) // Start CARAVELA REST API web server
 	if err != nil {
 		return err
 	}
 
 	log.Debug(util.LogTag("Node") + "Node STARTED")
 
-	for {
-		select {
-		case stop := <-node.stopChan: // Block main Goroutine until a stop message is received
-			if stop {
-				return nil
-			}
+	select {
+	case stop := <-node.stopChan: // Block main Goroutine until a stop message is received
+		if stop {
+			return nil
 		}
 	}
 	return nil
 }
 
-/*
-Stop the node internal working
-*/
 func (node *Node) Stop() {
 	log.Debug(util.LogTag("Node") + "STOPPING...")
 	node.apiServer.Stop()
@@ -118,17 +123,47 @@ func (node *Node) Stop() {
 	log.Debug(util.LogTag("Node") + "-> STOPPED")
 }
 
+/* ======================== Overlay Membership Interface =========================== */
+
 func (node *Node) AddTrader(guidBytes []byte) {
 	guidRes := guid.NewGUIDBytes(guidBytes)
 	node.discovery.AddTrader(*guidRes)
 }
 
-/* ================================== NodeRemote ============================= */
+/* ========================= Discovery Module Interface ====================== */
 
-func (node *Node) Discovery() nodeAPI.Discovery {
-	return node.discovery
+func (node *Node) CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string,
+	id int64, amount int, cpus int, ram int) {
+	node.discovery.CreateOffer(fromSupplierGUID, fromSupplierIP, toTraderGUID, id, amount, cpus, ram)
 }
 
-func (node *Node) Scheduler() nodeAPI.Scheduler {
-	return node.scheduler
+func (node *Node) RefreshOffer(offerID int64, fromTraderGUID string) bool {
+	return node.discovery.RefreshOffer(offerID, fromTraderGUID)
+}
+
+func (node *Node) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64) {
+	node.discovery.RemoveOffer(fromSupplierIP, fromSupplierGUID, toTraderGUID, offerID)
+}
+
+func (node *Node) GetOffers(toTraderGUID string, relay bool, fromNodeGUID string) []nodeAPI.Offer {
+	return node.discovery.GetOffers(toTraderGUID, relay, fromNodeGUID)
+}
+
+func (node *Node) AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID string, traderOfferingIP string,
+	traderOfferingGUID string) {
+	node.discovery.AdvertiseNeighborOffers(toTraderGUID, fromTraderGUID, traderOfferingIP, traderOfferingGUID)
+}
+
+/* ========================= Scheduling Module Interface ======================== */
+
+func (node *Node) LaunchContainers(fromBuyerIP string, offerId int64, containerImageKey string, portMappings []rest.PortMapping,
+	containerArgs []string, cpus int, ram int) (string, error) {
+	return node.scheduler.Launch(fromBuyerIP, offerId, containerImageKey, portMappings, containerArgs, cpus, ram)
+}
+
+/* ========================= User Module Interface ============================= */
+
+func (node *Node) SubmitContainers(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
+	cpus int, ram int) error {
+	return node.scheduler.Run(containerImageKey, portMappings, containerArgs, cpus, ram)
 }

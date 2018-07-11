@@ -73,7 +73,7 @@ func (r *Resources) IsZero() bool {
 /*
 Return true if all resources are greater than 0
 */
-func (r *Resources) Available() bool {
+func (r *Resources) IsValid() bool {
 	return r.cpus > 0 && r.ram > 0
 }
 

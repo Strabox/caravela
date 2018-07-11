@@ -33,16 +33,16 @@ type traderOffer struct {
 func newTraderOffer(supplierGUID guid.GUID, supplierIP string, id common.OfferID, amount int,
 	res resources.Resources) *traderOffer {
 
-	offerRes := &traderOffer{}
-	offerRes.Offer = common.NewOffer(id, amount, res)
+	return &traderOffer{
+		Offer: common.NewOffer(id, amount, res),
 
-	offerRes.supplierGUID = &supplierGUID
-	offerRes.supplierIP = supplierIP
+		supplierGUID: &supplierGUID,
+		supplierIP:   supplierIP,
 
-	offerRes.lastRefreshTimestamp = time.Now()
-	offerRes.waitingForRefresh = false
-	offerRes.refreshesFailed = 0
-	return offerRes
+		lastRefreshTimestamp: time.Now(),
+		waitingForRefresh:    false,
+		refreshesFailed:      0,
+	}
 }
 
 /*

@@ -9,9 +9,7 @@ import (
 	"net/http"
 )
 
-/*
-Validate the HTTP message content extracting the JSON into a golang structure if necessary
-*/
+// Validate the HTTP message content extracting the JSON into a Go structure if necessary.
 func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill interface{}) error {
 	if r.Body != nil { // Verify if HTTP message body is not empty
 		err := json.NewDecoder(r.Body).Decode(jsonToFill)
@@ -25,9 +23,7 @@ func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill inte
 	}
 }
 
-/*
-Build and execute an HTTP Request and frees all the resources getting all the data before
-*/
+// Build and execute an HTTP Request and frees all the resources getting all the data before.
 func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, jsonToSend interface{},
 	jsonToGet interface{}) (error, int) {
 
@@ -65,9 +61,7 @@ func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, j
 	}
 }
 
-/*
-Encodes a golang struct into a buffer using JSON format.
-*/
+// Encodes a golang struct into a buffer using JSON format.
 func ToJSONBuffer(jsonToEncode interface{}) *bytes.Buffer {
 	if jsonToEncode == nil {
 		return new(bytes.Buffer) // HACK!!! I should try to tell http that the body should be empty
@@ -78,16 +72,12 @@ func ToJSONBuffer(jsonToEncode interface{}) *bytes.Buffer {
 	}
 }
 
-/*
-Encodes a golang struct into a an array of bytes.
-*/
+// Encodes a golang struct into a an array of bytes.
 func ToJSONBytes(jsonToEncode interface{}) []byte {
 	return ToJSONBuffer(jsonToEncode).Bytes()
 }
 
-/*
-Build a valid HTTP/HTTPS URL and returns it as a string.
-*/
+// Build a valid HTTP/HTTPS URL and returns it as a string.
 func BuildHttpURL(https bool, ip string, port int, uri string) string {
 	var protocol string
 	if https {

@@ -4,26 +4,21 @@ import (
 	"time"
 )
 
-/*
-Caravela client configuration struct.
-*/
+// CARAVELA's client configuration
 type Configuration struct {
-	// IP of the Caravela's Daemon that will receive the request
-	caravelaInstanceIP string
-	// Port of the Caravela's Daemon that will receive the request
-	caravelaInstancePort int
+	caravelaInstanceIP   string // IP of the CARAVELA's Daemon that will receive the request
+	caravelaInstancePort int    // Port of the CARAVELA's Daemon that will receive the request
 
-	// HTTP requests timeout
-	httpRequestTimeout time.Duration
+	httpRequestTimeout time.Duration // HTTP requests timeout
 }
 
 func DefaultConfiguration(caravelaInstanceIP string) *Configuration {
-	res := &Configuration{}
-	res.caravelaInstanceIP = caravelaInstanceIP
-	res.caravelaInstancePort = 8001
+	return &Configuration{
+		caravelaInstanceIP:   caravelaInstanceIP,
+		caravelaInstancePort: 8001,
 
-	res.httpRequestTimeout = 3 * time.Second
-	return res
+		httpRequestTimeout: 3 * time.Second,
+	}
 }
 
 func (config *Configuration) CaravelaInstanceIP() string {

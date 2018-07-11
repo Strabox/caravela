@@ -2,17 +2,13 @@ package storage
 
 import dockerClient "github.com/docker/docker/client"
 
-/*
-Interface for container's images storage Backends
-*/
+// Interface for container's images storage Backends
 type Backend interface {
 	// Returns the image key assigned inside the docker engine.
 	Load(imageKey string) (string, error)
 }
 
-/*
-BaseBackend structure
-*/
+// BaseBackend structure
 type BaseBackend struct {
 	docker *dockerClient.Client
 }

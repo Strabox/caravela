@@ -7,17 +7,16 @@ import (
 const Unknown = 1
 const CaravelaInstanceUnavailable = 2
 
-/*
-Error of Caravela's remote client.
-*/
+// Error of CARAVELA's remote client.
 type Error struct {
 	Code int
 	err  error
 }
 
 func NewRemoteClientError(err error) *Error {
-	res := &Error{}
-	res.err = err
+	res := &Error{
+		err: err,
+	}
 	if strings.Contains(err.Error(), "No connection") {
 		res.Code = CaravelaInstanceUnavailable
 	} else {

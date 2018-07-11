@@ -34,46 +34,20 @@ type Discovery struct {
 
 func NewDiscovery(config *configuration.Configuration, overlay overlay.Overlay,
 	client remote.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
-	res := &Discovery{}
-	res.config = config
-	res.overlay = overlay
-	res.client = client
-	res.resourcesMap = resourcesMap
-	res.supplier = supplier.NewSupplier(config, overlay, client, resourcesMap, maxResources)
-	res.virtualTraders = make(map[string]*trader.Trader)
-	res.virtualTradersMutex = sync.Mutex{}
-	return res
+
+	return &Discovery{
+		config:  config,
+		overlay: overlay,
+		client:  client,
+
+		resourcesMap:        resourcesMap,
+		supplier:            supplier.NewSupplier(config, overlay, client, resourcesMap, maxResources),
+		virtualTraders:      make(map[string]*trader.Trader),
+		virtualTradersMutex: sync.Mutex{},
+	}
 }
 
 /*============================== DiscoveryInternal Interface =============================== */
-
-/*
-Start the node's supplier module
-*/
-func (disc *Discovery) Start() {
-	disc.Started(func() {
-		disc.supplier.Start()
-	})
-}
-
-/*
-Stops the node's supplier module
-*/
-func (disc *Discovery) Stop() {
-	disc.Stopped(func() {
-		disc.virtualTradersMutex.Lock()
-		defer disc.virtualTradersMutex.Unlock()
-
-		disc.supplier.Stop()
-		for _, trader := range disc.virtualTraders {
-			trader.Stop()
-		}
-	})
-}
-
-func (disc *Discovery) isWorking() bool {
-	return disc.Working()
-}
 
 /*
 Adds a new local "virtual" trader when the overlay notifies its presence.
@@ -143,4 +117,32 @@ func (disc *Discovery) AdvertiseNeighborOffers(toTraderGUID string, fromTraderGU
 	if exist {
 		t.AdvertiseNeighborOffer(fromTraderGUID, traderOfferingIP, traderOfferingGUID)
 	}
+}
+
+/*
+===============================================================================
+							SubComponent Interface
+===============================================================================
+*/
+
+func (disc *Discovery) Start() {
+	disc.Started(func() {
+		disc.supplier.Start()
+	})
+}
+
+func (disc *Discovery) Stop() {
+	disc.Stopped(func() {
+		disc.virtualTradersMutex.Lock()
+		defer disc.virtualTradersMutex.Unlock()
+
+		disc.supplier.Stop()
+		for _, trader := range disc.virtualTraders {
+			trader.Stop()
+		}
+	})
+}
+
+func (disc *Discovery) isWorking() bool {
+	return disc.Working()
 }

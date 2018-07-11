@@ -14,7 +14,7 @@ import (
 )
 
 /*
-Scheduler entity responsible for receiving local and remote requests for deploying containers
+Scheduler is responsible for receiving local and remote requests for deploying containers
 running in the system. It takes a request for running a container and decides where to deploy it
 in conjunction with the Discovery module.
 */
@@ -24,7 +24,7 @@ type Scheduler struct {
 	config *configuration.Configuration // System's configuration
 	client remote.Caravela              // Caravela's remote client
 
-	discovery         apiInternal.DiscoveryInternal // Discovery module
+	discovery         apiInternal.DiscoveryInternal // Local Discovery module
 	containersManager *containers.Manager           // Containers manager module
 }
 
@@ -53,7 +53,7 @@ func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.Po
 	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
 
 	for _, offer := range offers {
-		err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
+		_, err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
 			containerImageKey, portMappings, containerArgs, cpus, ram)
 		if err != nil {
 			log.Debugf(util.LogTag("Run")+"Deploy error: %v", err)
@@ -70,7 +70,7 @@ func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.Po
 Executed when a system's node wants to launch a container in this node.
 */
 func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerImageKey string,
-	portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error {
+	portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (string, error) {
 
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
@@ -78,10 +78,41 @@ func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerI
 	log.Debugf(util.LogTag("Launch")+"Launching %s , Resources: <%d,%d> ...", containerImageKey, cpus, ram)
 
 	resourcesNecessary := resources.NewResources(cpus, ram)
-	err := scheduler.containersManager.StartContainer(fromBuyerIP, containerImageKey, portMappings,
+	containerID, err := scheduler.containersManager.StartContainer(fromBuyerIP, containerImageKey, portMappings,
 		containerArgs, offerID, *resourcesNecessary)
 
-	return err
+	return containerID, err
+}
+
+func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
+	cpus int, ram int) (string, string, error) {
+
+	if !scheduler.isWorking() {
+		panic(fmt.Errorf("can't run container, scheduler not working"))
+	}
+	log.Debugf(util.LogTag("Run")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+
+	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
+
+	for _, offer := range offers {
+		contStatus, err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
+			containerImageKey, portMappings, containerArgs, cpus, ram)
+		if err != nil {
+			log.Debugf(util.LogTag("Run")+"Deploy error: %v", err)
+		}
+
+		log.Debugf(util.LogTag("Run")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+		return contStatus.ID, offer.SupplierIP, nil
+	}
+
+	log.Debugf(util.LogTag("Run") + "No offers found")
+	return "", "", fmt.Errorf("no offers found to deploy the container")
+
+}
+
+func (scheduler *Scheduler) StopContainers(containerIDs []string) error {
+	// TODO
+	return nil
 }
 
 /*

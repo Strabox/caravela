@@ -5,42 +5,44 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	configEndpoint "github.com/strabox/caravela/api/rest/configuration"
+	"github.com/strabox/caravela/api/rest/configuration"
 	"github.com/strabox/caravela/api/rest/discovery"
 	"github.com/strabox/caravela/api/rest/scheduling"
 	"github.com/strabox/caravela/api/rest/user"
-	"github.com/strabox/caravela/configuration"
-	nodeAPI "github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/util"
 	"net/http"
 )
 
-/*
-Represents the server (HTTP server) that handle the API requests in each node.
-*/
+// HttpServer handles the REST API requests in each node and redirects it to the local Node,
+// where is the logic's core.
 type HttpServer struct {
 	router     *mux.Router
 	httpServer *http.Server
 }
 
-func NewServer() *HttpServer {
+// NewServer creates a new API HttpServer that receives the requests for the local node.
+func NewServer(port int) *HttpServer {
+	router := mux.NewRouter()
 	return &HttpServer{
-		router:     mux.NewRouter(), // HTTP request endpoint router
-		httpServer: nil,             // Filled when server is started
+		router: router, // HTTP request endpoint router
+		httpServer: &http.Server{ // Filled when server is started
+			Addr:    fmt.Sprintf(":%d", port),
+			Handler: router,
+		},
 	}
 }
 
-func (server *HttpServer) Start(config *configuration.Configuration, thisNode nodeAPI.Node) error {
+// Start initializes the endpoints and starts the http web server.
+func (server *HttpServer) Start(node LocalNode) error {
 	log.Debug(util.LogTag("[API]") + "Starting REST API HttpServer ...")
 
-	// Start all the API rest endpoints and the respective endpoint routing
-	configEndpoint.Initialize(server.router, thisNode, config)
-	discovery.Initialize(server.router, thisNode)
-	scheduling.Initialize(server.router, thisNode)
-	user.Initialize(server.router, thisNode)
+	// Initialize all the API rest endpoints
+	configuration.Init(server.router, node)
+	discovery.Init(server.router, node)
+	scheduling.Init(server.router, node)
+	user.Init(server.router, node)
 
-	server.httpServer = &http.Server{Addr: fmt.Sprintf(":%d", config.APIPort()), Handler: server.router}
-
+	// Starts the http web server
 	go func() {
 		if err := server.httpServer.ListenAndServe(); err != nil {
 			log.Infof(util.LogTag("[API]")+" REST API server STOPPED: %s", err)
@@ -50,6 +52,7 @@ func (server *HttpServer) Start(config *configuration.Configuration, thisNode no
 	return nil
 }
 
+// Stop the http web server
 func (server *HttpServer) Stop() {
 	go server.httpServer.Shutdown(context.Background())
 }

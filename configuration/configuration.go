@@ -9,24 +9,19 @@ import (
 	"time"
 )
 
-/*
-Default port for the CARAVELA's API endpoints
-*/
+// Minimum API version of docker engine supported
+const minimumDockerEngineVersion = "1.35"
+
+// Default port for the CARAVELA's API endpoints
 const caravelaAPIPort = 8001
 
-/*
-Directory path to where search for the configuration file.
-*/
-const configurationFilePath = "" // Default: Directory of binary execution
+// Directory path to where search for the configuration file. (Directory of binary execution)
+const configurationFilePath = ""
 
-/*
-Expected name of the configuration file.
-*/
+// Expected name of the configuration file.
 const configurationFileName = "configuration.toml"
 
-/*
-CARAVELA system's configurations.
-*/
+// CARAVELA system's configurations.
 type Configuration struct {
 	Host          host          `json:"-"` // Do not encode host configuration due to security concerns!!
 	Caravela      caravela      `json:"Caravela"`
@@ -34,17 +29,13 @@ type Configuration struct {
 	Overlay       overlay       `json:"Overlay"`
 }
 
-/*
-Configurations for the local host node.
-*/
+// Configurations for the local host node.
 type host struct {
 	IP               string `json:"IP"`               // Local node host's IP
 	DockerAPIVersion string `json:"DockerAPIVersion"` // API Version of the local node Docker's engine
 }
 
-/*
-Configurations for the CARAVELA's node specific parameters
-*/
+// Configurations for the CARAVELA's node specific parameters
 type caravela struct {
 	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
 	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
@@ -62,16 +53,12 @@ type caravela struct {
 	ResourcesOvercommit     int                 `json:"ResourcesOvercommit"`     // Percentage of overcommit to apply to available resources
 }
 
-/*
-Configuration for the CARAVELA's container image storage
-*/
+// Configuration for the CARAVELA's container image storage
 type imagesStorage struct {
 	Backend string `json:"Backend"` // Type of storage of images used to share them
 }
 
-/*
-Configurations for the node overlay
-*/
+// Configurations for the node overlay
 type overlay struct {
 	OverlayPort        int      `json:"OverlayPort"`        // Port of the overlay endpoints
 	ChordTimeout       duration `json:"ChordTimeout"`       // Timeout for the chord messages
@@ -80,16 +67,14 @@ type overlay struct {
 	ChordHashSizeBits  int      `json:"ChordHashSizeBits"`  // Number of chord hash size (in bits)
 }
 
-/*
-Produces the configuration structure with all the default values for the system to work.
-*/
-func Default(hostIP string, dockerAPIVersion string) *Configuration {
+// Produces the configuration structure with all the default values for the system to work.
+func Default(hostIP string) *Configuration {
 	refreshingInterval := duration{Duration: 15 * time.Second}
 
 	return &Configuration{
 		Host: host{
 			IP:               hostIP,
-			DockerAPIVersion: dockerAPIVersion,
+			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
 			APIPort:                 caravelaAPIPort,
@@ -125,45 +110,38 @@ func Default(hostIP string, dockerAPIVersion string) *Configuration {
 	}
 }
 
-/*
-Produces configuration structure reading from the configuration file and filling the rest
-with the default values
-*/
-func ReadFromFile(hostIP string, dockerAPIVersion string) (*Configuration, error) {
-	config := Default(hostIP, dockerAPIVersion)
-	configurationsFullFileName := configurationFilePath + configurationFileName
+// Produces configuration structure reading from the configuration file and filling the rest
+// with the default values
+func ReadFromFile(hostIP string) (*Configuration, error) {
+	config := Default(hostIP)
+	configFullFileName := configurationFilePath + configurationFileName
 
-	if _, err := toml.DecodeFile(configurationsFullFileName, config); err != nil && !strings.Contains(err.Error(), "cannot find the file") {
+	if _, err := toml.DecodeFile(configFullFileName, config); err != nil && !strings.Contains(err.Error(), "cannot find the file") {
 		return nil, err
 	}
 
-	if err := config.validateConfigurations(); err != nil {
+	if err := config.validate(); err != nil {
 		return nil, err
 	}
 
 	return config, nil
 }
 
-/*
-Produces configuration structured based on a given structure that.
-Used to pass the system configurations between nodes, usually during the joining process.
-*/
-func ObtainExternal(hostIP string, dockerAPIVersion string, config *Configuration) (*Configuration, error) {
+// Produces configuration structured based on a given structure that.
+// Used to pass the system configurations between nodes, usually during the joining process.
+func ObtainExternal(hostIP string, config *Configuration) (*Configuration, error) {
 	config.Host.IP = hostIP
-	config.Host.DockerAPIVersion = dockerAPIVersion
 
-	if err := config.validateConfigurations(); err != nil {
+	if err := config.validate(); err != nil {
 		return nil, err
 	}
 
 	return config, nil
 }
 
-/*
-Briefly validate the configuration to avoid/short-circuit many runtime errors due to
-typos or completely non sense configurations, like negative ports.
-*/
-func (c *Configuration) validateConfigurations() error {
+// Briefly validate the configuration to avoid/short-circuit many runtime errors due to
+// typos or completely non sense configurations, like negative ports.
+func (c *Configuration) validate() error {
 	/* TODO: Undo this when simulator generates valid unique IPs
 	if net.ParseIP(c.HostIP()) == nil {
 		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
@@ -237,9 +215,7 @@ func (c *Configuration) validateConfigurations() error {
 	return nil
 }
 
-/*
-Print/log the current configurations in order to debug the programs behavior.
-*/
+// Print/log the current configurations in order to debug the programs behavior.
 func (c *Configuration) Print() {
 	log.Printf("##################################################################")
 	log.Printf("#                       CONFIGURATIONS                           #")

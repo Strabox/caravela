@@ -17,6 +17,6 @@ func listContainer(c *cli.Context) {
 
 	fmt.Println("ID                      STATUS")
 	for _, containerStatus := range containersList.ContainersStatus {
-		fmt.Printf("%s                      %s\n", containerStatus.ID, containerStatus.Status)
+		fmt.Printf("%s                      %s\n", containerStatus.ID, "TODO")
 	}
 }

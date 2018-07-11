@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// HttpClient is used to contact the REST API of other nodes.
 type HttpClient struct {
 	httpClient *http.Client
 	config     *configuration.Configuration
@@ -115,10 +116,12 @@ func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string, rela
 }
 
 func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64,
-	containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) error {
+	containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (*rest.ContainerStatus, error) {
 
 	log.Infof("--> LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
 		fromBuyerIP, offerID, containerImageKey, portMappings, containerArgs, cpus, ram, toSupplierIP)
+
+	var contStatusResp rest.ContainerStatus
 
 	launchContainerMsg := rest.LaunchContainerMessage{
 		FromBuyerIP:       fromBuyerIP,
@@ -133,15 +136,15 @@ func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP strin
 	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.SchedulerContainerBaseEndpoint)
 
 	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerMsg, nil)
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerMsg, &contStatusResp)
 	if err != nil {
-		return NewRemoteClientError(err)
+		return nil, NewRemoteClientError(err)
 	}
 
 	if httpCode == http.StatusOK {
-		return nil
+		return &contStatusResp, nil
 	} else {
-		return NewRemoteClientError(fmt.Errorf("impossible launch container"))
+		return nil, NewRemoteClientError(fmt.Errorf("impossible launch container"))
 	}
 }
 

@@ -86,7 +86,7 @@ func (man *Manager) checkDeployedContainers() {
 Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
 */
 func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings []rest.PortMapping,
-	args []string, offerID int64, resourcesNecessary resources.Resources) error {
+	args []string, offerID int64, resourcesNecessary resources.Resources) (string, error) {
 
 	if !man.isWorking() {
 		panic(fmt.Errorf("can't start container, container manager not working"))
@@ -96,29 +96,30 @@ func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings
 	defer man.containersMutex.Unlock()
 
 	obtained := man.supplier.ObtainResources(offerID, resourcesNecessary)
-	if obtained {
-		containerID, err := man.dockerClient.RunContainer(imageKey, portMappings, args, int64(resourcesNecessary.CPUs()),
-			resourcesNecessary.RAM())
-		if err == nil {
-			log.Debugf(util.LogTag("ContMng")+"Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
-				containerID, imageKey, args, resourcesNecessary.CPUs(), resourcesNecessary.RAM())
-			newContainer := NewContainer(containerID, buyerIP, resourcesNecessary)
-			if man.containersMap[buyerIP] == nil {
-				containersList := make([]*Container, 1)
-				containersList[0] = newContainer
-				man.containersMap[buyerIP] = containersList
-			} else {
-				man.containersMap[buyerIP] = append(man.containersMap[buyerIP], newContainer)
-			}
-			return nil
-		} else {
-			man.supplier.ReturnResources(resourcesNecessary)
-			return err
-		}
-	} else {
+	if !obtained {
 		log.Debugf(util.LogTag("ContMng")+"Container NOT RUNNING, invalid offer: %d", offerID)
-		return fmt.Errorf("can't start container: invalid offer: %d", offerID)
+		return "", fmt.Errorf("can't start container: invalid offer: %d", offerID)
 	}
+
+	containerID, err := man.dockerClient.RunContainer(imageKey, portMappings, args, int64(resourcesNecessary.CPUs()),
+		resourcesNecessary.RAM())
+	if err != nil {
+		man.supplier.ReturnResources(resourcesNecessary)
+		return "", err
+	}
+
+	newContainer := NewContainer(containerID, buyerIP, resourcesNecessary)
+	if man.containersMap[buyerIP] == nil {
+		containersList := make([]*Container, 1)
+		containersList[0] = newContainer
+		man.containersMap[buyerIP] = containersList
+	} else {
+		man.containersMap[buyerIP] = append(man.containersMap[buyerIP], newContainer)
+	}
+
+	log.Debugf(util.LogTag("ContMng")+"Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
+		containerID, imageKey, args, resourcesNecessary.CPUs(), resourcesNecessary.RAM())
+	return containerID, nil
 }
 
 /*

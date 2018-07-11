@@ -16,19 +16,19 @@ func initNode(hostIP string, join bool, joinIP string) error {
 
 	// Create configuration structures from the configuration file (if it exists)
 	if join {
-		caravelaClient := remote.NewHttpClient(configuration.Default(hostIP, DockerEngineAPIVersion))
+		caravelaClient := remote.NewHttpClient(configuration.Default(hostIP))
 
 		systemConfigurations, err = caravelaClient.ObtainConfiguration(joinIP)
 		if err != nil {
 			return err
 		}
 
-		systemConfigurations, err = configuration.ObtainExternal(hostIP, DockerEngineAPIVersion, systemConfigurations)
+		systemConfigurations, err = configuration.ObtainExternal(hostIP, systemConfigurations)
 		if err != nil {
 			return err
 		}
 	} else {
-		systemConfigurations, err = configuration.ReadFromFile(hostIP, DockerEngineAPIVersion)
+		systemConfigurations, err = configuration.ReadFromFile(hostIP)
 		if err != nil {
 			return err
 		}
@@ -51,7 +51,7 @@ func initNode(hostIP string, join bool, joinIP string) error {
 	dockerClient := docker.NewDockerClient(systemConfigurations)
 
 	// Create the API server
-	apiServer := api.NewServer()
+	apiServer := api.NewServer(systemConfigurations.APIPort())
 
 	// Create a CARAVELA Node passing all the external components and start it functions
 	thisNode := node.NewNode(systemConfigurations, overlay, caravelaCli, dockerClient, apiServer)

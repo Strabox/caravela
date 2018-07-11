@@ -1,5 +1,7 @@
-// Package that provides a CLI (Command Line Interface) for the CARAVELA system, wrapping
-// up the REST API provided in the package github.com/strabox/caravela/api/client.
+/*
+Package that provides a CLI (Command Line Interface) for the CARAVELA system, wrapping
+up the REST API provided in the package github.com/strabox/caravela/api/client.
+*/
 package cli
 
 import (
