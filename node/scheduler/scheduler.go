@@ -13,11 +13,9 @@ import (
 	"github.com/strabox/caravela/util"
 )
 
-/*
-Scheduler is responsible for receiving local and remote requests for deploying containers
-running in the system. It takes a request for running a container and decides where to deploy it
-in conjunction with the Discovery module.
-*/
+// Scheduler is responsible for receiving local and remote requests for deploying containers
+// running in the system. It takes a request for running a container and decides where to deploy it
+// in conjunction with the Discovery module.
 type Scheduler struct {
 	common.SystemSubComponent // Base component
 
@@ -39,9 +37,7 @@ func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.
 	}
 }
 
-/*
-Executed when the local user wants to deploy a container in the system.
-*/
+// Executed when the local user wants to deploy a container in the system.
 func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
 	cpus int, ram int) error {
 
@@ -66,9 +62,7 @@ func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.Po
 	return fmt.Errorf("no offers found to deploy the container")
 }
 
-/*
-Executed when a system's node wants to launch a container in this node.
-*/
+// Executed when a system's node wants to launch a container in this node.
 func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerImageKey string,
 	portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (string, error) {
 

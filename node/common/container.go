@@ -5,9 +5,7 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 )
 
-/*
-Base structure for a container running in the system.
-*/
+// Base structure for a container running in the system.
 type Container struct {
 	imageKey  string
 	args      []string

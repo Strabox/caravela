@@ -15,10 +15,8 @@ import (
 	"sync"
 )
 
-/*
-Discovery module of a CARAVELA node. It is responsible for dealing with the resource management
-and finding.
-*/
+// Discovery module of a CARAVELA node. It is responsible for dealing with the resource management
+// and finding.
 type Discovery struct {
 	common.SystemSubComponent // Base component
 
@@ -49,9 +47,7 @@ func NewDiscovery(config *configuration.Configuration, overlay overlay.Overlay,
 
 /*============================== DiscoveryInternal Interface =============================== */
 
-/*
-Adds a new local "virtual" trader when the overlay notifies its presence.
-*/
+// Adds a new local "virtual" trader when the overlay notifies its presence.
 func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 	disc.virtualTradersMutex.Lock()
 

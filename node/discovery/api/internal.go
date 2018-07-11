@@ -6,9 +6,7 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 )
 
-/*
-Interface of discovery module for the scheduler and containers manager
-*/
+// Interface of discovery module for the scheduler and containers manager
 type DiscoveryInternal interface {
 	Start()                                                                     // Starts the discovery module operations
 	AddTrader(traderGUID guid.GUID)                                             // Add a new trader (called during overlay bootstrap)

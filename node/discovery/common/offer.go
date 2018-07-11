@@ -2,14 +2,10 @@ package common
 
 import "github.com/strabox/caravela/node/common/resources"
 
-/*
-OfferID is a type for the offer identifier.
-*/
+// OfferID is a type for the offer identifier.
 type OfferID int64
 
-/*
-Represents the basic offer of resources into the system
-*/
+// Represents the basic offer of resources into the system
 type Offer struct {
 	id        OfferID              // Local id (for supplier) of the offer
 	amount    int                  // Amount of times the resource combination we have

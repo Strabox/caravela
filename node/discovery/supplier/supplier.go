@@ -16,9 +16,7 @@ import (
 	"time"
 )
 
-/*
-Supplier handles all the logic of managing the node own resources, advertising them into the system.
-*/
+// Supplier handles all the logic of managing the node own resources, advertising them into the system.
 type Supplier struct {
 	nodeCommon.SystemSubComponent // Base component
 
@@ -38,6 +36,7 @@ type Supplier struct {
 	refreshesCheckTicker <-chan time.Time // Timer to check if the active offers are in alive traders
 }
 
+// NewSupplier creates a new supplier component, that manages the local resources.
 func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, client remote.Caravela,
 	resourcesMap *resources.Mapping, maxResources resources.Resources) *Supplier {
 	return &Supplier{
@@ -58,9 +57,7 @@ func NewSupplier(config *configuration.Configuration, overlay overlay.Overlay, c
 	}
 }
 
-/*
-Controls the time dependant actions like supplying the resources.
-*/
+// Controls the time dependant actions like supplying the resources.
 func (sup *Supplier) startSupplying() {
 	for {
 		select {
@@ -71,11 +68,9 @@ func (sup *Supplier) startSupplying() {
 				defer sup.offersMutex.Unlock()
 
 				if sup.availableResources.IsValid() {
-					/*
-						What?: Remove all active offers from the traders in order to gather all available resources.
-						Goal: This is used to try offer the maximum amount of resources the node has available between
-							  the Available (offered) and the Available (but not offered).
-					*/
+					// What?: Remove all active offers from the traders in order to gather all available resources.
+					// Goal: This is used to try offer the maximum amount of resources the node has available between
+					//		 the Available (offered) and the Available (but not offered).
 					for offerID, offer := range sup.activeOffers {
 						go func(offerID int64, offer *supplierOffer) {
 							sup.client.RemoveOffer(sup.config.HostIP(), "", offer.ResponsibleTraderIP(),
@@ -153,9 +148,7 @@ func (sup *Supplier) startSupplying() {
 	}
 }
 
-/*
-Find a list active Offers that best suit the target resources given.
-*/
+// Find a list active Offers that best suit the target resources given.
 func (sup *Supplier) FindOffers(targetResources resources.Resources) []api.Offer {
 	if !sup.isWorking() {
 		panic(fmt.Errorf("can't find offers, supplier not working"))
@@ -195,9 +188,7 @@ func (sup *Supplier) FindOffers(targetResources resources.Resources) []api.Offer
 	}
 }
 
-/*
-Tries refresh an offer. Called when a refresh message was received.
-*/
+// Tries refresh an offer. Called when a refresh message was received.
 func (sup *Supplier) RefreshOffer(offerID int64, fromTraderGUID string) bool {
 	if !sup.isWorking() {
 		panic(fmt.Errorf("can't refresh offer, supplier not working"))
@@ -223,10 +214,8 @@ func (sup *Supplier) RefreshOffer(offerID int64, fromTraderGUID string) bool {
 	}
 }
 
-/*
-Tries to obtain a subset of the resources represented by the given offer in order to deploy  a container.
-It updates the respective trader that manages the offer.
-*/
+// Tries to obtain a subset of the resources represented by the given offer in order to deploy  a container.
+// It updates the respective trader that manages the offer.
 func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
 	if !sup.isWorking() {
 		panic(fmt.Errorf("can't obtain resources, supplier not working"))
@@ -256,9 +245,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 	}
 }
 
-/*
-Release resources of an used offer into the supplier again in order to offer them again into the system.
-*/
+// Release resources of an used offer into the supplier again in order to offer them again into the system.
 func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	if !sup.isWorking() {
 		panic(fmt.Errorf("can't return resources, supplier not working"))
@@ -270,9 +257,7 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	sup.availableResources.Add(releasedResources)
 }
 
-/*
-Remove nodes that do not belong to that target GUID partition. (Probably because we were target a frontier node)
-*/
+// Remove nodes that do not belong to that target GUID partition. (Probably because we were target a frontier node)
 func (sup *Supplier) removeNonTargetNodes(remoteNodes []*overlay.Node, targetGuid guid.GUID) []*overlay.Node {
 	resultNodes := make([]*overlay.Node, 0)
 	targetGuidResources, _ := sup.resourcesMap.ResourcesByGUID(targetGuid)

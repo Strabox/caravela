@@ -7,18 +7,14 @@ import (
 	"time"
 )
 
-/*
-offerKey is based on the local offer id and the supplier IP
-TODO: Hoping the supplier IP is unique????
-*/
+// offerKey is based on the local offer id and the supplier IP
+// TODO: Hoping the supplier IP is unique????
 type offerKey struct {
 	supplierIP string         // Offer supplier's IP address
 	id         common.OfferID // Local id of the offer (in supplier)
 }
 
-/*
-Represents an offer from a supplier that the trader is responsible for managing
-*/
+// Represents an offer from a supplier that the trader is responsible for managing
 type traderOffer struct {
 	*common.Offer // Offer resources
 
@@ -45,9 +41,7 @@ func newTraderOffer(supplierGUID guid.GUID, supplierIP string, id common.OfferID
 	}
 }
 
-/*
-Return true if it is time to refresh the offer, and false otherwise.
-*/
+// Return true if it is time to refresh the offer, and false otherwise.
 func (offer *traderOffer) Refresh() bool {
 	if offer.waitingForRefresh {
 		return false
@@ -57,18 +51,14 @@ func (offer *traderOffer) Refresh() bool {
 	}
 }
 
-/*
-Refresh for the offer failed. Supplier didn't replied to refresh, for example.
-*/
+// Refresh for the offer failed. Supplier didn't replied to refresh, for example.
 func (offer *traderOffer) RefreshFailed() {
 	offer.refreshesFailed++
 	offer.lastRefreshTimestamp = time.Now()
 	offer.waitingForRefresh = false
 }
 
-/*
-Refresh for the offer succeeded.
-*/
+// Refresh for the offer succeeded.
 func (offer *traderOffer) RefreshSucceeded() {
 	offer.refreshesFailed = 0
 	offer.lastRefreshTimestamp = time.Now()

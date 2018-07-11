@@ -4,9 +4,7 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 )
 
-/*
-Represents a remote CARAVELA node.
-*/
+// Represents a remote CARAVELA node.
 type RemoteNode struct {
 	ip   string
 	guid *guid.GUID

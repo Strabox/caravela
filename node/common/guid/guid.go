@@ -15,16 +15,12 @@ var isGuidInitialized = false
 // 160-bits default (To maintain compatibility with used chord overlay implementation)
 var guidSizeBits = 160
 
-/*
-Represents a Global Unique IDentifier (GUID) for a system's node
-*/
+// Represents a Global Unique Identifier (GUID) for a system's node
 type GUID struct {
 	id *big.Int
 }
 
-/*
-Initializes the GUID package with the size of the GUID.
-*/
+// Initializes the GUID package with the size of the GUID.
 func InitializeGUID(guidBitsSize int) {
 	if !isGuidInitialized {
 		guidSizeBits = guidBitsSize
@@ -32,23 +28,17 @@ func InitializeGUID(guidBitsSize int) {
 	}
 }
 
-/*
-Size of the GUID (in bits).
-*/
+// Size of the GUID (in bits).
 func SizeBits() int {
 	return guidSizeBits
 }
 
-/*
-Size of the GUID (in bytes).
-*/
+// Size of the GUID (in bytes).
 func SizeBytes() int {
 	return guidSizeBits / 8
 }
 
-/*
-Maximum GUID available for the current defined number of bits.
-*/
+// Maximum GUID available for the current defined number of bits.
 func MaximumGUID() *GUID {
 	maxId := big.NewInt(0)
 	maxId.Exp(big.NewInt(2), big.NewInt(int64(guidSizeBits)), nil)
@@ -56,9 +46,7 @@ func MaximumGUID() *GUID {
 	return newGUIDBigInt(maxId)
 }
 
-/*
-Generate a random GUID in the range [0,MaxGUID).
-*/
+// Generate a random GUID in the range [0,MaxGUID).
 func NewGUIDRandom() *GUID {
 	guid := &GUID{}
 
@@ -68,9 +56,7 @@ func NewGUIDRandom() *GUID {
 	return guid
 }
 
-/*
-Creates a new GUID based on a string representation (in base 10) of the identifier.
-*/
+// Creates a new GUID based on a string representation (in base 10) of the identifier.
 func NewGUIDString(stringID string) *GUID {
 	guid := &GUID{}
 
@@ -80,9 +66,7 @@ func NewGUIDString(stringID string) *GUID {
 	return guid
 }
 
-/*
-Creates a new GUID based on an integer64 representation of the identifier.
-*/
+// Creates a new GUID based on an integer64 representation of the identifier.
 func NewGUIDInteger(intId int64) *GUID {
 	guid := &GUID{}
 
@@ -92,10 +76,8 @@ func NewGUIDInteger(intId int64) *GUID {
 	return guid
 }
 
-/*
-Creates a new GUID based on an array of bytes representation of the identifier.
-Array of bytes is a representation of the number using the minimum number of bits.
-*/
+// Creates a new GUID based on an array of bytes representation of the identifier.
+// Array of bytes is a representation of the number using the minimum number of bits.
 func NewGUIDBytes(bytesID []byte) *GUID {
 	guid := &GUID{}
 
@@ -104,9 +86,7 @@ func NewGUIDBytes(bytesID []byte) *GUID {
 	return guid
 }
 
-/*
-Creates a new GUID based on Golang big.Int representation.
-*/
+// Creates a new GUID based on Golang big.Int representation.
 func newGUIDBigInt(bytesID *big.Int) *GUID {
 	guid := &GUID{}
 
@@ -115,9 +95,7 @@ func newGUIDBigInt(bytesID *big.Int) *GUID {
 	return guid
 }
 
-/*
-Generates a random GUID that belongs to the interval [this, topGUID)
-*/
+// Generates a random GUID that belongs to the interval [this, topGUID).
 func (guid *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
 	dif := big.NewInt(0)
 	randOffset := big.NewInt(0)
@@ -132,9 +110,7 @@ func (guid *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
 	return NewGUIDString(res.String()), nil
 }
 
-/*
-Returns the number of ids (as a string with an integer in base 10) using % offset to higher GUID
-*/
+// Returns the number of ids (as a string with an integer in base 10) using % offset to higher GUID
 func (guid *GUID) PercentageOffset(offsetPercentage int, nextGuid GUID) string {
 	offset := big.NewInt(int64(offsetPercentage))
 	dif := big.NewInt(0)
@@ -145,9 +121,7 @@ func (guid *GUID) PercentageOffset(offsetPercentage int, nextGuid GUID) string {
 	return offset.String()
 }
 
-/*
-Adds an offset (as a string in base 10) of ids to the GUID.
-*/
+// Adds an offset (as a string in base 10) of ids to the GUID.
 func (guid *GUID) AddOffset(offset string) {
 	toAdd := big.NewInt(0)
 	toAdd.SetString(offset, 10)
@@ -155,23 +129,17 @@ func (guid *GUID) AddOffset(offset string) {
 	guid.id.Add(guid.id, toAdd)
 }
 
-/*
-Compare to see what is the biggest GUID
-*/
+// Compare to see what is the biggest GUID
 func (guid *GUID) Cmp(guid2 GUID) int {
 	return guid.id.Cmp(guid2.id)
 }
 
-/*
-Compare if two GUIDs are equal or not.
-*/
+// Compare if two GUIDs are equal or not.
 func (guid *GUID) Equals(guid2 GUID) bool {
 	return guid.id.Cmp(guid2.id) == 0
 }
 
-/*
-Returns an array of bytes (with size of guidSizeBits) with the value of the GUID
-*/
+// Returns an array of bytes (with size of guidSizeBits) with the value of the GUID
 func (guid *GUID) Bytes() []byte {
 	numOfBytes := guidSizeBits / 8
 	res := make([]byte, numOfBytes)
@@ -187,23 +155,17 @@ func (guid *GUID) Bytes() []byte {
 	return res
 }
 
-/*
-Returns an int64 that represents the GUID
-*/
+// Returns an int64 that represents the GUID
 func (guid *GUID) Int64() int64 {
 	return guid.id.Int64()
 }
 
-/*
-Creates a copy of the GUID object.
-*/
+// Creates a copy of the GUID object.
 func (guid *GUID) Copy() *GUID {
 	return NewGUIDString(guid.String())
 }
 
-/*
-Returns the value of the GUID in a string representation (as an integer in base 10)
-*/
+// Returns the value of the GUID in a string representation (as an integer in base 10)
 func (guid *GUID) String() string {
 	return guid.id.String()
 }

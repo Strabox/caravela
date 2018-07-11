@@ -14,11 +14,9 @@ import (
 	"time"
 )
 
-/*
-Containers manager responsible for interacting with the Docker daemon and managing all the interaction with the
-deployed containers.
-Basically it is a local node manager for the containers.
-*/
+// Containers manager responsible for interacting with the Docker daemon and managing all the interaction with the
+// deployed containers.
+// Basically it is a local node manager for the containers.
 type Manager struct {
 	common.SystemSubComponent // Base component
 
@@ -82,9 +80,7 @@ func (man *Manager) checkDeployedContainers() {
 	}
 }
 
-/*
-Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
-*/
+// Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
 func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings []rest.PortMapping,
 	args []string, offerID int64, resourcesNecessary resources.Resources) (string, error) {
 
