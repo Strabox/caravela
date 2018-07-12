@@ -115,58 +115,6 @@ func (client *HttpClient) GetOffers(toTraderIP string, toTraderGUID string, rela
 	}
 }
 
-func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64,
-	containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (*rest.ContainerStatus, error) {
-
-	log.Infof("--> LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
-		fromBuyerIP, offerID, containerImageKey, portMappings, containerArgs, cpus, ram, toSupplierIP)
-
-	var contStatusResp rest.ContainerStatus
-
-	launchContainerMsg := rest.LaunchContainerMessage{
-		FromBuyerIP:       fromBuyerIP,
-		OfferID:           offerID,
-		ContainerImageKey: containerImageKey,
-		PortMappings:      portMappings,
-		ContainerArgs:     containerArgs,
-		CPUs:              cpus,
-		RAM:               ram,
-	}
-
-	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.SchedulerContainerBaseEndpoint)
-
-	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerMsg, &contStatusResp)
-	if err != nil {
-		return nil, NewRemoteClientError(err)
-	}
-
-	if httpCode == http.StatusOK {
-		return &contStatusResp, nil
-	} else {
-		return nil, NewRemoteClientError(fmt.Errorf("impossible launch container"))
-	}
-}
-
-func (client *HttpClient) ObtainConfiguration(systemsNodeIP string) (*configuration.Configuration, error) {
-	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNodeIP)
-
-	var systemsNodeConfigsResp configuration.Configuration
-
-	url := rest.BuildHttpURL(false, systemsNodeIP, client.config.APIPort(), rest.ConfigurationBaseEndpoint)
-
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
-	if err != nil {
-		return nil, NewRemoteClientError(err)
-	}
-
-	if httpCode == http.StatusOK {
-		return &systemsNodeConfigsResp, nil
-	} else {
-		return nil, NewRemoteClientError(fmt.Errorf("impossible obtain node's configurations"))
-	}
-}
-
 func (client *HttpClient) AdvertiseOffersNeighbor(toNeighborTraderIP string, toNeighborTraderGUID string,
 	fromTraderGUID string, traderOfferingGUID string, traderOfferingIP string) error {
 
@@ -191,5 +139,78 @@ func (client *HttpClient) AdvertiseOffersNeighbor(toNeighborTraderIP string, toN
 		return nil
 	} else {
 		return NewRemoteClientError(fmt.Errorf("impossible advertise neighbor's offers"))
+	}
+}
+
+func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64,
+	containerImageKey string, portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (*rest.ContainerStatus, error) {
+
+	log.Infof("--> LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
+		fromBuyerIP, offerID, containerImageKey, portMappings, containerArgs, cpus, ram, toSupplierIP)
+
+	launchContainerMsg := rest.LaunchContainerMessage{
+		FromBuyerIP:       fromBuyerIP,
+		OfferID:           offerID,
+		ContainerImageKey: containerImageKey,
+		PortMappings:      portMappings,
+		ContainerArgs:     containerArgs,
+		CPUs:              cpus,
+		RAM:               ram,
+	}
+
+	var contStatusResp rest.ContainerStatus
+
+	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.ContainersBaseEndpoint)
+
+	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodPost, launchContainerMsg, &contStatusResp)
+	if err != nil {
+		return nil, NewRemoteClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return &contStatusResp, nil
+	} else {
+		return nil, NewRemoteClientError(fmt.Errorf("impossible launch container"))
+	}
+}
+
+func (client *HttpClient) StopLocalContainer(toSupplierIP string, containerID string) error {
+	log.Infof("--> STOP ID: %s", containerID)
+
+	stopContainerMsg := rest.StopContainerMessage{
+		ContainerID: containerID,
+	}
+
+	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.ContainersBaseEndpoint)
+
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodDelete, stopContainerMsg, nil)
+	if err != nil {
+		return NewRemoteClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return nil
+	} else {
+		return NewRemoteClientError(fmt.Errorf("impossible stop container"))
+	}
+}
+
+func (client *HttpClient) ObtainConfiguration(systemsNodeIP string) (*configuration.Configuration, error) {
+	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNodeIP)
+
+	var systemsNodeConfigsResp configuration.Configuration
+
+	url := rest.BuildHttpURL(false, systemsNodeIP, client.config.APIPort(), rest.ConfigurationBaseEndpoint)
+
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
+	if err != nil {
+		return nil, NewRemoteClientError(err)
+	}
+
+	if httpCode == http.StatusOK {
+		return &systemsNodeConfigsResp, nil
+	} else {
+		return nil, NewRemoteClientError(fmt.Errorf("impossible obtain node's configurations"))
 	}
 }

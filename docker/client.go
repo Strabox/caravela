@@ -16,5 +16,5 @@ type Client interface {
 		ram int) (string, error)
 
 	// Remove a container from the Docker engine.
-	RemoveContainer(containerID string)
+	RemoveContainer(containerID string) error
 }

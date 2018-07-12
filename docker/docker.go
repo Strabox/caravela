@@ -143,9 +143,9 @@ func (client *DefaultClient) RunContainer(imageKey string, portMappings []rest.P
 }
 
 // Remove a container from the Docker engine (to avoid filling space in the node).
-func (client *DefaultClient) RemoveContainer(containerID string) {
+func (client *DefaultClient) RemoveContainer(containerID string) error {
 	client.isInit()
 
-	ctx := context.Background()
-	client.docker.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{Force: true})
+	err := client.docker.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{Force: true})
+	return fmt.Errorf("problem stopping and removing container. Error: %s", err)
 }

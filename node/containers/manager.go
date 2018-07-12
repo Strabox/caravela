@@ -118,6 +118,10 @@ func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings
 	return containerID, nil
 }
 
+func (man *Manager) StopContainer(containerID string) error {
+	return man.dockerClient.RemoveContainer(containerID)
+}
+
 /*
 ===============================================================================
 							SubComponent Interface

@@ -11,7 +11,7 @@ var nodeSchedulingAPI Scheduling = nil
 
 func Init(router *mux.Router, nodeScheduling Scheduling) {
 	nodeSchedulingAPI = nodeScheduling
-	router.Handle(rest.SchedulerContainerBaseEndpoint, rest.AppHandler(launchContainer)).Methods(http.MethodPost)
+	router.Handle(rest.ContainersBaseEndpoint, rest.AppHandler(launchContainer)).Methods(http.MethodPost)
 }
 
 func launchContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {

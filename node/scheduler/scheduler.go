@@ -37,31 +37,6 @@ func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.
 	}
 }
 
-// Executed when the local user wants to deploy a container in the system.
-func (scheduler *Scheduler) Run(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
-	cpus int, ram int) error {
-
-	if !scheduler.isWorking() {
-		panic(fmt.Errorf("can't run container, scheduler not working"))
-	}
-	log.Debugf(util.LogTag("Run")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
-
-	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
-
-	for _, offer := range offers {
-		_, err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
-			containerImageKey, portMappings, containerArgs, cpus, ram)
-		if err != nil {
-			log.Debugf(util.LogTag("Run")+"Deploy error: %v", err)
-		}
-
-		log.Debugf(util.LogTag("Run")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
-		return nil
-	}
-	log.Debugf(util.LogTag("Run") + "No offers found")
-	return fmt.Errorf("no offers found to deploy the container")
-}
-
 // Executed when a system's node wants to launch a container in this node.
 func (scheduler *Scheduler) Launch(fromBuyerIP string, offerID int64, containerImageKey string,
 	portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (string, error) {
@@ -92,7 +67,8 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 		contStatus, err := scheduler.client.LaunchContainer(offer.SupplierIP, scheduler.config.HostIP(), offer.ID,
 			containerImageKey, portMappings, containerArgs, cpus, ram)
 		if err != nil {
-			log.Debugf(util.LogTag("Run")+"Deploy error: %v", err)
+			log.Debugf(util.LogTag("Run")+"Deploy error: %s", err)
+			continue
 		}
 
 		log.Debugf(util.LogTag("Run")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
@@ -101,12 +77,6 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 
 	log.Debugf(util.LogTag("Run") + "No offers found")
 	return "", "", fmt.Errorf("no offers found to deploy the container")
-
-}
-
-func (scheduler *Scheduler) StopContainers(containerIDs []string) error {
-	// TODO
-	return nil
 }
 
 /*

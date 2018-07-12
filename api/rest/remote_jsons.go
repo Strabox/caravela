@@ -52,6 +52,11 @@ type LaunchContainerMessage struct {
 	RAM               int           `json:"RAM"`
 }
 
+// Stop container struct/JSON used in the REST APIs
+type StopContainerMessage struct {
+	ContainerID string `json:"ContainerID"`
+}
+
 // Neighbor offer's message struct/JSON used in the REST APIs.
 type NeighborOffersMessage struct {
 	ToNeighborGUID       string `json:"ToNeighborGUID"`

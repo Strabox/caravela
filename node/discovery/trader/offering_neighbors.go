@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+//
 type NearbyTradersOffering struct {
 	successor   *common.RemoteNode
 	predecessor *common.RemoteNode
@@ -45,4 +46,14 @@ func (neigh *NearbyTradersOffering) SetPredecessor(newPredecessor *common.Remote
 	defer neigh.mutex.Unlock()
 
 	neigh.predecessor = newPredecessor
+}
+
+func (neigh *NearbyTradersOffering) Neighbors() []*common.RemoteNode {
+	neigh.mutex.RLock()
+	defer neigh.mutex.RUnlock()
+
+	res := make([]*common.RemoteNode, 2)
+	res[0] = neigh.predecessor
+	res[1] = neigh.successor
+	return res
 }

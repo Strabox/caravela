@@ -2,12 +2,11 @@ package rest
 
 const ConfigurationBaseEndpoint = "/configuration"
 
-const DiscoveryBaseEndpoint = "/discovery"
-const DiscoveryOfferBaseEndpoint = DiscoveryBaseEndpoint + "/offer"
-const DiscoveryNeighborOfferBaseEndpoint = DiscoveryBaseEndpoint + "/neighbor/offer"
+const discoveryBaseEndpoint = "/discovery"
+const DiscoveryOfferBaseEndpoint = discoveryBaseEndpoint + "/offer"
+const DiscoveryNeighborOfferBaseEndpoint = discoveryBaseEndpoint + "/neighbor/offer"
 
-const SchedulerBaseEndpoint = "/scheduler"
-const SchedulerContainerBaseEndpoint = SchedulerBaseEndpoint + "/container"
+const ContainersBaseEndpoint = "/container"
 
 const UserBaseEndpoint = "/user"
 const UserContainerBaseEndpoint = UserBaseEndpoint + "/container"

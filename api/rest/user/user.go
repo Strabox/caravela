@@ -44,15 +44,14 @@ func stopContainers(w http.ResponseWriter, r *http.Request) (interface{}, error)
 	}
 	log.Infof("<-- STOP Containers: %v", stopContainersMsg.ContainersIDs)
 
-	// TODO: Forward the call to node
-	return nil, nil
+	err = userNodeAPI.StopContainers(stopContainersMsg.ContainersIDs)
+	return nil, err
 }
 
 func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	log.Infof("<-- LIST Containers")
 
-	// TODO: Forward the call to node
-	return rest.ContainersList{ContainersStatus: make([]rest.ContainerStatus, 0)}, nil
+	return userNodeAPI.ListContainers(), nil
 }
 
 func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {

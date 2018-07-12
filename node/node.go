@@ -27,8 +27,8 @@ type Node struct {
 	discovery         *discovery.Discovery // Discovery component
 	scheduler         *scheduler.Scheduler // Scheduler component
 	containersManager *containers.Manager  // Containers Manager component
-	userManager       *user.Manager
-	overlay           overlay.Overlay // Overlay component
+	userManager       *user.Manager        // User Manager component
+	overlay           overlay.Overlay      // Overlay component
 }
 
 func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli remote.Caravela,
@@ -49,7 +49,7 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 
 	schedulerComp := scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli)
 
-	userManagerComp := user.NewManager(schedulerComp)
+	userManagerComp := user.NewManager(schedulerComp, caravelaCli)
 
 	return &Node{
 		config:   config,
@@ -130,7 +130,7 @@ func (node *Node) AddTrader(guidBytes []byte) {
 	node.discovery.AddTrader(*guidRes)
 }
 
-/* ========================= Discovery Module Interface ====================== */
+/* ========================= Discovery Component Interface ====================== */
 
 func (node *Node) CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string,
 	id int64, amount int, cpus int, ram int) {
@@ -154,16 +154,30 @@ func (node *Node) AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID st
 	node.discovery.AdvertiseNeighborOffers(toTraderGUID, fromTraderGUID, traderOfferingIP, traderOfferingGUID)
 }
 
-/* ========================= Scheduling Module Interface ======================== */
+/* ========================= Scheduling Component Interface ======================== */
 
 func (node *Node) LaunchContainers(fromBuyerIP string, offerId int64, containerImageKey string, portMappings []rest.PortMapping,
 	containerArgs []string, cpus int, ram int) (string, error) {
 	return node.scheduler.Launch(fromBuyerIP, offerId, containerImageKey, portMappings, containerArgs, cpus, ram)
 }
 
-/* ========================= User Module Interface ============================= */
+/* ========================= Containers Component Interface ======================== */
+
+func (node *Node) StopLocalContainer(containerID string) error {
+	return node.containersManager.StopContainer(containerID)
+}
+
+/* ========================= User Component Interface ============================= */
 
 func (node *Node) SubmitContainers(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
 	cpus int, ram int) error {
-	return node.scheduler.Run(containerImageKey, portMappings, containerArgs, cpus, ram)
+	return node.userManager.SubmitContainers(containerImageKey, portMappings, containerArgs, cpus, ram)
+}
+
+func (node *Node) StopContainers(containersIDs []string) error {
+	return node.userManager.StopContainers(containersIDs)
+}
+
+func (node *Node) ListContainers() rest.ContainersList {
+	return node.userManager.ListContainers()
 }

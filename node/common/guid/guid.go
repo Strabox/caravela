@@ -129,9 +129,19 @@ func (guid *GUID) AddOffset(offset string) {
 	guid.id.Add(guid.id, toAdd)
 }
 
-// Compare to see what is the biggest GUID
+// Cmp used to check what if the guid is higher, lower or equal than the given guid.
 func (guid *GUID) Cmp(guid2 GUID) int {
 	return guid.id.Cmp(guid2.id)
+}
+
+// Higher returns true if guid is higher than the given guid and false otherwise.
+func (guid *GUID) Higher(guid2 GUID) bool {
+	return guid.id.Cmp(guid2.id) > 0
+}
+
+// Greater returns true if guid is lower than the given guid and false otherwise.
+func (guid *GUID) Lower(guid2 GUID) bool {
+	return guid.id.Cmp(guid2.id) < 0
 }
 
 // Compare if two GUIDs are equal or not.

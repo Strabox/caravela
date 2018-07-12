@@ -1,6 +1,8 @@
 package containers
 
-import "github.com/strabox/caravela/node/common/resources"
+import (
+	"github.com/strabox/caravela/node/common/resources"
+)
 
 // Represents a container that was submitted to run in a CARAVELA's node.
 type Container struct {
@@ -18,6 +20,10 @@ func NewContainer(dockerID string, buyerIP string, resources resources.Resources
 }
 
 func (container *Container) DockerID() string {
+	return container.dockerID
+}
+
+func (container *Container) DockerIDShort() string {
 	return container.dockerID
 }
 

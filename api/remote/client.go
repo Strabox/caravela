@@ -6,7 +6,7 @@ import (
 	"github.com/strabox/caravela/node/api"
 )
 
-// Complete interface for the remote client of a node.
+// Caravela is the complete API/Interface for the remote client of a node.
 type Caravela interface {
 	// =============================== Discovery ===============================
 
@@ -32,6 +32,11 @@ type Caravela interface {
 	// Sends a launch container message to a supplier in order to deploy the container
 	LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64, containerImageKey string,
 		portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (*rest.ContainerStatus, error)
+
+	// =============================== Containers ===============================
+
+	// Sends a stop container message to a supplier in order to stop the container
+	StopLocalContainer(toSupplierIP string, containerID string) error
 
 	// ============================== Configuration ==============================
 
