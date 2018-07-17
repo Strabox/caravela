@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest/configuration"
+	"github.com/strabox/caravela/api/rest/containers"
 	"github.com/strabox/caravela/api/rest/discovery"
 	"github.com/strabox/caravela/api/rest/scheduling"
 	"github.com/strabox/caravela/api/rest/user"
@@ -38,6 +39,7 @@ func (server *HttpServer) Start(node LocalNode) error {
 
 	// Initialize all the API rest endpoints
 	configuration.Init(server.router, node)
+	containers.Init(server.router, node)
 	discovery.Init(server.router, node)
 	scheduling.Init(server.router, node)
 	user.Init(server.router, node)

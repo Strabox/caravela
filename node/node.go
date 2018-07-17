@@ -41,7 +41,8 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 	// Create Resources Mapping (based on the configurations)
 	resourcesMap := resources.NewResourcesMap(resources.GetCpuCoresPartitions(config.CPUCoresPartitions()),
 		resources.GetRamPartitions(config.RAMPartitions()))
-	resourcesMap.Print()
+
+	// Create all the internal components
 
 	discoveryComp := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxResources)
 
@@ -49,7 +50,7 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 
 	schedulerComp := scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli)
 
-	userManagerComp := user.NewManager(schedulerComp, caravelaCli)
+	userManagerComp := user.NewManager(config, schedulerComp, caravelaCli)
 
 	return &Node{
 		config:   config,
@@ -64,6 +65,7 @@ func NewNode(config *configuration.Configuration, overlay overlay.Overlay, carav
 	}
 }
 
+// Configuration returns the configuration that is
 func (node *Node) Configuration() *configuration.Configuration {
 	return node.config
 }

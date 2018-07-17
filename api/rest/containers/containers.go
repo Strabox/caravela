@@ -21,7 +21,7 @@ func stopLocalContainer(w http.ResponseWriter, r *http.Request) (interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("<-- STOP ID: %s", stopContainerMsg.ContainerID)
+	log.Infof("<-- STOP Local Container ID: %s", stopContainerMsg.ContainerID)
 
 	err = nodeContainersAPI.StopLocalContainer(stopContainerMsg.ContainerID)
 	return nil, err

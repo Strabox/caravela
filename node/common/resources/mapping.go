@@ -2,7 +2,6 @@ package resources
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common/guid"
 )
@@ -185,14 +184,15 @@ func (rm *Mapping) getFittestResources(resources Resources) *Resources {
 }
 
 // Prints the resource map into the log.
-func (rm *Mapping) Print() {
-	log.Debug("%%%%%%%%%%%%%%%%% Resource <-> GUID Mapping %%%%%%%%%%%%%%%%%%%%%")
+func (rm *Mapping) String() (res string) {
+	res = "%%%%%%%%%%%%%%%%% Resource <-> GUID Mapping %%%%%%%%%%%%%%%%%%%%%\n"
 	for indexCPU := range rm.resourcesIDMap {
-		log.Debugf("-> %v CPUs", rm.invertCpuIndexes[indexCPU])
+		res += fmt.Sprintf("-> %v CPUs\n", rm.invertCpuIndexes[indexCPU])
 		for indexRAM := range rm.resourcesIDMap {
-			log.Debugf("--> %vMB RAM", rm.invertRamIndexes[indexRAM])
-			log.Debug(rm.resourcesIDMap[indexCPU][indexRAM].String())
+			res += fmt.Sprintf("--> %vMB RAM\n", rm.invertRamIndexes[indexRAM])
+			res += rm.resourcesIDMap[indexCPU][indexRAM].String()
 		}
 	}
-	log.Debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+	res += "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	return
 }

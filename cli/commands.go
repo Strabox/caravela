@@ -34,6 +34,11 @@ var (
 					Usage: "Define a port mapping for a container, HostPort:ContainerPort",
 				},
 				cli.UintFlag{
+					Name:  "cpuPower, cp",
+					Value: 0,
+					Usage: "Power/Class of the cpu necessary for the container",
+				},
+				cli.UintFlag{
 					Name:  "cpus, c",
 					Value: 0,
 					Usage: "Maximum number of CPUs/Cores that the container need",
@@ -53,7 +58,7 @@ var (
 			Before:   printBanner,
 			Subcommands: []cli.Command{
 				{
-					Name:   "ls",
+					Name:   "ps",
 					Usage:  "List the user's containers in the system",
 					Action: listContainer,
 				},

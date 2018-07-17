@@ -18,7 +18,7 @@ import (
 // Trader is responsible for managing offers from multiple suppliers and negotiate these offers with buyers.
 // The resources combination that the trader can handle is described by its GUID.
 type Trader struct {
-	nodeCommon.SystemSubComponent // Base component
+	nodeCommon.NodeComponent // Base component
 
 	config  *configuration.Configuration // System's configurations
 	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
@@ -230,16 +230,6 @@ func (trader *Trader) AdvertiseNeighborOffer(fromTraderGUID string, traderOfferi
 	}
 }
 
-// GUID returns the trader identifier.
-func (trader *Trader) GUID() *guid.GUID {
-	return trader.guid.Copy()
-}
-
-// HandlerResources returns the resources combination that the trader handles.
-func (trader *Trader) HandledResources() *resources.Resources {
-	return trader.handledResources.Copy()
-}
-
 func (trader *Trader) haveOffers() bool {
 	trader.offersMutex.Lock()
 	defer trader.offersMutex.Unlock()
@@ -255,7 +245,7 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 		return
 	}
 
-	for _, overlayNeighbor := range overlayNeighbors { // Advertise to the lower and higher GUID's node (inside partition)
+	for _, overlayNeighbor := range overlayNeighbors { // Advertise to all neighbors (inside resource partition)
 		go func(overlayNeighbor *overlay.Node) {
 			nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
 			nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
@@ -274,8 +264,10 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 */
 
 func (trader *Trader) Start() {
-	trader.Started(func() {
-		go trader.start()
+	trader.Started(trader.config.Simulation(), func() {
+		if !trader.config.Simulation() {
+			go trader.start()
+		}
 	})
 }
 

@@ -31,5 +31,8 @@ type ContainersList struct {
 
 // Represents a container and its status in the node.
 type ContainerStatus struct {
-	ID string `json:"ID"`
+	ImageKey     string        `json:"ImageKey"`
+	ID           string        `json:"ID"`
+	PortMappings []PortMapping `json:"PortMappings"`
+	Status       string        `json:"Status"`
 }

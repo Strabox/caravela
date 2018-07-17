@@ -4,7 +4,7 @@ Backend = "DockerHub"
 [Caravela]
 APIPort = 8001
 APITimeout = "5s"
-CheckContainersInterval = "30s"
+OffersStrategy = "chordDefault"
 SupplyingInterval = "30s"
 SpreadOffersInterval = "30s"
 RefreshesCheckInterval = "30s"
@@ -12,6 +12,7 @@ RefreshingInterval = "30s"
 MaxRefreshesFailed = 3
 MaxRefreshesMissed = 2
 RefreshMissedTimeout = "20s"
+CheckContainersInterval = "30s"
 ResourcesOvercommit = 50
     # Cpu Cores Partitions
     [[Caravela.CpuCoresPartitions]]

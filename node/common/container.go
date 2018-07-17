@@ -47,3 +47,7 @@ func (cont *Container) Resources() resources.Resources {
 func (cont *Container) ID() string {
 	return cont.id
 }
+
+func (cont *Container) ShortID() string {
+	return cont.id[:12]
+}

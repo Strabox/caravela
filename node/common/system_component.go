@@ -5,20 +5,28 @@ import "sync"
 // Provides a common interface for all the internal independent components of a node.
 // Providing the common interface of a component.
 type Component interface {
-	Start()          // Starts the component
-	Stop()           // Stops the component
-	isWorking() bool // Verifies if the component is working
+	// Starts the component
+	Start(simulation bool)
+	// Stops the component
+	Stop()
+	// Verifies if the component is working
+	isWorking() bool
 }
 
 // Base object for all system's internal components.
-type SystemSubComponent struct {
-	mutex   sync.Mutex
-	working bool
+type NodeComponent struct {
+	mutex      sync.Mutex
+	working    bool
+	simulation bool
 }
 
-func (comp *SystemSubComponent) Started(startFunction func()) {
+//func NewNodeComponent() *NodeComponent
+
+func (comp *NodeComponent) Started(simulation bool, startFunction func()) {
 	comp.mutex.Lock()
 	defer comp.mutex.Unlock()
+
+	comp.simulation = simulation
 
 	if !comp.working {
 		comp.working = true
@@ -28,7 +36,7 @@ func (comp *SystemSubComponent) Started(startFunction func()) {
 	}
 }
 
-func (comp *SystemSubComponent) Stopped(stopFunction func()) {
+func (comp *NodeComponent) Stopped(stopFunction func()) {
 	comp.mutex.Lock()
 	defer comp.mutex.Unlock()
 
@@ -40,9 +48,9 @@ func (comp *SystemSubComponent) Stopped(stopFunction func()) {
 	}
 }
 
-func (comp *SystemSubComponent) Working() bool {
+func (comp *NodeComponent) Working() bool {
 	comp.mutex.Lock()
 	defer comp.mutex.Unlock()
 
-	return comp.working
+	return comp.working || comp.simulation
 }

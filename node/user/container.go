@@ -6,20 +6,20 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 )
 
-type container struct {
+type deployedContainer struct {
 	*common.Container        // Base container
 	suppIP            string // IP of the supplier node
 }
 
 func newContainer(imageKey string, args []string, portMaps []rest.PortMapping,
-	resources resources.Resources, id string, supplierIP string) *container {
+	resources resources.Resources, id string, supplierIP string) *deployedContainer {
 
-	return &container{
+	return &deployedContainer{
 		Container: common.NewContainer(imageKey, args, portMaps, resources, id),
 		suppIP:    supplierIP,
 	}
 }
 
-func (cont *container) supplierIP() string {
+func (cont *deployedContainer) supplierIP() string {
 	return cont.suppIP
 }

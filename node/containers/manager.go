@@ -18,18 +18,19 @@ import (
 // deployed containers.
 // Basically it is a local node manager for the containers.
 type Manager struct {
-	common.SystemSubComponent // Base component
+	common.NodeComponent // Base component
 
 	config       *configuration.Configuration // System's configuration
 	dockerClient docker.Client                // Docker's client
 	supplier     api.DiscoveryInternal        // Node supplier API
 
-	quitChan              chan bool               // Channel to alert that the node is stopping
-	checkContainersTicker <-chan time.Time        // Ticker to check for containers status
-	containersMutex       *sync.Mutex             // Mutex to control access to containers map
-	containersMap         map[string][]*Container // Collection of deployed containers (buyerIP -> Container)
+	quitChan              chan bool                             // Channel to alert that the node is stopping
+	checkContainersTicker <-chan time.Time                      // Ticker to check for containers status
+	containersMutex       *sync.Mutex                           // Mutex to control access to containers map
+	containersMap         map[string]map[string]*localContainer // Collection of deployed containers (buyerIP->(containerID->Container))
 }
 
+// NewManager creates a new containers manager component.
 func NewManager(config *configuration.Configuration, dockerClient docker.Client,
 	supplier api.DiscoveryInternal) *Manager {
 	return &Manager{
@@ -40,35 +41,33 @@ func NewManager(config *configuration.Configuration, dockerClient docker.Client,
 		quitChan:              make(chan bool),
 		checkContainersTicker: time.NewTicker(config.CheckContainersInterval()).C,
 		containersMutex:       &sync.Mutex{},
-		containersMap:         make(map[string][]*Container),
+		containersMap:         make(map[string]map[string]*localContainer),
 	}
 }
 
 func (man *Manager) checkDeployedContainers() {
 	for {
 		select {
-		case <-man.checkContainersTicker: // Checking the submitted containers status
+		case <-man.checkContainersTicker: // Checking the submitted containers status and remove them if they finished
 			go func() {
 				man.containersMutex.Lock()
 				defer man.containersMutex.Unlock()
 
-				for key, containers := range man.containersMap {
+				for key, containerMap := range man.containersMap {
 
-					for i := len(containers) - 1; i >= 0; i-- {
-						containerID := man.containersMap[key][i].DockerID()
+					for containerID, container := range containerMap {
 						contStatus, err := man.dockerClient.CheckContainerStatus(containerID)
 						if err == nil && !contStatus.IsRunning() {
 							log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", containerID)
-							man.dockerClient.RemoveContainer(containers[i].dockerID)
-							man.supplier.ReturnResources(containers[i].resources)
-							man.containersMap[key] = append(man.containersMap[key][:i], man.containersMap[key][i+1:]...)
+							man.dockerClient.RemoveContainer(containerID)
+							man.supplier.ReturnResources(container.Resources())
+							delete(containerMap, containerID)
 						}
 					}
 
-					if man.containersMap[key] == nil || len(man.containersMap[key]) == 0 {
+					if containerMap == nil || len(containerMap) == 0 {
 						delete(man.containersMap, key)
 					}
-
 				}
 			}()
 		case res := <-man.quitChan: // Stopping the containers management
@@ -104,13 +103,13 @@ func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings
 		return "", err
 	}
 
-	newContainer := NewContainer(containerID, buyerIP, resourcesNecessary)
+	newContainer := newContainer(imageKey, args, portMappings, resourcesNecessary, containerID, buyerIP)
 	if man.containersMap[buyerIP] == nil {
-		containersList := make([]*Container, 1)
-		containersList[0] = newContainer
-		man.containersMap[buyerIP] = containersList
+		userContainersMap := make(map[string]*localContainer)
+		userContainersMap[containerID] = newContainer
+		man.containersMap[buyerIP] = userContainersMap
 	} else {
-		man.containersMap[buyerIP] = append(man.containersMap[buyerIP], newContainer)
+		man.containersMap[buyerIP][containerID] = newContainer
 	}
 
 	log.Debugf(util.LogTag("ContMng")+"Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
@@ -118,8 +117,23 @@ func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings
 	return containerID, nil
 }
 
-func (man *Manager) StopContainer(containerID string) error {
-	return man.dockerClient.RemoveContainer(containerID)
+// Stop a local container and remove it.
+func (man *Manager) StopContainer(containerIDToStop string) error {
+	man.containersMutex.Lock()
+	defer man.containersMutex.Unlock()
+
+	for _, containersMap := range man.containersMap {
+		for containerID, container := range containersMap {
+			if containerID == containerIDToStop {
+				man.dockerClient.RemoveContainer(containerIDToStop)
+				man.supplier.ReturnResources(container.Resources())
+				delete(containersMap, containerID)
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("container does not exist")
 }
 
 /*
@@ -129,8 +143,10 @@ func (man *Manager) StopContainer(containerID string) error {
 */
 
 func (man *Manager) Start() {
-	man.Started(func() {
-		go man.checkDeployedContainers()
+	man.Started(man.config.Simulation(), func() {
+		if !man.config.Simulation() {
+			go man.checkDeployedContainers()
+		}
 	})
 }
 
@@ -140,12 +156,11 @@ func (man *Manager) Stop() {
 		defer man.containersMutex.Unlock()
 
 		// Stop and remove all the running containers from the docker engine
-		for key, containers := range man.containersMap {
-			for _, container := range containers {
-				man.dockerClient.RemoveContainer(container.dockerID)
-				log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", container.dockerID)
+		for _, containers := range man.containersMap {
+			for containerID := range containers {
+				man.dockerClient.RemoveContainer(containerID)
+				log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", containerID)
 			}
-			delete(man.containersMap, key)
 		}
 
 		man.quitChan <- true

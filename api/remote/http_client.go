@@ -176,7 +176,7 @@ func (client *HttpClient) LaunchContainer(toSupplierIP string, fromBuyerIP strin
 }
 
 func (client *HttpClient) StopLocalContainer(toSupplierIP string, containerID string) error {
-	log.Infof("--> STOP ID: %s", containerID)
+	log.Infof("--> STOP ID: %s, SuppIP: %s", containerID, toSupplierIP)
 
 	stopContainerMsg := rest.StopContainerMessage{
 		ContainerID: containerID,

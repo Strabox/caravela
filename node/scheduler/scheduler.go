@@ -17,7 +17,7 @@ import (
 // running in the system. It takes a request for running a container and decides where to deploy it
 // in conjunction with the Discovery module.
 type Scheduler struct {
-	common.SystemSubComponent // Base component
+	common.NodeComponent // Base component
 
 	config *configuration.Configuration // System's configuration
 	client remote.Caravela              // Caravela's remote client
@@ -86,7 +86,7 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 */
 
 func (scheduler *Scheduler) Start() {
-	scheduler.Started(func() { /* Do Nothing */ })
+	scheduler.Started(scheduler.config.Simulation(), func() { /* Do Nothing */ })
 }
 
 func (scheduler *Scheduler) Stop() {

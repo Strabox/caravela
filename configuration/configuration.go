@@ -23,7 +23,7 @@ const configurationFileName = "configuration.toml"
 
 // CARAVELA system's configurations.
 type Configuration struct {
-	Host          host          `json:"-"` // Do not encode host configuration due to security concerns!!
+	Host          host          `json:"-"` // Do not encode host configuration due to security concerns!!!
 	Caravela      caravela      `json:"Caravela"`
 	ImagesStorage imagesStorage `json:"ImagesStorage"`
 	Overlay       overlay       `json:"Overlay"`
@@ -37,10 +37,12 @@ type host struct {
 
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
+	Simulation              bool                `json:"APIPort"`                 // If the CARAVELA node is simulated or not
 	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
 	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
 	MaxRefreshesFailed      int                 `json:"MaxRefreshesFailed"`      // Maximum amount of refreshes that a supplier failed to reply
 	MaxRefreshesMissed      int                 `json:"MaxRefreshesMissed"`      // Maximum amount of refreshes a trader failed to send to the supplier
+	OffersStrategy          string              `json:"OffersStrategy"`          // Define what strategy is used to manage the offers
 	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
 	SupplyingInterval       duration            `json:"SupplyingInterval"`       // Interval for supplier to check if it is necessary offer resources
 	SpreadOffersInterval    duration            `json:"SpreadOffersInterval"`    // Interval for the trader to spread offer information into neighbors
@@ -77,8 +79,10 @@ func Default(hostIP string) *Configuration {
 			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
+			Simulation:              false,
 			APIPort:                 caravelaAPIPort,
-			APITimeout:              duration{Duration: 3 * time.Second},
+			OffersStrategy:          "chordDefault",
+			APITimeout:              duration{Duration: 5 * time.Second},
 			CheckContainersInterval: duration{Duration: 30 * time.Second},
 			SupplyingInterval:       duration{Duration: 45 * time.Second},
 			RefreshesCheckInterval:  duration{Duration: 30 * time.Second},
@@ -226,8 +230,10 @@ func (c *Configuration) Print() {
 	log.Printf("Docker Engine Version:       %s", c.DockerAPIVersion())
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ CARAVELA $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Printf("Simulation:                  %t", c.Simulation())
 	log.Printf("Port:                        %d", c.APIPort())
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
+	log.Printf("OffersStrategy:              %s", c.OffersStrategy())
 	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
 	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
 	log.Printf("Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
@@ -289,6 +295,10 @@ func (c *Configuration) ImagesStorageBackend() string {
 	return c.ImagesStorage.Backend
 }
 
+func (c *Configuration) Simulation() bool {
+	return c.Caravela.Simulation
+}
+
 func (c *Configuration) APIPort() int {
 	return c.Caravela.APIPort
 }
@@ -303,6 +313,10 @@ func (c *Configuration) CheckContainersInterval() time.Duration {
 
 func (c *Configuration) SpreadOffersInterval() time.Duration {
 	return c.Caravela.SpreadOffersInterval.Duration
+}
+
+func (c *Configuration) OffersStrategy() string {
+	return c.Caravela.OffersStrategy
 }
 
 func (c *Configuration) SupplyingInterval() time.Duration {
