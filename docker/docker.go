@@ -10,6 +10,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/strabox/caravela/api/rest"
 	"github.com/strabox/caravela/configuration"
+	myContainer "github.com/strabox/caravela/docker/container"
 	"github.com/strabox/caravela/storage"
 	"github.com/strabox/caravela/util"
 	"strconv"
@@ -68,19 +69,19 @@ func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 }
 
 // Check the container status (running, stopped, etc)
-func (client *DefaultClient) CheckContainerStatus(containerID string) (ContainerStatus, error) {
+func (client *DefaultClient) CheckContainerStatus(containerID string) (myContainer.ContainerStatus, error) {
 	client.isInit()
 
 	ctx := context.Background()
 	status, err := client.docker.ContainerInspect(ctx, containerID)
 	if err != nil {
-		return NewContainerStatus(Unknown), err
+		return myContainer.NewContainerStatus(myContainer.Unknown), err
 	}
 
 	if status.State.Running {
-		return NewContainerStatus(Running), nil
+		return myContainer.NewContainerStatus(myContainer.Running), nil
 	} else {
-		return NewContainerStatus(Finished), nil
+		return myContainer.NewContainerStatus(myContainer.Finished), nil
 	}
 }
 

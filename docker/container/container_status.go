@@ -1,4 +1,4 @@
-package docker
+package container
 
 const Running = 0
 const Finished = 1
