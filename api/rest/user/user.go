@@ -19,7 +19,7 @@ func Init(router *mux.Router, userNode User) {
 
 func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var runContainerMsg rest.RunContainerMessage
+	var runContainerMsg rest.RunContainerMsg
 
 	err = rest.ReceiveJSONFromHttp(w, r, &runContainerMsg)
 	if err != nil {
@@ -36,7 +36,7 @@ func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 
 func stopContainers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var stopContainersMsg rest.StopContainersMessage
+	var stopContainersMsg rest.StopContainersMsg
 
 	err = rest.ReceiveJSONFromHttp(w, r, &stopContainersMsg)
 	if err != nil {
@@ -51,7 +51,11 @@ func stopContainers(w http.ResponseWriter, r *http.Request) (interface{}, error)
 func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	log.Infof("<-- LIST Containers")
 
-	return userNodeAPI.ListContainers(), nil
+	containersStatus := userNodeAPI.ListContainers()
+
+	return rest.ContainersStatusMsg{
+		ContainersStatus: containersStatus,
+	}, nil
 }
 
 func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {

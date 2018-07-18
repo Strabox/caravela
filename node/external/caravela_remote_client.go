@@ -1,9 +1,8 @@
-package remote
+package external
 
 import (
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
-	"github.com/strabox/caravela/node/api"
 )
 
 // Caravela is the complete API/Interface for the remote client of a node.
@@ -11,27 +10,24 @@ type Caravela interface {
 	// =============================== Discovery ===============================
 
 	// Sends a create offer message to a trader from a supplier that wants to offer its resources.
-	CreateOffer(fromSupplierIP string, fromSupplierGUID string, toTraderIP string, toTraderGUID string, offerID int64,
-		amount int, cpus int, ram int) error
+	CreateOffer(fromNode, toNode *types.Node, offer *types.Offer) error
 
 	// Sends a refresh message from a trader to a supplier. It is used to mutually know that both are alive.
-	RefreshOffer(toSupplierIP string, fromTraderGUID string, offerID int64) (bool, error)
+	RefreshOffer(fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error)
 
 	// Sends a remove offer message from a supplier to a trader. It means the supplier does not handle the offer anymore.
-	RemoveOffer(fromSupplierIP string, fromSupplierGUID, toTraderIP string, toTraderGUID string, offerID int64) error
+	RemoveOffer(fromSupp, toTrader *types.Node, offer *types.Offer) error
 
 	// Sends a get message to obtain all the available offers in a trader.
-	GetOffers(toTraderIP string, toTraderGUID string, relay bool, fromNodeGUID string) ([]api.Offer, error)
+	GetOffers(fromNode, toTrader *types.Node, relay bool) ([]types.AvailableOffer, error)
 
 	// Sends a message to a neighbor trader saying that a given trader has offers available
-	AdvertiseOffersNeighbor(toNeighborTraderIP string, toNeighborTraderGUID string,
-		fromTraderGUID string, traderOfferingGUID string, traderOfferingIP string) error
+	AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, traderOffering *types.Node) error
 
 	// =============================== Scheduling ===============================
 
 	// Sends a launch container message to a supplier in order to deploy the container
-	LaunchContainer(toSupplierIP string, fromBuyerIP string, offerID int64, containerImageKey string,
-		portMappings []rest.PortMapping, containerArgs []string, cpus int, ram int) (*rest.ContainerStatus, error)
+	LaunchContainer(fromBuyer, toSupplier *types.Node, offer *types.Offer, containerConfig *types.ContainerConfig) (*types.ContainerStatus, error)
 
 	// =============================== Containers ===============================
 

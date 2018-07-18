@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/strabox/caravela/api/rest"
+	caravelaTypes "github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	myContainer "github.com/strabox/caravela/docker/container"
 	"github.com/strabox/caravela/storage"
@@ -86,7 +86,7 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (myContain
 }
 
 // Launches a container from an image in the local Docker Engine.
-func (client *DefaultClient) RunContainer(imageKey string, portMappings []rest.PortMapping,
+func (client *DefaultClient) RunContainer(imageKey string, portMappings []caravelaTypes.PortMapping,
 	args []string, cpus int64, ram int) (string, error) {
 
 	client.isInit()

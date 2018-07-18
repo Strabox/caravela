@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/strabox/caravela/api/client"
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/util"
 	"github.com/urfave/cli"
 	"os"
@@ -19,10 +19,10 @@ func runContainers(c *cli.Context) {
 	}
 
 	// Validate port mappings provided
-	var portMappings = make([]rest.PortMapping, 0)
+	var portMappings = make([]types.PortMapping, 0)
 	for _, portMap := range c.StringSlice("p") {
 		var err error
-		resultPortMap := rest.PortMapping{}
+		resultPortMap := types.PortMapping{}
 		portMapping := strings.Split(portMap, ":")
 
 		if len(portMapping) != 2 {

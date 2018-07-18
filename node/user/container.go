@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 )
@@ -11,7 +11,7 @@ type deployedContainer struct {
 	suppIP            string // IP of the supplier node
 }
 
-func newContainer(imageKey string, args []string, portMaps []rest.PortMapping,
+func newContainer(imageKey string, args []string, portMaps []types.PortMapping,
 	resources resources.Resources, id string, supplierIP string) *deployedContainer {
 
 	return &deployedContainer{

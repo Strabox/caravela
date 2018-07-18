@@ -12,7 +12,7 @@ func listContainer(c *cli.Context) {
 	// Create a user client of the CARAVELA system
 	caravelaClient := client.NewCaravelaIP(c.String("ip"))
 
-	containersList, err := caravelaClient.ListContainers()
+	containersStatus, err := caravelaClient.ListContainers()
 	if err != nil {
 		fmt.Printf("Error with request: %s\n", err)
 		os.Exit(1)
@@ -25,9 +25,9 @@ func listContainer(c *cli.Context) {
 		"STATUS",
 		"PORTS"}, columnSize)
 
-	for _, containerStatus := range containersList.ContainersStatus {
+	for _, containerStatus := range containersStatus {
 		presentTableLine([]string{
-			containerStatus.ID,
+			containerStatus.ContainerID,
 			containerStatus.ImageKey,
 			containerStatus.Status,
 			fmt.Sprintf("%v", containerStatus.PortMappings)},

@@ -16,28 +16,22 @@ func Init(router *mux.Router, nodeScheduling Scheduling) {
 
 func launchContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var launchContainerMsg rest.LaunchContainerMessage
+	var launchContainerMsg rest.LaunchContainerMsg
 
 	err = rest.ReceiveJSONFromHttp(w, r, &launchContainerMsg)
 	if err != nil {
 		return nil, err
 	}
 	log.Infof("<-- LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>",
-		launchContainerMsg.FromBuyerIP, launchContainerMsg.OfferID, launchContainerMsg.ContainerImageKey,
-		launchContainerMsg.PortMappings, launchContainerMsg.ContainerArgs, launchContainerMsg.CPUs,
-		launchContainerMsg.RAM)
+		launchContainerMsg.FromBuyer.IP, launchContainerMsg.Offer.ID, launchContainerMsg.ContainerConfig.ImageKey,
+		launchContainerMsg.ContainerConfig.PortMappings, launchContainerMsg.ContainerConfig.Args,
+		launchContainerMsg.ContainerConfig.Resources.CPUs, launchContainerMsg.ContainerConfig.Resources.RAM)
 
-	containerID, err := nodeSchedulingAPI.LaunchContainers(launchContainerMsg.FromBuyerIP, launchContainerMsg.OfferID,
-		launchContainerMsg.ContainerImageKey, launchContainerMsg.PortMappings, launchContainerMsg.ContainerArgs,
-		launchContainerMsg.CPUs, launchContainerMsg.RAM)
-
+	containerStatus, err := nodeSchedulingAPI.LaunchContainers(&launchContainerMsg.FromBuyer,
+		&launchContainerMsg.Offer, &launchContainerMsg.ContainerConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	contStatusResp := &rest.ContainerStatus{
-		ID: containerID,
-	}
-
-	return contStatusResp, err
+	return containerStatus, err
 }

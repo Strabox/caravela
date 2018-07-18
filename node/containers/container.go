@@ -1,7 +1,7 @@
 package containers
 
 import (
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 )
@@ -13,7 +13,7 @@ type localContainer struct {
 	buyerIP string // IP of the node that submitted the container in the system TODO: Try use node's GUID and user ID?
 }
 
-func newContainer(imageKey string, args []string, portMaps []rest.PortMapping, resources resources.Resources,
+func newContainer(imageKey string, args []string, portMaps []types.PortMapping, resources resources.Resources,
 	dockerID string, buyerIP string) *localContainer {
 	return &localContainer{
 		Container: common.NewContainer(imageKey, args, portMaps, resources, dockerID),

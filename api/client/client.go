@@ -1,6 +1,8 @@
 package client
 
-import "github.com/strabox/caravela/api/rest"
+import (
+	"github.com/strabox/caravela/api/types"
+)
 
 // CARAVELA Golang SDK/client complete interface.
 type Client interface {
@@ -12,7 +14,7 @@ type Client interface {
 	StopContainers(containersIDs []string) *Error
 
 	// List all the containers the user submitted.
-	ListContainers() (*rest.ContainersList, *Error)
+	ListContainers() ([]types.ContainerStatus, *Error)
 
 	// Exits the system, it makes the local node exit.
 	Exit() *Error

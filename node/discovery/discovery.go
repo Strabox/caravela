@@ -2,14 +2,14 @@ package discovery
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/strabox/caravela/api/remote"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
-	"github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/supplier"
 	"github.com/strabox/caravela/node/discovery/trader"
+	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -22,7 +22,7 @@ type Discovery struct {
 
 	config  *configuration.Configuration // System's configurations
 	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
-	client  remote.Caravela              // Remote caravela's client
+	client  external.Caravela            // Remote caravela's client
 
 	resourcesMap   *resources.Mapping // GUID<->Resources mapping
 	supplier       *supplier.Supplier // Supplier for managing the offers locally and remotely
@@ -30,7 +30,7 @@ type Discovery struct {
 }
 
 func NewDiscovery(config *configuration.Configuration, overlay overlay.Overlay,
-	client remote.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
+	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
 
 	return &Discovery{
 		config:  config,
@@ -56,7 +56,7 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 		(&traderGUID).String(), newTraderResources.String())
 }
 
-func (disc *Discovery) FindOffers(resources resources.Resources) []api.Offer {
+func (disc *Discovery) FindOffers(resources resources.Resources) []types.AvailableOffer {
 	return disc.supplier.FindOffers(resources)
 }
 
@@ -70,47 +70,41 @@ func (disc *Discovery) ReturnResources(resources resources.Resources) {
 
 /*============================== DiscoveryExternal Interface ============================== */
 
-func (disc *Discovery) CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string,
-	id int64, amount int, cpus int, ram int) {
-
-	t, exist := disc.virtualTraders.Load(toTraderGUID)
-	toTrader, ok := t.(*trader.Trader)
+func (disc *Discovery) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
+	t, exist := disc.virtualTraders.Load(toNode.GUID)
+	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		toTrader.CreateOffer(id, amount, cpus, ram, fromSupplierGUID, fromSupplierIP)
+		targetTrader.CreateOffer(fromNode, offer)
 	}
 }
 
-func (disc *Discovery) RefreshOffer(offerID int64, fromTraderGUID string) bool {
-	return disc.supplier.RefreshOffer(offerID, fromTraderGUID)
+func (disc *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
+	return disc.supplier.RefreshOffer(fromTrader, offer)
 }
 
-func (disc *Discovery) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string,
-	offerID int64) {
-
-	t, exist := disc.virtualTraders.Load(toTraderGUID)
-	toTrader, ok := t.(*trader.Trader)
+func (disc *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+	t, exist := disc.virtualTraders.Load(toTrader.GUID)
+	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		toTrader.RemoveOffer(fromSupplierIP, fromSupplierGUID, toTraderGUID, offerID)
+		targetTrader.RemoveOffer(fromSupp, offer)
 	}
 }
 
-func (disc *Discovery) GetOffers(toTraderGUID string, relay bool, fromNodeGUID string) []api.Offer {
-	t, exist := disc.virtualTraders.Load(toTraderGUID)
-	toTrader, ok := t.(*trader.Trader)
+func (disc *Discovery) GetOffers(fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+	t, exist := disc.virtualTraders.Load(toTrader.GUID)
+	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		return toTrader.GetOffers(relay, fromNodeGUID)
+		return targetTrader.GetOffers(fromNode, relay)
 	} else {
 		return nil
 	}
 }
 
-func (disc *Discovery) AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID string, traderOfferingIP string,
-	traderOfferingGUID string) {
-
-	t, exist := disc.virtualTraders.Load(toTraderGUID)
-	toTrader, ok := t.(*trader.Trader)
+func (disc *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node) {
+	t, exist := disc.virtualTraders.Load(toNeighborTrader.GUID)
+	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		toTrader.AdvertiseNeighborOffer(fromTraderGUID, traderOfferingIP, traderOfferingGUID)
+		targetTrader.AdvertiseNeighborOffer(fromTrader, toNeighborTrader, traderOffering)
 	}
 }
 

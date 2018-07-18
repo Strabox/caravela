@@ -5,6 +5,7 @@ import (
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/util"
+	"net"
 	"strings"
 	"time"
 )
@@ -146,11 +147,9 @@ func ObtainExternal(hostIP string, config *Configuration) (*Configuration, error
 // Briefly validate the configuration to avoid/short-circuit many runtime errors due to
 // typos or completely non sense configurations, like negative ports.
 func (c *Configuration) validate() error {
-	/* TODO: Undo this when simulator generates valid unique IPs
 	if net.ParseIP(c.HostIP()) == nil {
 		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
 	}
-	*/
 	if !util.IsValidPort(c.APIPort()) {
 		return fmt.Errorf("invalid api port: %d", c.APIPort())
 	}

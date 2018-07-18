@@ -3,12 +3,12 @@ package containers
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
-	"github.com/strabox/caravela/docker"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/api"
+	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 	"sync"
 	"time"
@@ -21,7 +21,7 @@ type Manager struct {
 	common.NodeComponent // Base component
 
 	config       *configuration.Configuration // System's configuration
-	dockerClient docker.Client                // Docker's client
+	dockerClient external.DockerClient        // Docker's client
 	supplier     api.DiscoveryInternal        // Node supplier API
 
 	quitChan              chan bool                             // Channel to alert that the node is stopping
@@ -31,7 +31,7 @@ type Manager struct {
 }
 
 // NewManager creates a new containers manager component.
-func NewManager(config *configuration.Configuration, dockerClient docker.Client,
+func NewManager(config *configuration.Configuration, dockerClient external.DockerClient,
 	supplier api.DiscoveryInternal) *Manager {
 	return &Manager{
 		config:       config,
@@ -80,9 +80,8 @@ func (man *Manager) checkDeployedContainers() {
 }
 
 // Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
-func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings []rest.PortMapping,
-	args []string, offerID int64, resourcesNecessary resources.Resources) (string, error) {
-
+func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, containerConfig *types.ContainerConfig,
+	resourcesNecessary resources.Resources) (*types.ContainerStatus, error) {
 	if !man.isWorking() {
 		panic(fmt.Errorf("can't start container, container manager not working"))
 	}
@@ -90,31 +89,37 @@ func (man *Manager) StartContainer(buyerIP string, imageKey string, portMappings
 	man.containersMutex.Lock()
 	defer man.containersMutex.Unlock()
 
-	obtained := man.supplier.ObtainResources(offerID, resourcesNecessary)
+	obtained := man.supplier.ObtainResources(offer.ID, resourcesNecessary)
 	if !obtained {
-		log.Debugf(util.LogTag("ContMng")+"Container NOT RUNNING, invalid offer: %d", offerID)
-		return "", fmt.Errorf("can't start container: invalid offer: %d", offerID)
+		log.Debugf(util.LogTag("ContMng")+"Container NOT RUNNING, invalid offer: %d", offer.ID)
+		return nil, fmt.Errorf("can't start container: invalid offer: %d", offer.ID)
 	}
 
-	containerID, err := man.dockerClient.RunContainer(imageKey, portMappings, args, int64(resourcesNecessary.CPUs()),
-		resourcesNecessary.RAM())
+	containerID, err := man.dockerClient.RunContainer(containerConfig.ImageKey, containerConfig.PortMappings,
+		containerConfig.Args, int64(resourcesNecessary.CPUs()), resourcesNecessary.RAM())
 	if err != nil {
 		man.supplier.ReturnResources(resourcesNecessary)
-		return "", err
+		return nil, err
 	}
 
-	newContainer := newContainer(imageKey, args, portMappings, resourcesNecessary, containerID, buyerIP)
-	if man.containersMap[buyerIP] == nil {
+	newContainer := newContainer(containerConfig.ImageKey, containerConfig.Args, containerConfig.PortMappings,
+		resourcesNecessary, containerID, fromBuyer.IP)
+	if man.containersMap[fromBuyer.IP] == nil {
 		userContainersMap := make(map[string]*localContainer)
 		userContainersMap[containerID] = newContainer
-		man.containersMap[buyerIP] = userContainersMap
+		man.containersMap[fromBuyer.IP] = userContainersMap
 	} else {
-		man.containersMap[buyerIP][containerID] = newContainer
+		man.containersMap[fromBuyer.IP][containerID] = newContainer
 	}
 
 	log.Debugf(util.LogTag("ContMng")+"Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
-		containerID, imageKey, args, resourcesNecessary.CPUs(), resourcesNecessary.RAM())
-	return containerID, nil
+		containerID, containerConfig.ImageKey, containerConfig.Args, resourcesNecessary.CPUs(), resourcesNecessary.RAM())
+
+	return &types.ContainerStatus{
+		ContainerConfig: *containerConfig,
+		ContainerID:     containerID,
+		Status:          "Running",
+	}, nil
 }
 
 // Stop a local container and remove it.

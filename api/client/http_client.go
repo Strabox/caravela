@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"net/http"
 	"strconv"
 	"strings"
@@ -42,16 +43,16 @@ func NewCaravelaTimeoutIP(caravelaHostIP string, requestTimeout time.Duration) *
 func (client *HttpClient) SubmitContainers(containerImageKey string, portMappings []string, arguments []string,
 	cpus int, ram int) *Error {
 
-	portMappingsList := make([]rest.PortMapping, 0)
+	portMappingsList := make([]types.PortMapping, 0)
 	for _, portMap := range portMappings {
 		portMapping := strings.Split(portMap, ":")
-		resultPortMap := rest.PortMapping{}
+		resultPortMap := types.PortMapping{}
 		resultPortMap.HostPort, _ = strconv.Atoi(portMapping[0])
 		resultPortMap.ContainerPort, _ = strconv.Atoi(portMapping[1])
 		portMappingsList = append(portMappingsList, resultPortMap)
 	}
 
-	runContainerMessage := rest.RunContainerMessage{
+	runContainerMessage := rest.RunContainerMsg{
 		ContainerImageKey: containerImageKey,
 		Arguments:         arguments,
 		PortMappings:      portMappingsList,
@@ -75,7 +76,7 @@ func (client *HttpClient) SubmitContainers(containerImageKey string, portMapping
 }
 
 func (client *HttpClient) StopContainers(containersIDs []string) *Error {
-	stopContainersMessage := rest.StopContainersMessage{ContainersIDs: containersIDs}
+	stopContainersMessage := rest.StopContainersMsg{ContainersIDs: containersIDs}
 
 	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
 		rest.UserContainerBaseEndpoint)
@@ -92,8 +93,8 @@ func (client *HttpClient) StopContainers(containersIDs []string) *Error {
 	}
 }
 
-func (client *HttpClient) ListContainers() (*rest.ContainersList, *Error) {
-	var containersList rest.ContainersList
+func (client *HttpClient) ListContainers() ([]types.ContainerStatus, *Error) {
+	var containersList rest.ContainersStatusMsg
 
 	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
 		rest.UserContainerBaseEndpoint)
@@ -104,7 +105,7 @@ func (client *HttpClient) ListContainers() (*rest.ContainersList, *Error) {
 	}
 
 	if httpCode == http.StatusOK {
-		return &containersList, nil
+		return containersList.ContainersStatus, nil
 	} else {
 		return nil, NewClientError(fmt.Errorf("error checking the container"))
 	}

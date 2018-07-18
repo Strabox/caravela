@@ -1,14 +1,14 @@
 package discovery
 
-import nodeAPI "github.com/strabox/caravela/node/api"
+import (
+	"github.com/strabox/caravela/api/types"
+)
 
 // Discovery API necessary to forward the REST calls
 type Discovery interface {
-	CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string,
-		id int64, amount int, cpus int, ram int)
-	RefreshOffer(offerID int64, fromTraderGUID string) bool
-	RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64)
-	GetOffers(toTraderGUID string, relay bool, fromNodeGUID string) []nodeAPI.Offer
-	AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID string, traderOfferingIP string,
-		traderOfferingGUID string)
+	CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer)
+	RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool
+	RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer)
+	GetOffers(fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer
+	AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, traderOffering *types.Node)
 }

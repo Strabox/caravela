@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/node/common/resources"
 )
 
@@ -9,13 +9,13 @@ import (
 type Container struct {
 	imageKey  string
 	args      []string
-	portMaps  []rest.PortMapping
+	portMaps  []types.PortMapping
 	resources resources.Resources
 
 	id string
 }
 
-func NewContainer(imageKey string, args []string, portMaps []rest.PortMapping,
+func NewContainer(imageKey string, args []string, portMaps []types.PortMapping,
 	resources resources.Resources, id string) *Container {
 
 	return &Container{
@@ -36,7 +36,7 @@ func (cont *Container) Args() []string {
 	return cont.args
 }
 
-func (cont *Container) PortMappings() []rest.PortMapping {
+func (cont *Container) PortMappings() []types.PortMapping {
 	return cont.portMaps
 }
 

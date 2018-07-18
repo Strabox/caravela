@@ -3,22 +3,20 @@ package node
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api"
-	"github.com/strabox/caravela/api/remote"
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
-	"github.com/strabox/caravela/docker"
-	nodeAPI "github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/containers"
 	"github.com/strabox/caravela/node/discovery"
+	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/node/user"
 	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 )
 
-// Node is the top level (Entry) structure for all the functionality.
+// Node is the top level entry structure (Facade) for all the functionality of a CARAVELA's node.
 type Node struct {
 	config   *configuration.Configuration // System's configuration
 	stopChan chan bool                    // Channel to stop the node functions
@@ -31,8 +29,8 @@ type Node struct {
 	overlay           overlay.Overlay      // Overlay component
 }
 
-func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli remote.Caravela,
-	dockerClient docker.Client, apiServer api.Server) *Node {
+func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli external.Caravela,
+	dockerClient external.DockerClient, apiServer api.Server) *Node {
 
 	// Obtain the maximum resources Docker Engine has available
 	maxCPUs, maxRAM := dockerClient.GetDockerCPUAndRAM()
@@ -125,6 +123,12 @@ func (node *Node) Stop() {
 	log.Debug(util.LogTag("Node") + "-> STOPPED")
 }
 
+/*
+##############################################################################################
+#									   REMOTE CLIENT API									 #
+##############################################################################################
+*/
+
 /* ======================== Overlay Membership Interface =========================== */
 
 func (node *Node) AddTrader(guidBytes []byte) {
@@ -134,33 +138,31 @@ func (node *Node) AddTrader(guidBytes []byte) {
 
 /* ========================= Discovery Component Interface ====================== */
 
-func (node *Node) CreateOffer(fromSupplierGUID string, fromSupplierIP string, toTraderGUID string,
-	id int64, amount int, cpus int, ram int) {
-	node.discovery.CreateOffer(fromSupplierGUID, fromSupplierIP, toTraderGUID, id, amount, cpus, ram)
+func (node *Node) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
+	node.discovery.CreateOffer(fromNode, toNode, offer)
 }
 
-func (node *Node) RefreshOffer(offerID int64, fromTraderGUID string) bool {
-	return node.discovery.RefreshOffer(offerID, fromTraderGUID)
+func (node *Node) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
+	return node.discovery.RefreshOffer(fromTrader, offer)
 }
 
-func (node *Node) RemoveOffer(fromSupplierIP string, fromSupplierGUID string, toTraderGUID string, offerID int64) {
-	node.discovery.RemoveOffer(fromSupplierIP, fromSupplierGUID, toTraderGUID, offerID)
+func (node *Node) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+	node.discovery.RemoveOffer(fromSupp, toTrader, offer)
 }
 
-func (node *Node) GetOffers(toTraderGUID string, relay bool, fromNodeGUID string) []nodeAPI.Offer {
-	return node.discovery.GetOffers(toTraderGUID, relay, fromNodeGUID)
+func (node *Node) GetOffers(fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+	return node.discovery.GetOffers(fromNode, toTrader, relay)
 }
 
-func (node *Node) AdvertiseNeighborOffers(toTraderGUID string, fromTraderGUID string, traderOfferingIP string,
-	traderOfferingGUID string) {
-	node.discovery.AdvertiseNeighborOffers(toTraderGUID, fromTraderGUID, traderOfferingIP, traderOfferingGUID)
+func (node *Node) AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, traderOffering *types.Node) {
+	node.discovery.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
 }
 
 /* ========================= Scheduling Component Interface ======================== */
 
-func (node *Node) LaunchContainers(fromBuyerIP string, offerId int64, containerImageKey string, portMappings []rest.PortMapping,
-	containerArgs []string, cpus int, ram int) (string, error) {
-	return node.scheduler.Launch(fromBuyerIP, offerId, containerImageKey, portMappings, containerArgs, cpus, ram)
+func (node *Node) LaunchContainers(fromBuyer *types.Node, offer *types.Offer,
+	containerConfig *types.ContainerConfig) (*types.ContainerStatus, error) {
+	return node.scheduler.Launch(fromBuyer, offer, containerConfig)
 }
 
 /* ========================= Containers Component Interface ======================== */
@@ -169,9 +171,15 @@ func (node *Node) StopLocalContainer(containerID string) error {
 	return node.containersManager.StopContainer(containerID)
 }
 
-/* ========================= User Component Interface ============================= */
+/*
+##############################################################################################
+#									     CLIENT API											 #
+##############################################################################################
+*/
 
-func (node *Node) SubmitContainers(containerImageKey string, portMappings []rest.PortMapping, containerArgs []string,
+/* ========================= User Component Interface (USER API) ============================= */
+
+func (node *Node) SubmitContainers(containerImageKey string, portMappings []types.PortMapping, containerArgs []string,
 	cpus int, ram int) error {
 	return node.userManager.SubmitContainers(containerImageKey, portMappings, containerArgs, cpus, ram)
 }
@@ -180,6 +188,6 @@ func (node *Node) StopContainers(containersIDs []string) error {
 	return node.userManager.StopContainers(containersIDs)
 }
 
-func (node *Node) ListContainers() rest.ContainersList {
+func (node *Node) ListContainers() []types.ContainerStatus {
 	return node.userManager.ListContainers()
 }

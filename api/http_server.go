@@ -35,7 +35,7 @@ func NewServer(port int) *HttpServer {
 
 // Start initializes the endpoints and starts the http web server.
 func (server *HttpServer) Start(node LocalNode) error {
-	log.Debug(util.LogTag("[API]") + "Starting REST API HttpServer ...")
+	log.Debug(util.LogTag("API") + "Starting REST API HttpServer ...")
 
 	// Initialize all the API rest endpoints
 	configuration.Init(server.router, node)

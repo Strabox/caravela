@@ -1,8 +1,9 @@
 package scheduling
 
-import "github.com/strabox/caravela/api/rest"
+import (
+	"github.com/strabox/caravela/api/types"
+)
 
 type Scheduling interface {
-	LaunchContainers(fromBuyerIP string, offerId int64, containerImageKey string, portMappings []rest.PortMapping,
-		containerArgs []string, cpus int, ram int) (string, error)
+	LaunchContainers(fromBuyer *types.Node, offer *types.Offer, containerConfig *types.ContainerConfig) (*types.ContainerStatus, error)
 }

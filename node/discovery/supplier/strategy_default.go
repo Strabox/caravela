@@ -3,12 +3,12 @@ package supplier
 import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
-	"github.com/strabox/caravela/api/remote"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
-	"github.com/strabox/caravela/node/api"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
+	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 )
@@ -17,18 +17,18 @@ type DefaultChordOffersManager struct {
 	configs          *configuration.Configuration
 	resourcesMapping *resources.Mapping
 	overlay          overlay.Overlay
-	remoteClient     remote.Caravela
+	remoteClient     external.Caravela
 }
 
 func (man *DefaultChordOffersManager) Init(resourcesMap *resources.Mapping, overlay overlay.Overlay,
-	remoteClient remote.Caravela) {
+	remoteClient external.Caravela) {
 
 	man.resourcesMapping = resourcesMap
 	man.overlay = overlay
 	man.remoteClient = remoteClient
 }
 
-func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resources) []api.Offer {
+func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resources) []types.AvailableOffer {
 	var destinationGUID *guid.GUID = nil
 	findPhase := 0
 	for {
@@ -39,7 +39,7 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 		} else { // Random trader in higher resources zone
 			destinationGUID, err = man.resourcesMapping.HigherRandGUID(*destinationGUID, targetResources)
 			if err != nil {
-				return make([]api.Offer, 0)
+				return make([]types.AvailableOffer, 0)
 			} // No more resource partitions to search
 		}
 
@@ -50,7 +50,18 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 		overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 		for _, node := range overlayNodes {
-			offers, err := man.remoteClient.GetOffers(node.IP(), guid.NewGUIDBytes(node.GUID()).String(), true, "")
+			offers, err := man.remoteClient.GetOffers(
+				&types.Node{
+					GUID: "",
+				},
+				&types.Node{
+					IP:   node.IP(),
+					GUID: guid.NewGUIDBytes(node.GUID()).String(),
+				},
+				true,
+			)
+
+			//offers, err := man.remoteClient.GetOffers(node.IP(), guid.NewGUIDBytes(node.GUID()).String(), true, "")
 			if (err == nil) && (len(offers) != 0) {
 				return offers
 			}
@@ -89,9 +100,24 @@ func (man *DefaultChordOffersManager) AdvertiseOffer(newOfferID int64, available
 	chosenNode := overlayNodes[0]
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
-	err = man.remoteClient.CreateOffer(man.configs.HostIP(), "", chosenNode.IP(),
-		chosenNodeGUID.String(), newOfferID, 1, availableResources.CPUs(),
-		availableResources.RAM())
+	err = man.remoteClient.CreateOffer(
+		&types.Node{
+			IP:   man.configs.HostIP(),
+			GUID: "",
+		},
+		&types.Node{
+			IP:   chosenNode.IP(),
+			GUID: chosenNodeGUID.String(),
+		},
+		&types.Offer{
+			ID:     newOfferID,
+			Amount: 1,
+			Resources: types.Resources{
+				CPUs: availableResources.CPUs(),
+				RAM:  availableResources.RAM(),
+			},
+		},
+	)
 
 	if err == nil {
 		return newSupplierOffer(common.OfferID(newOfferID), 1, availableResources, chosenNode.IP(), *chosenNodeGUID), nil
