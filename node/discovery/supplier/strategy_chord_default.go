@@ -51,13 +51,8 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 
 		for _, node := range overlayNodes {
 			offers, err := man.remoteClient.GetOffers(
-				&types.Node{
-					GUID: "",
-				},
-				&types.Node{
-					IP:   node.IP(),
-					GUID: guid.NewGUIDBytes(node.GUID()).String(),
-				},
+				&types.Node{GUID: ""},
+				&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 				true,
 			)
 
@@ -101,21 +96,12 @@ func (man *DefaultChordOffersManager) AdvertiseOffer(newOfferID int64, available
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
 	err = man.remoteClient.CreateOffer(
-		&types.Node{
-			IP:   man.configs.HostIP(),
-			GUID: "",
-		},
-		&types.Node{
-			IP:   chosenNode.IP(),
-			GUID: chosenNodeGUID.String(),
-		},
+		&types.Node{IP: man.configs.HostIP(), GUID: ""},
+		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{
-			ID:     newOfferID,
-			Amount: 1,
-			Resources: types.Resources{
-				CPUs: availableResources.CPUs(),
-				RAM:  availableResources.RAM(),
-			},
+			ID:        newOfferID,
+			Amount:    1,
+			Resources: types.Resources{CPUs: availableResources.CPUs(), RAM: availableResources.RAM()},
 		},
 	)
 

@@ -65,7 +65,11 @@ func (sup *Supplier) startSupplying() {
 	for {
 		select {
 		case <-sup.supplyingTicker: // Offer the available resources into a random trader (responsible for them).
-			go sup.advertiseOffer()
+			go func() {
+				sup.offersMutex.Lock()
+				defer sup.offersMutex.Unlock()
+				sup.advertiseOffer()
+			}()
 		case <-sup.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
 			go func() {
 				sup.offersMutex.Lock()
@@ -167,7 +171,11 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
 			)
-			go sup.advertiseOffer() // Update its own offers
+			go func() {
+				sup.offersMutex.Lock()
+				defer sup.offersMutex.Unlock()
+				sup.advertiseOffer()
+			}() // Update its own offers
 		}
 		return true
 	}
@@ -187,14 +195,15 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	if sup.config.Simulation() {
 		sup.advertiseOffer() // Update its own offers
 	} else {
-		go sup.advertiseOffer() // Update its own offers
+		go func() {
+			sup.offersMutex.Lock()
+			defer sup.offersMutex.Unlock()
+			sup.advertiseOffer()
+		}() // Update its own offers
 	}
 }
 
 func (sup *Supplier) advertiseOffer() {
-	sup.offersMutex.Lock()
-	defer sup.offersMutex.Unlock()
-
 	if sup.availableResources.IsValid() {
 		// What?: Remove all active offers from the traders in order to gather all available resources.
 		// Goal: This is used to try offer the maximum amount of resources the node has available between

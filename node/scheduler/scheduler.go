@@ -64,23 +64,14 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 
 	for _, offer := range offers {
 		contStatus, err := scheduler.client.LaunchContainer(
-			&types.Node{
-				IP: scheduler.config.HostIP(),
-			},
-			&types.Node{
-				IP: offer.SupplierIP,
-			},
-			&types.Offer{
-				ID: offer.ID,
-			},
+			&types.Node{IP: scheduler.config.HostIP()},
+			&types.Node{IP: offer.SupplierIP},
+			&types.Offer{ID: offer.ID},
 			&types.ContainerConfig{
 				ImageKey:     containerImageKey,
 				PortMappings: portMappings,
 				Args:         containerArgs,
-				Resources: types.Resources{
-					CPUs: cpus,
-					RAM:  ram,
-				},
+				Resources:    types.Resources{CPUs: cpus, RAM: ram},
 			},
 		)
 		if err != nil {
