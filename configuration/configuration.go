@@ -86,6 +86,7 @@ func Default(hostIP string) *Configuration {
 			APITimeout:              duration{Duration: 5 * time.Second},
 			CheckContainersInterval: duration{Duration: 30 * time.Second},
 			SupplyingInterval:       duration{Duration: 45 * time.Second},
+			SpreadOffersInterval:    duration{Duration: 40 * time.Second},
 			RefreshesCheckInterval:  duration{Duration: 30 * time.Second},
 			RefreshingInterval:      refreshingInterval,
 			MaxRefreshesFailed:      2,
@@ -235,6 +236,7 @@ func (c *Configuration) Print() {
 	log.Printf("OffersStrategy:              %s", c.OffersStrategy())
 	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
 	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
+	log.Printf("Spread Offers Interval:   	%s", c.SpreadOffersInterval().String())
 	log.Printf("Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
 	log.Printf("Refreshes Interval:          %s", c.RefreshingInterval().String())
 	log.Printf("Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())

@@ -74,15 +74,9 @@ func (trader *Trader) start() {
 					if offer.Refresh() {
 						go func(offer *traderOffer) {
 							refreshed, err := trader.client.RefreshOffer(
-								&types.Node{
-									GUID: trader.guid.String(),
-								},
-								&types.Node{
-									IP: offer.supplierIP,
-								},
-								&types.Offer{
-									ID: int64(offer.ID()),
-								},
+								&types.Node{GUID: trader.guid.String()},
+								&types.Node{IP: offer.supplierIP},
+								&types.Offer{ID: int64(offer.ID())},
 							)
 
 							trader.offersMutex.Lock()
@@ -175,13 +169,8 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 			predecessorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if trader.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
-					&types.Node{
-						GUID: trader.guid.String(),
-					},
-					&types.Node{
-						IP:   predecessor.IP(),
-						GUID: predecessor.GUID().String(),
-					},
+					&types.Node{GUID: trader.guid.String()},
+					&types.Node{IP: predecessor.IP(), GUID: predecessor.GUID().String()},
 					false,
 				) // Sends the get offers message
 				if err == nil && offers != nil {
@@ -205,15 +194,16 @@ func (trader *Trader) CreateOffer(fromSupp *types.Node, recvOffer *types.Offer) 
 		trader.offersMutex.Lock()
 		defer trader.offersMutex.Unlock()
 
-		offerKey := offerKey{
-			supplierIP: fromSupp.IP,
-			id:         common.OfferID(recvOffer.ID),
-		}
+		offerKey := offerKey{supplierIP: fromSupp.IP, id: common.OfferID(recvOffer.ID)}
 		offer := newTraderOffer(*guid.NewGUIDString(fromSupp.GUID), fromSupp.IP, common.OfferID(recvOffer.ID),
 			recvOffer.Amount, *resourcesOffered)
 
 		if len(trader.offers) == 0 { // If node had no offers, advertise it has now for all the neighbors
-			trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+			if trader.config.Simulation() {
+				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+			} else {
+				go trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+			}
 		}
 
 		trader.offers[offerKey] = offer
@@ -254,7 +244,11 @@ func (trader *Trader) AdvertiseNeighborOffer(fromTrader, toNeighborTrader, trade
 
 	// Do not relay the advertise if the node has offers.
 	if !trader.haveOffers() {
-		trader.advertiseOffersToNeighbors(isValidNeighbor)
+		if trader.config.Simulation() {
+			trader.advertiseOffersToNeighbors(isValidNeighbor)
+		} else {
+			go trader.advertiseOffersToNeighbors(isValidNeighbor)
+		}
 	}
 }
 
@@ -274,25 +268,31 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 	}
 
 	for _, overlayNeighbor := range overlayNeighbors { // Advertise to all neighbors (inside resource partition)
-		go func(overlayNeighbor *overlayTypes.OverlayNode) {
-			nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
-			nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
-			if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {
-				trader.client.AdvertiseOffersNeighbor(
-					&types.Node{
-						GUID: trader.guid.String(),
-					},
-					&types.Node{
-						IP:   overlayNeighbor.IP(),
-						GUID: nodeGUID.String(),
-					},
-					&types.Node{
-						IP:   trader.config.Host.IP,
-						GUID: trader.guid.String(),
-					},
-				) // Sends advertise local offers message
-			}
-		}(overlayNeighbor)
+		if trader.config.Simulation() {
+			func(overlayNeighbor *overlayTypes.OverlayNode) {
+				nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
+				nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+				if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {
+					trader.client.AdvertiseOffersNeighbor(
+						&types.Node{GUID: trader.guid.String()},
+						&types.Node{IP: overlayNeighbor.IP(), GUID: nodeGUID.String()},
+						&types.Node{IP: trader.config.Host.IP, GUID: trader.guid.String()},
+					) // Sends advertise local offers message
+				}
+			}(overlayNeighbor)
+		} else {
+			go func(overlayNeighbor *overlayTypes.OverlayNode) {
+				nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
+				nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+				if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {
+					trader.client.AdvertiseOffersNeighbor(
+						&types.Node{GUID: trader.guid.String()},
+						&types.Node{IP: overlayNeighbor.IP(), GUID: nodeGUID.String()},
+						&types.Node{IP: trader.config.Host.IP, GUID: trader.guid.String()},
+					) // Sends advertise local offers message
+				}
+			}(overlayNeighbor)
+		}
 	}
 }
 

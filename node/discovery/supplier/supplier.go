@@ -154,21 +154,21 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 
 		delete(sup.activeOffers, common.OfferID(offerID))
 
-		go sup.client.RemoveOffer(
-			&types.Node{
-				IP:   sup.config.HostIP(),
-				GUID: "",
-			},
-			&types.Node{
-				IP:   supOffer.ResponsibleTraderIP(),
-				GUID: supOffer.ResponsibleTraderGUID().String(),
-			},
-			&types.Offer{
-				ID: int64(supOffer.ID()),
-			},
-		)
-		go sup.advertiseOffer() // Update its own offers
-
+		if sup.config.Simulation() {
+			sup.client.RemoveOffer(
+				&types.Node{IP: sup.config.HostIP(), GUID: ""},
+				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
+				&types.Offer{ID: int64(supOffer.ID())},
+			)
+			sup.advertiseOffer() // Update its own offers
+		} else {
+			go sup.client.RemoveOffer(
+				&types.Node{IP: sup.config.HostIP(), GUID: ""},
+				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
+				&types.Offer{ID: int64(supOffer.ID())},
+			)
+			go sup.advertiseOffer() // Update its own offers
+		}
 		return true
 	}
 }
@@ -184,7 +184,11 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 
 	sup.availableResources.Add(releasedResources)
 
-	go sup.advertiseOffer() // Update its own offers
+	if sup.config.Simulation() {
+		sup.advertiseOffer() // Update its own offers
+	} else {
+		go sup.advertiseOffer() // Update its own offers
+	}
 }
 
 func (sup *Supplier) advertiseOffer() {
@@ -196,22 +200,21 @@ func (sup *Supplier) advertiseOffer() {
 		// Goal: This is used to try offer the maximum amount of resources the node has available between
 		//		 the Available (offered) and the Available (but not offered).
 		for offerID, offer := range sup.activeOffers {
-			go func(offerID int64, offer *supplierOffer) {
+			offerIDRef := offerID
+			offerRef := offer
+			if sup.config.Simulation() {
 				sup.client.RemoveOffer(
-					&types.Node{
-						IP:   sup.config.HostIP(),
-						GUID: "",
-					},
-					&types.Node{
-						IP:   offer.ResponsibleTraderIP(),
-						GUID: offer.ResponsibleTraderGUID().String(),
-					},
-					&types.Offer{
-						ID: offerID,
-					},
-				)
-			}(int64(offerID), offer) // Send remove offer message in background
-
+					&types.Node{IP: sup.config.HostIP(), GUID: ""},
+					&types.Node{IP: offerRef.ResponsibleTraderIP(), GUID: offerRef.ResponsibleTraderGUID().String()},
+					&types.Offer{ID: int64(offerIDRef)},
+				) // Send remove offer message in background
+			} else {
+				go sup.client.RemoveOffer(
+					&types.Node{IP: sup.config.HostIP(), GUID: ""},
+					&types.Node{IP: offerRef.ResponsibleTraderIP(), GUID: offerRef.ResponsibleTraderGUID().String()},
+					&types.Offer{ID: int64(offerIDRef)},
+				) // Send remove offer message in background
+			}
 			delete(sup.activeOffers, offerID)
 			sup.availableResources.Add(*offer.Resources())
 		}
