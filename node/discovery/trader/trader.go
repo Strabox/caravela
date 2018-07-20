@@ -207,8 +207,9 @@ func (trader *Trader) CreateOffer(fromSupp *types.Node, recvOffer *types.Offer) 
 		}
 
 		trader.offers[offerKey] = offer
-		log.Debugf(util.LogTag("Trader")+"%s OFFER CREATED %dX<%d;%d>, From: %s",
-			trader.guid.String(), recvOffer.Amount, recvOffer.Resources.CPUs, recvOffer.Resources.RAM, fromSupp.IP)
+		log.Debugf(util.LogTag("Trader")+"%s OFFER CREATED %dX<%d;%d>, From: %s, ID: %d",
+			trader.guid.String(), recvOffer.Amount, recvOffer.Resources.CPUs, recvOffer.Resources.RAM,
+			fromSupp.IP, recvOffer.ID)
 	}
 }
 
