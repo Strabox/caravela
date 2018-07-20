@@ -232,7 +232,7 @@ func (sup *Supplier) advertiseOffer() {
 		if err == nil {
 			sup.activeOffers[offer.ID()] = offer
 			sup.availableResources.SetZero()
-			log.Debugf(util.LogTag("Supplier")+"CREATING OFFER %dX<%d;%d>, From: %s, ID: %d ...",
+			log.Debugf(util.LogTag("Supplier")+"CREATING OFFER %dX<%d;%d>, ID: %d ...",
 				offer.Amount(), offer.Resources().CPUs(), offer.Resources().RAM(), offer.ID())
 		}
 		sup.offersIDGen++
