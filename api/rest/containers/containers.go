@@ -15,7 +15,7 @@ func Init(router *mux.Router, nodeContainers Containers) {
 }
 
 func stopLocalContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	var stopContainerMsg rest.StopContainerMsg
+	var stopContainerMsg rest.StopLocalContainerMsg
 
 	err := rest.ReceiveJSONFromHttp(w, r, &stopContainerMsg)
 	if err != nil {

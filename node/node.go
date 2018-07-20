@@ -12,7 +12,6 @@ import (
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/node/user"
-	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 )
 
@@ -26,10 +25,10 @@ type Node struct {
 	scheduler         *scheduler.Scheduler // Scheduler component
 	containersManager *containers.Manager  // Containers Manager component
 	userManager       *user.Manager        // User Manager component
-	overlay           overlay.Overlay      // Overlay component
+	overlay           external.Overlay     // Overlay component
 }
 
-func NewNode(config *configuration.Configuration, overlay overlay.Overlay, caravelaCli external.Caravela,
+func NewNode(config *configuration.Configuration, overlay external.Overlay, caravelaCli external.Caravela,
 	dockerClient external.DockerClient, apiServer api.Server) *Node {
 
 	// Obtain the maximum resources Docker Engine has available

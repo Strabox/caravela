@@ -10,7 +10,6 @@ import (
 	"github.com/strabox/caravela/node/discovery/supplier"
 	"github.com/strabox/caravela/node/discovery/trader"
 	"github.com/strabox/caravela/node/external"
-	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 	"sync"
 )
@@ -21,7 +20,7 @@ type Discovery struct {
 	common.NodeComponent // Base component
 
 	config  *configuration.Configuration // System's configurations
-	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
+	overlay external.Overlay             // Node overlay to efficient route messages to specific nodes.
 	client  external.Caravela            // Remote caravela's client
 
 	resourcesMap   *resources.Mapping // GUID<->Resources mapping
@@ -29,7 +28,7 @@ type Discovery struct {
 	virtualTraders sync.Map           // map[string]*trader.Trader // Node can have multiple "virtual" traders in several places of the overlay
 }
 
-func NewDiscovery(config *configuration.Configuration, overlay overlay.Overlay,
+func NewDiscovery(config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
 
 	return &Discovery{

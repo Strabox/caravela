@@ -1,4 +1,4 @@
-package api
+package types
 
 //Node interface exposed to the overlay below.
 type OverlayMembership interface {

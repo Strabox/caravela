@@ -53,7 +53,7 @@ func (man *Manager) StopContainers(containerIDs []string) error {
 		contTmp, contExist := man.containers.Load(contID)
 		container, ok := contTmp.(*deployedContainer)
 		if contExist && ok {
-			if err := man.userRemoteCli.StopLocalContainer(container.supplierIP(), container.ID()); err == nil {
+			if err := man.userRemoteCli.StopLocalContainer(&types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
 				man.containers.Delete(contID)
 			} else {
 				fail = true

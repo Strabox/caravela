@@ -7,7 +7,7 @@ type Offer struct {
 }
 
 type AvailableOffer struct {
-	Offer
+	Offer      `json:"Offer"`
 	SupplierIP string `json:"SupplierIP"`
 }
 

@@ -32,11 +32,12 @@ type Caravela interface {
 	// =============================== Containers ===============================
 
 	// Sends a stop container message to a supplier in order to stop the container
-	StopLocalContainer(toSupplierIP string, containerID string) error
+	StopLocalContainer(toSupplier *types.Node, containerID string) error
+	//StopLocalContainer(toSupplierIP string, containerID string) error
 
 	// ============================== Configuration ==============================
 
 	// Sends a message to obtain the system configurations of an existing node. Used by joining nodes to know what are
 	// the system configuration parameters and the respective values.
-	ObtainConfiguration(systemsNodeIP string) (*configuration.Configuration, error)
+	ObtainConfiguration(systemsNode *types.Node) (*configuration.Configuration, error)
 }

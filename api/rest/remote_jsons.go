@@ -46,7 +46,7 @@ type LaunchContainerMsg struct {
 }
 
 // Stop container struct/JSON used in the REST APIs
-type StopContainerMsg struct {
+type StopLocalContainerMsg struct {
 	ContainerID string `json:"ContainerID"`
 }
 

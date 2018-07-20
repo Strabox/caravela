@@ -9,7 +9,7 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/node/external"
-	"github.com/strabox/caravela/overlay"
+	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
 	"sync"
 	"time"
@@ -21,7 +21,7 @@ type Trader struct {
 	nodeCommon.NodeComponent // Base component
 
 	config  *configuration.Configuration // System's configurations
-	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
+	overlay external.Overlay             // Node overlay to efficient route messages to specific nodes.
 	client  external.Caravela            // Client for the system
 
 	guid             *guid.GUID           // Trader's own GUID
@@ -38,7 +38,7 @@ type Trader struct {
 }
 
 // NewTrader creates a new "virtual" trader.
-func NewTrader(config *configuration.Configuration, overlay overlay.Overlay, client external.Caravela,
+func NewTrader(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
 	guid guid.GUID, resourcesMapping *resources.Mapping) *Trader {
 
 	handledResources, _ := resourcesMapping.ResourcesByGUID(guid)
@@ -274,7 +274,7 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 	}
 
 	for _, overlayNeighbor := range overlayNeighbors { // Advertise to all neighbors (inside resource partition)
-		go func(overlayNeighbor *overlay.Node) {
+		go func(overlayNeighbor *overlayTypes.OverlayNode) {
 			nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
 			nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
 			if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {

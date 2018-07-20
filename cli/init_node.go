@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
+	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/docker"
 	"github.com/strabox/caravela/node"
@@ -18,7 +19,7 @@ func initNode(hostIP string, join bool, joinIP string) error {
 	if join {
 		caravelaClient := remote.NewHttpClient(configuration.Default(hostIP))
 
-		systemConfigurations, err = caravelaClient.ObtainConfiguration(joinIP)
+		systemConfigurations, err = caravelaClient.ObtainConfiguration(&types.Node{IP: joinIP})
 		if err != nil {
 			return err
 		}

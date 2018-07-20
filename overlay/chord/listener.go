@@ -2,7 +2,7 @@ package chord
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
 	"math/big"
@@ -21,12 +21,12 @@ func (cl *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *c
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(local.Id)
 		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
-		predecessorNode := overlay.NewNode(nodeIP, nodePort, newPredecessor.Id)
+		predecessorNode := types.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
 		cl.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
 	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
 		// New predecessor for a existing node
 		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
-		predecessorNode := overlay.NewNode(nodeIP, nodePort, newPredecessor.Id)
+		predecessorNode := types.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
 		cl.chordOverlay.predecessorNodeChanged(local.Id, predecessorNode)
 	}
 }

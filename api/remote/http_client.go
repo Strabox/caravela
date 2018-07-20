@@ -175,16 +175,16 @@ func (client *HttpClient) LaunchContainer(fromBuyer, toSupplier *types.Node, off
 	}
 }
 
-func (client *HttpClient) StopLocalContainer(toSupplierIP string, containerID string) error {
-	log.Infof("--> STOP ID: %s, SuppIP: %s", containerID, toSupplierIP)
+func (client *HttpClient) StopLocalContainer(toSupplier *types.Node, containerID string) error {
+	log.Infof("--> STOP ID: %s, SuppIP: %s", containerID, toSupplier.IP)
 
-	stopContainerMsg := rest.StopContainerMsg{
+	stopLocalContainerMsg := rest.StopLocalContainerMsg{
 		ContainerID: containerID,
 	}
 
-	url := rest.BuildHttpURL(false, toSupplierIP, client.config.APIPort(), rest.ContainersBaseEndpoint)
+	url := rest.BuildHttpURL(false, toSupplier.IP, client.config.APIPort(), rest.ContainersBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodDelete, stopContainerMsg, nil)
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodDelete, stopLocalContainerMsg, nil)
 	if err != nil {
 		return NewRemoteClientError(err)
 	}
@@ -196,12 +196,12 @@ func (client *HttpClient) StopLocalContainer(toSupplierIP string, containerID st
 	}
 }
 
-func (client *HttpClient) ObtainConfiguration(systemsNodeIP string) (*configuration.Configuration, error) {
-	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNodeIP)
+func (client *HttpClient) ObtainConfiguration(systemsNode *types.Node) (*configuration.Configuration, error) {
+	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNode.IP)
 
 	var systemsNodeConfigsResp configuration.Configuration
 
-	url := rest.BuildHttpURL(false, systemsNodeIP, client.config.APIPort(), rest.ConfigurationBaseEndpoint)
+	url := rest.BuildHttpURL(false, systemsNode.IP, client.config.APIPort(), rest.ConfigurationBaseEndpoint)
 
 	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
 	if err != nil {

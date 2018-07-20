@@ -1,7 +1,7 @@
-package overlay
+package types
 
 // Represents a generic overlay node.
-type Node struct {
+type OverlayNode struct {
 	// IP address
 	nodeIP string
 	// Port where it runs the overlay daemon
@@ -10,9 +10,9 @@ type Node struct {
 	guid []byte
 }
 
-// NewNode creates a new overlay node.
-func NewNode(nodeIP string, port int, guid []byte) *Node {
-	return &Node{
+// NewOverlayNode creates a new overlay node.
+func NewOverlayNode(nodeIP string, port int, guid []byte) *OverlayNode {
+	return &OverlayNode{
 		nodeIP: nodeIP,
 		port:   port,
 		guid:   guid,
@@ -20,16 +20,16 @@ func NewNode(nodeIP string, port int, guid []byte) *Node {
 }
 
 // IP of the node
-func (rn *Node) IP() string {
+func (rn *OverlayNode) IP() string {
 	return rn.nodeIP
 }
 
 // Port of the overlay daemon
-func (rn *Node) Port() int {
+func (rn *OverlayNode) Port() int {
 	return rn.port
 }
 
 // Node identifier
-func (rn *Node) GUID() []byte {
+func (rn *OverlayNode) GUID() []byte {
 	return rn.guid
 }

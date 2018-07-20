@@ -3,8 +3,7 @@ package chord
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	nodeAPI "github.com/strabox/caravela/node/api"
-	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
 	"hash"
@@ -17,7 +16,7 @@ import (
 // Represents a Chord overlay local (for each node) structure.
 type Overlay struct {
 	// Used to communicate interesting events to the application.
-	appNode nodeAPI.OverlayMembership
+	appNode types.OverlayMembership
 	// Map of local virtual nodes IDs to the respective predecessors IDs
 	predecessors sync.Map
 	// Number of virtual nodes up and running
@@ -64,7 +63,7 @@ func NewChordOverlay(hashSizeBytes int, hostIP string, hostPort int,
 }
 
 // Initialize the chord overlay and its respective inner structures.
-func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config, chord.Transport, error) {
+func (co *Overlay) initialize(appNode types.OverlayMembership) (*chord.Config, chord.Transport, error) {
 	co.appNode = appNode
 	hostname := co.hostIP + ":" + strconv.Itoa(co.hostPort)
 	chordListener := &Listener{chordOverlay: co}
@@ -86,7 +85,7 @@ func (co *Overlay) initialize(appNode nodeAPI.OverlayMembership) (*chord.Config,
 }
 
 // Called when a new virtual node of this physical node has joined the chord ring.
-func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
+func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *types.OverlayNode) {
 	if co.virtualNodesRunning == co.numVirtualNodes {
 		return
 	}
@@ -109,7 +108,7 @@ func (co *Overlay) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNod
 
 // Called when the predecessor of a virtual node of the physical node changes.
 // e.g. Due to a crash in the previous predecessor or because he left the chord ring.
-func (co *Overlay) predecessorNodeChanged(localVirtualNodeID []byte, predecessorNode *overlay.Node) {
+func (co *Overlay) predecessorNodeChanged(localVirtualNodeID []byte, predecessorNode *types.OverlayNode) {
 	vNodeID := big.NewInt(0)
 	vNodeID.SetBytes(localVirtualNodeID)
 	co.predecessors.Store(vNodeID.String(), predecessorNode)
@@ -117,7 +116,7 @@ func (co *Overlay) predecessorNodeChanged(localVirtualNodeID []byte, predecessor
 
 /* ============================ Overlay Interface ============================ */
 
-func (co *Overlay) Create(appNode nodeAPI.OverlayMembership) error {
+func (co *Overlay) Create(appNode types.OverlayMembership) error {
 	config, transport, err := co.initialize(appNode)
 	if err != nil {
 		return err
@@ -132,7 +131,7 @@ func (co *Overlay) Create(appNode nodeAPI.OverlayMembership) error {
 	return nil
 }
 
-func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode nodeAPI.OverlayMembership) error {
+func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode types.OverlayMembership) error {
 	config, transport, err := co.initialize(appNode)
 	if err != nil {
 		return err
@@ -147,29 +146,29 @@ func (co *Overlay) Join(overlayNodeIP string, overlayNodePort int, appNode nodeA
 	return nil
 }
 
-func (co *Overlay) Lookup(key []byte) ([]*overlay.Node, error) {
+func (co *Overlay) Lookup(key []byte) ([]*types.OverlayNode, error) {
 	virtualNodes, err := co.chordRing.Lookup(co.numSuccessors, key)
 	if err != nil {
 		log.Errorf(util.LogTag("Chord")+"Lookup error: %s", err)
-		return make([]*overlay.Node, 0), fmt.Errorf("lookup error")
+		return make([]*types.OverlayNode, 0), fmt.Errorf("lookup error")
 	}
 
-	res := make([]*overlay.Node, len(virtualNodes))
+	res := make([]*types.OverlayNode, len(virtualNodes))
 	for index := range virtualNodes {
 		nodeIP, nodePort := util.ObtainIpPort(virtualNodes[index].Host)
-		res[index] = overlay.NewNode(nodeIP, nodePort, virtualNodes[index].Id)
+		res[index] = types.NewOverlayNode(nodeIP, nodePort, virtualNodes[index].Id)
 	}
 	return res, nil
 }
 
-func (co *Overlay) Neighbors(nodeID []byte) ([]*overlay.Node, error) {
+func (co *Overlay) Neighbors(nodeID []byte) ([]*types.OverlayNode, error) {
 	id := big.NewInt(0)
 	id.SetBytes(nodeID)
 
-	res := make([]*overlay.Node, 0)
+	res := make([]*types.OverlayNode, 0)
 	nodes, err := co.Lookup(nodeID)
 	if err != nil {
-		return make([]*overlay.Node, 0), err
+		return make([]*types.OverlayNode, 0), err
 	}
 
 	if len(nodes) > 1 {
@@ -179,7 +178,7 @@ func (co *Overlay) Neighbors(nodeID []byte) ([]*overlay.Node, error) {
 	}
 	predecessorNode, exist := co.predecessors.Load(id.String())
 	if exist {
-		node, ok := predecessorNode.(*overlay.Node)
+		node, ok := predecessorNode.(*types.OverlayNode)
 		if ok {
 			hmm := big.NewInt(0)
 			hmm.SetBytes(node.GUID())

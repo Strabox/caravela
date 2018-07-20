@@ -9,18 +9,18 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/node/external"
-	"github.com/strabox/caravela/overlay"
+	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
 )
 
 type DefaultChordOffersManager struct {
 	configs          *configuration.Configuration
 	resourcesMapping *resources.Mapping
-	overlay          overlay.Overlay
+	overlay          external.Overlay
 	remoteClient     external.Caravela
 }
 
-func (man *DefaultChordOffersManager) Init(resourcesMap *resources.Mapping, overlay overlay.Overlay,
+func (man *DefaultChordOffersManager) Init(resourcesMap *resources.Mapping, overlay external.Overlay,
 	remoteClient external.Caravela) {
 
 	man.resourcesMapping = resourcesMap
@@ -72,7 +72,7 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 
 func (man *DefaultChordOffersManager) AdvertiseOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error) {
 	var err error
-	var overlayNodes []*overlay.Node = nil
+	var overlayNodes []*overlayTypes.OverlayNode = nil
 	destinationGUID, _ := man.resourcesMapping.RandGUID(availableResources)
 	overlayNodes, _ = man.overlay.Lookup(destinationGUID.Bytes())
 	overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
@@ -127,8 +127,10 @@ func (man *DefaultChordOffersManager) AdvertiseOffer(newOfferID int64, available
 }
 
 // Remove nodes that do not belong to that target GUID partition. (Probably because we were target a frontier node)
-func (man *DefaultChordOffersManager) removeNonTargetNodes(remoteNodes []*overlay.Node, targetGuid guid.GUID) []*overlay.Node {
-	resultNodes := make([]*overlay.Node, 0)
+func (man *DefaultChordOffersManager) removeNonTargetNodes(remoteNodes []*overlayTypes.OverlayNode,
+	targetGuid guid.GUID) []*overlayTypes.OverlayNode {
+
+	resultNodes := make([]*overlayTypes.OverlayNode, 0)
 	targetGuidResources, _ := man.resourcesMapping.ResourcesByGUID(targetGuid)
 	for _, remoteNode := range remoteNodes {
 		remoteNodeResources, _ := man.resourcesMapping.ResourcesByGUID(*guid.NewGUIDBytes(remoteNode.GUID()))
