@@ -29,7 +29,7 @@ func RegisterOffersStrategy(strategyName string, factory ManageOffersFactory) {
 	manageOffersStrategies[strategyName] = factory
 }
 
-func initOffersFactory() {
+func init() {
 	RegisterOffersStrategy("chordDefault", newDefaultChordManageOffers)
 }
 
