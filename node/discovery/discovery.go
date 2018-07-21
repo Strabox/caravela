@@ -51,8 +51,8 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 
 	newTrader.Start() // Start the node's trader module.
 	newTraderResources, _ := disc.resourcesMap.ResourcesByGUID(traderGUID)
-	log.Debugf(util.LogTag("Discovery")+"New Trader: %s | Resources: %s",
-		(&traderGUID).String(), newTraderResources.String())
+	log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s",
+		(&traderGUID).Short(), newTraderResources.String())
 }
 
 func (disc *Discovery) FindOffers(resources resources.Resources) []types.AvailableOffer {

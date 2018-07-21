@@ -63,7 +63,7 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
 
 	for _, offer := range offers {
-		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
+		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER... SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
 			offer.SupplierIP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM)
 
 		contStatus, err := scheduler.client.LaunchContainer(

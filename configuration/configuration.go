@@ -136,13 +136,14 @@ func ReadFromFile(hostIP string) (*Configuration, error) {
 // Produces configuration structured based on a given structure that.
 // Used to pass the system configurations between nodes, usually during the joining process.
 func ObtainExternal(hostIP string, config *Configuration) (*Configuration, error) {
-	config.Host.IP = hostIP
+	res := *config
+	res.Host.IP = hostIP
 
-	if err := config.validate(); err != nil {
+	if err := res.validate(); err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return &res, nil
 }
 
 // Briefly validate the configuration to avoid/short-circuit many runtime errors due to
@@ -236,7 +237,7 @@ func (c *Configuration) Print() {
 	log.Printf("OffersStrategy:              %s", c.OffersStrategy())
 	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
 	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
-	log.Printf("Spread Offers Interval:   	%s", c.SpreadOffersInterval().String())
+	log.Printf("Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
 	log.Printf("Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
 	log.Printf("Refreshes Interval:          %s", c.RefreshingInterval().String())
 	log.Printf("Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
