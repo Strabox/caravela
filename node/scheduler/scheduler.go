@@ -44,7 +44,7 @@ func (scheduler *Scheduler) Launch(fromBuyer *types.Node, offer *types.Offer,
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("Launch")+"LAUNCHING Img: %s, Resources: <%d,%d> ...", containerConfig.ImageKey,
+	log.Debugf(util.LogTag("SCHEDULE")+"Launching... Img: %s, Res: <%d,%d>", containerConfig.ImageKey,
 		containerConfig.Resources.CPUs, containerConfig.Resources.RAM)
 
 	resourcesNecessary := resources.NewResources(containerConfig.Resources.CPUs, containerConfig.Resources.RAM)
@@ -58,11 +58,14 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("Run")+"DEPLOYING... Img: %s , Resources: <%d;%d>", containerImageKey, cpus, ram)
+	log.Debugf(util.LogTag("SCHEDULE")+"Deploying... Img: %s , Res: <%d;%d>", containerImageKey, cpus, ram)
 
 	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
 
 	for _, offer := range offers {
+		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
+			offer.SupplierIP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM)
+
 		contStatus, err := scheduler.client.LaunchContainer(
 			&types.Node{IP: scheduler.config.HostIP()},
 			&types.Node{IP: offer.SupplierIP},
@@ -75,15 +78,15 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 			},
 		)
 		if err != nil {
-			log.Debugf(util.LogTag("Run")+"DEPLOY FAILED. Error: %s", err)
+			log.Debugf(util.LogTag("SCHEDULE")+"Deploy FAILED Offer: %d error: %s", offer.ID, err)
 			continue
 		}
 
-		log.Debugf(util.LogTag("Run")+"DEPLOY SUCCESS Img: %s, Resources: <%d,%d>", containerImageKey, cpus, ram)
+		log.Debugf(util.LogTag("SCHEDULE")+"Deploy SUCCESS Img: %s, Res: <%d,%d>", containerImageKey, cpus, ram)
 		return contStatus.ContainerID, offer.SupplierIP, nil
 	}
 
-	log.Debugf(util.LogTag("Run") + "DEPLOY FAILED. No offers found.")
+	log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")
 	return "", "", fmt.Errorf("no offers found to deploy")
 }
 

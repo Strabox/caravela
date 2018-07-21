@@ -64,7 +64,7 @@ func (man *Manager) StopContainers(containerIDs []string) error {
 
 	if fail {
 		err := errors.New(errMsg)
-		log.Debugf(util.LogTag("UsrMng")+" Error stopping containers: %s", err)
+		log.Debugf(util.LogTag("USRMNG")+"STOPPING containers error: %s", err)
 		return err
 	}
 

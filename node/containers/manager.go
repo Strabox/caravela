@@ -58,7 +58,7 @@ func (man *Manager) checkDeployedContainers() {
 					for containerID, container := range containerMap {
 						contStatus, err := man.dockerClient.CheckContainerStatus(containerID)
 						if err == nil && !contStatus.IsRunning() {
-							log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", containerID)
+							log.Debugf(util.LogTag("CONTAINER")+"Container, %s STOPPED and REMOVED", containerID)
 							man.dockerClient.RemoveContainer(containerID)
 							man.supplier.ReturnResources(container.Resources())
 							delete(containerMap, containerID)
@@ -72,7 +72,7 @@ func (man *Manager) checkDeployedContainers() {
 			}()
 		case res := <-man.quitChan: // Stopping the containers management
 			if res {
-				log.Infof(util.LogTag("ContMng") + "STOPPED")
+				log.Infof(util.LogTag("CONTAINER") + "STOPPED")
 				return
 			}
 		}
@@ -91,8 +91,8 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 
 	obtained := man.supplier.ObtainResources(offer.ID, resourcesNecessary)
 	if !obtained {
-		log.Debugf(util.LogTag("ContMng")+"Container NOT RUNNING, invalid offer: %d", offer.ID)
-		return nil, fmt.Errorf("can't start container: invalid offer: %d", offer.ID)
+		log.Debugf(util.LogTag("CONTAINER")+"Container NOT RUNNING, invalid offer: %v", offer)
+		return nil, fmt.Errorf("can't start container, invalid offer: %v", offer)
 	}
 
 	containerID, err := man.dockerClient.RunContainer(containerConfig.ImageKey, containerConfig.PortMappings,
@@ -112,8 +112,9 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 		man.containersMap[fromBuyer.IP][containerID] = newContainer
 	}
 
-	log.Debugf(util.LogTag("ContMng")+"Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
-		containerID, containerConfig.ImageKey, containerConfig.Args, resourcesNecessary.CPUs(), resourcesNecessary.RAM())
+	log.Debugf(util.LogTag("CONTAINER")+"Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
+		containerID[0:12], containerConfig.ImageKey, containerConfig.Args, resourcesNecessary.CPUs(),
+		resourcesNecessary.RAM())
 
 	return &types.ContainerStatus{
 		ContainerConfig: *containerConfig,
@@ -164,7 +165,7 @@ func (man *Manager) Stop() {
 		for _, containers := range man.containersMap {
 			for containerID := range containers {
 				man.dockerClient.RemoveContainer(containerID)
-				log.Debugf(util.LogTag("ContMng")+"Container, %s STOPPED and REMOVED", containerID)
+				log.Debugf(util.LogTag("CONTAINER")+"Container, %s STOPPED and REMOVED", containerID)
 			}
 		}
 

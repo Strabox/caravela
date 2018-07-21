@@ -8,15 +8,15 @@ import (
 )
 
 func TestInitializeGUID(t *testing.T) {
-	InitializeGUID(256)
+	Init(256)
 
 	assert.Equal(t, 256, SizeBits(), "GUID size were not correctly set!")
 	assert.Equal(t, 256/8, SizeBytes(), "GUID size were not correctly set!")
 }
 
 func TestInitializeGUID_Reinitialize(t *testing.T) {
-	InitializeGUID(256)
-	InitializeGUID(160)
+	Init(256)
+	Init(160)
 
 	assert.Equal(t, 256, SizeBits(), "GUID size were reinitialized after the first time!")
 }

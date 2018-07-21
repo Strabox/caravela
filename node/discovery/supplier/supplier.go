@@ -79,7 +79,7 @@ func (sup *Supplier) startSupplying() {
 					offer.VerifyRefreshes(sup.config.RefreshMissedTimeout())
 
 					if offer.RefreshesMissed() >= sup.config.MaxRefreshesMissed() {
-						log.Debugf(util.LogTag("Supplier")+"OFFER DOWN, ID: %d, ResponsibleTrader: %s",
+						log.Debugf(util.LogTag("SUPPLIER")+"Offer DOWN, Offer: %d, HandlerTrader: %s",
 							offer.ID(), offer.ResponsibleTraderIP())
 
 						sup.availableResources.Add(*offer.Resources())
@@ -89,7 +89,7 @@ func (sup *Supplier) startSupplying() {
 			}()
 		case res := <-sup.quitChan: // Stopping the supplier
 			if res {
-				log.Infof(util.LogTag("Supplier") + "STOPPED")
+				log.Infof(util.LogTag("SUPPLIER") + "STOPPED")
 				return
 			}
 		}
@@ -121,16 +121,16 @@ func (sup *Supplier) RefreshOffer(fromTrader *types.Node, recvOffer *types.Offer
 	offer, exist := sup.activeOffers[common.OfferID(recvOffer.ID)]
 
 	if !exist {
-		log.Debugf(util.LogTag("Supplier")+"ID: %d refresh FAILED (Offer does not exist)", recvOffer.ID)
+		log.Debugf(util.LogTag("SUPPLIER")+"Offer: %d refresh FAILED (Offer does not exist)", recvOffer.ID)
 		return false
 	}
 
 	if offer.IsResponsibleTrader(*guid.NewGUIDString(fromTrader.GUID)) {
 		offer.Refresh()
-		log.Debugf(util.LogTag("Supplier")+"ID: %d refresh SUCCESS", recvOffer.ID)
+		log.Debugf(util.LogTag("SUPPLIER")+"Offer: %d refresh SUCCESS", recvOffer.ID)
 		return true
 	} else {
-		log.Debugf(util.LogTag("Supplier")+"ID: %d refresh FAILED (wrong trader)", recvOffer.ID)
+		log.Debugf(util.LogTag("SUPPLIER")+"Offer: %d refresh FAILED (wrong trader)", recvOffer.ID)
 		return false
 	}
 }
@@ -228,7 +228,7 @@ func (sup *Supplier) createOffer() {
 			sup.availableResources.Add(*offer.Resources())
 		}
 
-		log.Debugf(util.LogTag("Supplier")+"CREATING OFFER... ID: %d, Resources:<%d;%d>",
+		log.Debugf(util.LogTag("SUPPLIER")+"CREATING offer... Offer: %d, Res: <%d;%d>",
 			int64(sup.offersIDGen), sup.availableResources.CPUs(), sup.availableResources.RAM())
 		offer, err := sup.offersStrategy.CreateOffer(int64(sup.offersIDGen), *sup.availableResources)
 		if err == nil {

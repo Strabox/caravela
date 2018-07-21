@@ -29,7 +29,7 @@ func NewDockerClient(config *configuration.Configuration) *DefaultClient {
 
 	res.docker, err = dockerClient.NewClientWithOpts(dockerClient.WithVersion(config.DockerAPIVersion()))
 	if err != nil {
-		log.Fatalf(util.LogTag("Docker")+"Initialize error: %s", err)
+		log.Fatalf(util.LogTag("DOCKER")+"Init error: %s", err)
 	}
 
 	switch imagesBackend := config.ImagesStorageBackend(); imagesBackend {
@@ -46,10 +46,10 @@ func (client *DefaultClient) isInit() {
 	if client.docker != nil {
 		if _, err := client.docker.Ping(context.Background()); err != nil {
 			// TODO: Shutdown node gracefully in each place where docker calls can fail!!
-			log.Fatalf(util.LogTag("Docker") + "Please turn on the Docker Engine")
+			log.Fatalf(util.LogTag("DOCKER") + "Please turn on the Docker Engine")
 		}
 	} else {
-		log.Fatalf(util.LogTag("Docker") + "Please initialize the Docker client")
+		log.Fatalf(util.LogTag("DOCKER") + "Please initialize the Docker client")
 	}
 }
 
@@ -60,7 +60,7 @@ func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 	ctx := context.Background()
 	info, err := client.docker.Info(ctx)
 	if err != nil {
-		log.Errorf(util.LogTag("Docker")+"Get Docker Info error: %s", err)
+		log.Errorf(util.LogTag("DOCKER")+"Get Docker Info error: %s", err)
 	}
 
 	cpu := info.NCPU
@@ -93,7 +93,7 @@ func (client *DefaultClient) RunContainer(imageKey string, portMappings []carave
 
 	dockerImageKey, err := client.imagesBackend.Load(imageKey)
 	if err != nil {
-		log.Errorf(util.LogTag("Docker")+"Loading image error", err)
+		log.Errorf(util.LogTag("DOCKER")+"Loading image error", err)
 		return "", err
 	}
 
@@ -127,17 +127,17 @@ func (client *DefaultClient) RunContainer(imageKey string, portMappings []carave
 	}, nil, "")
 	if err != nil { // Error creating the container
 		client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
-		log.Errorf(util.LogTag("Docker")+"Creating container error: %s", err)
+		log.Errorf(util.LogTag("DOCKER")+"Creating container error: %s", err)
 		return "", err
 	}
 
 	if err := client.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
-		log.Errorf(util.LogTag("Docker")+"Starting container error: %s", err)
+		log.Errorf(util.LogTag("DOCKER")+"Starting container error: %s", err)
 		return "", err // Error starting the container
 	}
 
-	log.Infof(util.LogTag("Docker")+"Container RUNNING, Image: %s, Args: %v, Resources: <%d,%d>",
+	log.Infof(util.LogTag("DOCKER")+"Container RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
 		imageKey, args, cpus, ram)
 
 	return resp.ID, nil
@@ -148,5 +148,5 @@ func (client *DefaultClient) RemoveContainer(containerID string) error {
 	client.isInit()
 
 	err := client.docker.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{Force: true})
-	return fmt.Errorf("problem stopping and removing container. Error: %s", err)
+	return fmt.Errorf("problem stopping/removing container error: %s", err)
 }

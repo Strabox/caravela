@@ -86,19 +86,19 @@ func (trader *Trader) start() {
 							offer, exist := trader.offers[offerKEY]
 
 							if err == nil && refreshed && exist { // Offer exist and was refreshed
-								log.Debugf(util.LogTag("Trader")+"Refresh SUCCEEDED for supplier: %s offer: %d",
+								log.Debugf(util.LogTag("TRADER")+"Refresh SUCCEEDED ,supplier: %s, offer: %d",
 									offer.SupplierIP(), offer.ID())
 								offer.RefreshSucceeded()
 							} else if err == nil && !refreshed && exist { // Offer did not exist, so it was not refreshed
-								log.Debugf(util.LogTag("Trader")+"Refresh FAILED (offer did not exist)"+
-									" for supplier: %s offer: %d", offer.SupplierIP(), offer.ID())
+								log.Debugf(util.LogTag("TRADER")+"Refresh FAILED (offer did not exist),"+
+									" supplier: %s, offer: %d", offer.SupplierIP(), offer.ID())
 								delete(trader.offers, offerKEY)
 							} else if err != nil && exist { // Offer exist but the refresh message failed
-								log.Debugf(util.LogTag("Trader")+"Refresh FAILED for supplier: %s offer: %d",
+								log.Debugf(util.LogTag("TRADER")+"Refresh FAILED, supplier: %s, offer: %d",
 									offer.SupplierIP(), offer.ID())
 								offer.RefreshFailed()
 								if offer.RefreshesFailed() >= trader.config.MaxRefreshesFailed() {
-									log.Debugf(util.LogTag("Trader")+"Removing offer of supplier: %s offer: %d",
+									log.Debugf(util.LogTag("TRADER")+"REMOVING offer, supplier: %s, offer: %d",
 										offer.SupplierIP(), offer.ID())
 									delete(trader.offers, offerKEY)
 								}
@@ -115,7 +115,7 @@ func (trader *Trader) start() {
 			}
 		case quit := <-trader.quitChan: // Stopping the trader (returning the goroutine)
 			if quit {
-				log.Infof(util.LogTag("Trader")+"Trader %s STOPPED", trader.guid.String())
+				log.Infof(util.LogTag("TRADER")+"Trader %s STOPPED", trader.guid.Short())
 				return
 			}
 		}
@@ -129,14 +129,14 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 		defer trader.offersMutex.Unlock()
 
 		availableOffers := len(trader.offers)
-		resOffers := make([]types.AvailableOffer, availableOffers)
+		allOffers := make([]types.AvailableOffer, availableOffers)
 		index := 0
-		for _, offer := range trader.offers {
-			resOffers[index].SupplierIP = trader.config.HostIP()
-			resOffers[index].ID = int64(offer.ID())
+		for _, traderOffer := range trader.offers {
+			allOffers[index].SupplierIP = traderOffer.SupplierIP()
+			allOffers[index].ID = int64(traderOffer.ID())
 			index++
 		}
-		return resOffers
+		return allOffers
 	} else { // Ask for offers in the nearby neighbors that we think they have offers (via offer advertise relaying)
 		resOffers := make([]types.AvailableOffer, 0)
 		fromNodeGuid := guid.NewGUIDString(fromNode.GUID)
@@ -207,8 +207,8 @@ func (trader *Trader) CreateOffer(fromSupp *types.Node, recvOffer *types.Offer) 
 		}
 
 		trader.offers[offerKey] = offer
-		log.Debugf(util.LogTag("Trader")+"%s OFFER CREATED %dX<%d;%d>, From: %s, ID: %d",
-			trader.guid.String(), recvOffer.Amount, recvOffer.Resources.CPUs, recvOffer.Resources.RAM,
+		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
+			trader.guid.Short(), recvOffer.Amount, recvOffer.Resources.CPUs, recvOffer.Resources.RAM,
 			fromSupp.IP, recvOffer.ID)
 	}
 }
@@ -220,7 +220,7 @@ func (trader *Trader) RemoveOffer(fromSupp *types.Node, offer *types.Offer) {
 
 	delete(trader.offers, offerKey{supplierIP: fromSupp.IP, id: common.OfferID(offer.ID)})
 
-	log.Debugf(util.LogTag("Trader")+"OFFER REMOVED %d, Supp: %s", offer.ID, fromSupp.IP)
+	log.Debugf(util.LogTag("TRADER")+"Offer REMOVED Offer: %d, Supp: %s", offer.ID, fromSupp.IP)
 }
 
 // Relay the offering advertise for the overlay neighbors if the trader doesn't have any available offers
@@ -264,7 +264,7 @@ func (trader *Trader) haveOffers() bool {
 func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool) {
 	// TODO: Verify if necessary cause this makes a lookup happen in Chord?
 
-	log.Debugf(util.LogTag("Trader")+"ADVERTISE OFFERS From: %s", trader.guid.String())
+	log.Debugf(util.LogTag("TRADER")+"ADVERTISE offers, From: %s", trader.guid.Short())
 
 	overlayNeighbors, err := trader.overlay.Neighbors(trader.guid.Bytes())
 	if err != nil {

@@ -21,7 +21,7 @@ type GUID struct {
 }
 
 // Initializes the GUID package with the size of the GUID.
-func InitializeGUID(guidBitsSize int) {
+func Init(guidBitsSize int) {
 	if !isGuidInitialized {
 		guidSizeBits = guidBitsSize
 		isGuidInitialized = true
@@ -175,7 +175,12 @@ func (guid *GUID) Copy() *GUID {
 	return NewGUIDString(guid.String())
 }
 
-// Returns the value of the GUID in a string representation (as an integer in base 10)
+// String returns the value of the GUID in a string representation (as an integer in base 10)
 func (guid *GUID) String() string {
 	return guid.id.String()
+}
+
+// Short returns the first digits of the GUID in a string representation
+func (guid *GUID) Short() string {
+	return guid.id.String()[0:12]
 }

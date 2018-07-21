@@ -39,7 +39,7 @@ func initNode(hostIP string, join bool, joinIP string) error {
 	systemConfigurations.Print()
 
 	// Global GUID size initialization
-	guid.InitializeGUID(systemConfigurations.ChordHashSizeBits())
+	guid.Init(systemConfigurations.ChordHashSizeBits())
 
 	// Create Overlay Component (Chord overlay initial)
 	overlay := chord.NewChordOverlay(guid.SizeBytes(), systemConfigurations.HostIP(), systemConfigurations.OverlayPort(),
