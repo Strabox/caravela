@@ -44,7 +44,7 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 		}
 
 		res, _ := man.resourcesMapping.ResourcesByGUID(*destinationGUID)
-		log.Debugf("DestinationGUIDRes: %s", res.String())
+		log.Debugf(util.LogTag("Supplier")+"FINDING OFFERS %s", res)
 
 		overlayNodes, _ := man.overlay.Lookup(destinationGUID.Bytes())
 		overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
@@ -56,8 +56,8 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 				true,
 			)
 
-			//offers, err := man.remoteClient.GetOffers(node.IP(), guid.NewGUIDBytes(node.GUID()).String(), true, "")
 			if (err == nil) && (len(offers) != 0) {
+				log.Debugf(util.LogTag("Supplier")+"OFFERS FOUND %v", offers)
 				return offers
 			}
 		}

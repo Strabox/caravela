@@ -77,7 +77,7 @@ func (r *Resources) Copy() *Resources {
 
 // Stringify the receiver resources object.
 func (r *Resources) String() string {
-	return fmt.Sprintf("CPUs: %d RAM: %d", r.cpus, r.ram)
+	return fmt.Sprintf("Resources: <%d;%d>", r.cpus, r.ram)
 }
 
 func (r *Resources) CPUs() int {
