@@ -65,7 +65,7 @@ func (man *DefaultChordOffersManager) FindOffers(targetResources resources.Resou
 	}
 }
 
-func (man *DefaultChordOffersManager) AdvertiseOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error) {
+func (man *DefaultChordOffersManager) CreateOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error) {
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
 	destinationGUID, _ := man.resourcesMapping.RandGUID(availableResources)
@@ -83,7 +83,7 @@ func (man *DefaultChordOffersManager) AdvertiseOffer(newOfferID int64, available
 	for len(overlayNodes) == 0 {
 		destinationGUID, err = man.resourcesMapping.LowerRandGUID(*destinationGUID, availableResources)
 		if err != nil {
-			log.Errorf(util.LogTag("Supplier")+"NO NODES to handle resources offer: %s, error: %s",
+			log.Errorf(util.LogTag("Supplier")+"NO NODES to handle resources offer: %s. Error: %s",
 				availableResources.String(), err)
 			return nil, errors.New("no nodes available to accept offer") // Wait fot the next tick to try supply resources
 		}

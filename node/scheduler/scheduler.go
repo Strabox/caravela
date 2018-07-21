@@ -44,7 +44,7 @@ func (scheduler *Scheduler) Launch(fromBuyer *types.Node, offer *types.Offer,
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("Launch")+"Launching %s , Resources: <%d,%d> ...", containerConfig.ImageKey,
+	log.Debugf(util.LogTag("Launch")+"LAUNCHING Img: %s, Resources: <%d,%d> ...", containerConfig.ImageKey,
 		containerConfig.Resources.CPUs, containerConfig.Resources.RAM)
 
 	resourcesNecessary := resources.NewResources(containerConfig.Resources.CPUs, containerConfig.Resources.RAM)
@@ -58,7 +58,7 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("Run")+"Deploying... %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+	log.Debugf(util.LogTag("Run")+"DEPLOYING... Img: %s , Resources: <%d;%d>", containerImageKey, cpus, ram)
 
 	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
 
@@ -75,16 +75,16 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 			},
 		)
 		if err != nil {
-			log.Debugf(util.LogTag("Run")+"Deploy error: %s", err)
+			log.Debugf(util.LogTag("Run")+"DEPLOY FAILED. Error: %s", err)
 			continue
 		}
 
-		log.Debugf(util.LogTag("Run")+"Deployed %s , CPUs: %d, RAM: %d", containerImageKey, cpus, ram)
+		log.Debugf(util.LogTag("Run")+"DEPLOY SUCCESS Img: %s, Resources: <%d,%d>", containerImageKey, cpus, ram)
 		return contStatus.ContainerID, offer.SupplierIP, nil
 	}
 
-	log.Debugf(util.LogTag("Run") + "No offers found")
-	return "", "", fmt.Errorf("no offers found to deploy the container")
+	log.Debugf(util.LogTag("Run") + "DEPLOY FAILED. No offers found.")
+	return "", "", fmt.Errorf("no offers found to deploy")
 }
 
 /*

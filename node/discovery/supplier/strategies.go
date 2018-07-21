@@ -9,5 +9,5 @@ import (
 type OffersManager interface {
 	Init(resourcesMap *resources.Mapping, overlay external.Overlay, remoteClient external.Caravela)
 	FindOffers(targetResources resources.Resources) []types.AvailableOffer
-	AdvertiseOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error)
+	CreateOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error)
 }

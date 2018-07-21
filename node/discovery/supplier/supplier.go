@@ -68,7 +68,7 @@ func (sup *Supplier) startSupplying() {
 			go func() {
 				sup.offersMutex.Lock()
 				defer sup.offersMutex.Unlock()
-				sup.advertiseOffer()
+				sup.createOffer()
 			}()
 		case <-sup.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
 			go func() {
@@ -164,7 +164,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
 			)
-			sup.advertiseOffer() // Update its own offers
+			sup.createOffer() // Update its own offers
 		} else {
 			go sup.client.RemoveOffer(
 				&types.Node{IP: sup.config.HostIP(), GUID: ""},
@@ -174,7 +174,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 			go func() {
 				sup.offersMutex.Lock()
 				defer sup.offersMutex.Unlock()
-				sup.advertiseOffer()
+				sup.createOffer()
 			}() // Update its own offers
 		}
 		return true
@@ -193,17 +193,17 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	sup.availableResources.Add(releasedResources)
 
 	if sup.config.Simulation() {
-		sup.advertiseOffer() // Update its own offers
+		sup.createOffer() // Update its own offers
 	} else {
 		go func() {
 			sup.offersMutex.Lock()
 			defer sup.offersMutex.Unlock()
-			sup.advertiseOffer()
+			sup.createOffer()
 		}() // Update its own offers
 	}
 }
 
-func (sup *Supplier) advertiseOffer() {
+func (sup *Supplier) createOffer() {
 	if sup.availableResources.IsValid() {
 		// What?: Remove all active offers from the traders in order to gather all available resources.
 		// Goal: This is used to try offer the maximum amount of resources the node has available between
@@ -228,12 +228,12 @@ func (sup *Supplier) advertiseOffer() {
 			sup.availableResources.Add(*offer.Resources())
 		}
 
-		offer, err := sup.offersStrategy.AdvertiseOffer(int64(sup.offersIDGen), *sup.availableResources)
+		log.Debugf(util.LogTag("Supplier")+"CREATING OFFER... ID: %d, Resources:<%d;%d>",
+			int64(sup.offersIDGen), sup.availableResources.CPUs(), sup.availableResources.RAM())
+		offer, err := sup.offersStrategy.CreateOffer(int64(sup.offersIDGen), *sup.availableResources)
 		if err == nil {
 			sup.activeOffers[offer.ID()] = offer
 			sup.availableResources.SetZero()
-			log.Debugf(util.LogTag("Supplier")+"CREATING OFFER %dX<%d;%d>, ID: %d ...",
-				offer.Amount(), offer.Resources().CPUs(), offer.Resources().RAM(), offer.ID())
 		}
 		sup.offersIDGen++
 	}
@@ -252,7 +252,7 @@ func (sup *Supplier) Start() {
 		} else {
 			sup.offersMutex.Lock()
 			defer sup.offersMutex.Unlock()
-			sup.advertiseOffer()
+			sup.createOffer()
 		}
 	})
 }

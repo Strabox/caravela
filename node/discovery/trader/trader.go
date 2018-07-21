@@ -263,6 +263,9 @@ func (trader *Trader) haveOffers() bool {
 // Advertise that we have offers into all trader's neighbors that survive the given predicate application.
 func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool) {
 	// TODO: Verify if necessary cause this makes a lookup happen in Chord?
+
+	log.Debugf(util.LogTag("Trader")+"ADVERTISE OFFERS From: %s", trader.guid.String())
+
 	overlayNeighbors, err := trader.overlay.Neighbors(trader.guid.Bytes())
 	if err != nil {
 		return
