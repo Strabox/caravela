@@ -39,7 +39,6 @@ type Supplier struct {
 func NewSupplier(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
 	resourcesMap *resources.Mapping, maxResources resources.Resources) *Supplier {
 
-	//init()
 	offersStrategy := CreateOffersStrategy(config)
 	offersStrategy.Init(resourcesMap, overlay, client)
 	return &Supplier{

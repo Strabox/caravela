@@ -96,10 +96,12 @@ func (node *Node) Start(join bool, joinIP string) error {
 
 	log.Debug(util.LogTag("Node") + "Node STARTED")
 
-	select {
-	case stop := <-node.stopChan: // Block main Goroutine until a stop message is received
-		if stop {
-			return nil
+	if !node.config.Simulation() {
+		select {
+		case stop := <-node.stopChan: // Block main Goroutine until a stop message is received
+			if stop {
+				return nil
+			}
 		}
 	}
 	return nil
