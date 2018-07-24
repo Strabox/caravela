@@ -19,7 +19,7 @@ func stopContainers(c *cli.Context) {
 	}
 
 	// Create a user client of the CARAVELA system
-	caravelaClient := client.NewCaravelaIP(c.String("ip"))
+	caravelaClient := client.NewCaravelaIP(c.GlobalString("ip"))
 
 	err := caravelaClient.StopContainers(containersIDs)
 	if err != nil {

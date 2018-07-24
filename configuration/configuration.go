@@ -223,7 +223,7 @@ func (c *Configuration) validate() error {
 // Print/log the current configurations in order to debug the programs behavior.
 func (c *Configuration) Print() {
 	log.Printf("##################################################################")
-	log.Printf("#                       CONFIGURATIONS                           #")
+	log.Printf("#                    CARAVELA's CONFIGURATIONS                   #")
 	log.Printf("##################################################################")
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$ HOST $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
@@ -234,7 +234,7 @@ func (c *Configuration) Print() {
 	log.Printf("Simulation:                  %t", c.Simulation())
 	log.Printf("Port:                        %d", c.APIPort())
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
-	log.Printf("OffersStrategy:              %s", c.OffersStrategy())
+	log.Printf("Offer's Strategy:            %s", c.OffersStrategy())
 	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
 	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
 	log.Printf("Spread Offers Interval:      %s", c.SpreadOffersInterval().String())

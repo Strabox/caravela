@@ -10,7 +10,7 @@ import (
 
 func listContainer(c *cli.Context) {
 	// Create a user client of the CARAVELA system
-	caravelaClient := client.NewCaravelaIP(c.String("ip"))
+	caravelaClient := client.NewCaravelaIP(c.GlobalString("ip"))
 
 	containersStatus, err := caravelaClient.ListContainers()
 	if err != nil {

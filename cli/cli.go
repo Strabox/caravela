@@ -38,7 +38,7 @@ func Run() {
 
 	// Before running the user's command
 	app.Before = func(context *cli.Context) error {
-		switch context.String("log") {
+		switch context.GlobalString("log") {
 		case "debug":
 			log.SetLevel(log.DebugLevel)
 		case "info":
