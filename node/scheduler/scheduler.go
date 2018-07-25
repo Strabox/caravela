@@ -90,11 +90,9 @@ func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappi
 	return "", "", fmt.Errorf("no offers found to deploy")
 }
 
-/*
-===============================================================================
-							SubComponent Interface
-===============================================================================
-*/
+// ===============================================================================
+// =							SubComponent Interface                           =
+// ===============================================================================
 
 func (scheduler *Scheduler) Start() {
 	scheduler.Started(scheduler.config.Simulation(), func() { /* Do Nothing */ })

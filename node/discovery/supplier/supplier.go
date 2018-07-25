@@ -70,22 +70,21 @@ func (sup *Supplier) startSupplying() {
 				sup.createOffer()
 			}()
 		case <-sup.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
-			go func() {
-				sup.offersMutex.Lock()
-				defer sup.offersMutex.Unlock()
+			sup.offersMutex.Lock()
 
-				for offerKey, offer := range sup.activeOffers {
-					offer.VerifyRefreshes(sup.config.RefreshMissedTimeout())
+			for offerKey, offer := range sup.activeOffers {
+				offer.VerifyRefreshes(sup.config.RefreshMissedTimeout())
 
-					if offer.RefreshesMissed() >= sup.config.MaxRefreshesMissed() {
-						log.Debugf(util.LogTag("SUPPLIER")+"Offer DOWN, Offer: %d, HandlerTrader: %s",
-							offer.ID(), offer.ResponsibleTraderIP())
+				if offer.RefreshesMissed() >= sup.config.MaxRefreshesMissed() {
+					log.Debugf(util.LogTag("SUPPLIER")+"Offer DOWN, Offer: %d, HandlerTrader: %s",
+						offer.ID(), offer.ResponsibleTraderIP())
 
-						sup.availableResources.Add(*offer.Resources())
-						delete(sup.activeOffers, offerKey)
-					}
+					sup.availableResources.Add(*offer.Resources())
+					delete(sup.activeOffers, offerKey)
 				}
-			}()
+			}
+
+			sup.offersMutex.Unlock()
 		case res := <-sup.quitChan: // Stopping the supplier
 			if res {
 				log.Infof(util.LogTag("SUPPLIER") + "STOPPED")
@@ -242,10 +241,17 @@ func (sup *Supplier) AvailableResources() types.Resources {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
-	return types.Resources{
+	res := types.Resources{
 		CPUs: sup.availableResources.CPUs(),
 		RAM:  sup.availableResources.RAM(),
 	}
+
+	for _, offer := range sup.activeOffers {
+		res.CPUs += offer.Resources().CPUs()
+		res.RAM += offer.Resources().RAM()
+	}
+
+	return res
 }
 
 // Simulation
