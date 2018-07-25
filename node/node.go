@@ -2,6 +2,7 @@ package node
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
@@ -15,7 +16,7 @@ import (
 	"github.com/strabox/caravela/util"
 )
 
-// Node is the top level entry structure (Facade) for all the functionality of a CARAVELA's node.
+// Node is the top level entry structure, facade, for all the functionality of a CARAVELA's node.
 type Node struct {
 	config   *configuration.Configuration // System's configuration
 	stopChan chan bool                    // Channel to stop the node functions
@@ -28,12 +29,13 @@ type Node struct {
 	overlay           external.Overlay     // Overlay component
 }
 
+// NewNode creates a Node object that contains all the functionality of a CARAVELA's node.
 func NewNode(config *configuration.Configuration, overlay external.Overlay, caravelaCli external.Caravela,
 	dockerClient external.DockerClient, apiServer api.Server) *Node {
 
 	// Obtain the maximum resources Docker Engine has available
 	maxCPUs, maxRAM := dockerClient.GetDockerCPUAndRAM()
-	maxResources := resources.NewResources(maxCPUs, maxRAM)
+	maxAvailableResources := resources.NewResources(maxCPUs, maxRAM)
 
 	// Create Resources Mapping (based on the configurations)
 	resourcesMap := resources.NewResourcesMap(resources.GetCpuCoresPartitions(config.CPUCoresPartitions()),
@@ -41,7 +43,7 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 
 	// Create all the internal components
 
-	discoveryComp := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxResources)
+	discoveryComp := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
 
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)
 
@@ -62,12 +64,12 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 	}
 }
 
-// Configuration returns the configuration that is
+// Configuration returns the system's configuration of this CARAVELA's node.
 func (node *Node) Configuration() *configuration.Configuration {
 	return node.config
 }
 
-/* ========================= SubComponent Interface ====================== */
+// ================================ SubComponent Interface ================================
 
 func (node *Node) Start(join bool, joinIP string) error {
 	var err error
@@ -124,20 +126,18 @@ func (node *Node) Stop() {
 	log.Debug(util.LogTag("Node") + "-> STOPPED")
 }
 
-/*
-##############################################################################################
-#									   REMOTE CLIENT API									 #
-##############################################################################################
-*/
+// ##############################################################################################
+// #								   REMOTE CLIENT API (RPC)  								#
+// ##############################################################################################
 
-/* ======================== Overlay Membership Interface =========================== */
+// ================================= Overlay Membership Interface ===============================
 
 func (node *Node) AddTrader(guidBytes []byte) {
 	guidRes := guid.NewGUIDBytes(guidBytes)
 	node.discovery.AddTrader(*guidRes)
 }
 
-/* ========================= Discovery Component Interface ====================== */
+// ================================== Discovery Component Interface =============================
 
 func (node *Node) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
 	node.discovery.CreateOffer(fromNode, toNode, offer)
@@ -159,29 +159,27 @@ func (node *Node) AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, traderOf
 	node.discovery.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
 }
 
-/* ========================= Scheduling Component Interface ======================== */
+// ================================ Scheduling Component Interface ==============================
 
 func (node *Node) LaunchContainers(fromBuyer *types.Node, offer *types.Offer,
 	containerConfig *types.ContainerConfig) (*types.ContainerStatus, error) {
 	return node.scheduler.Launch(fromBuyer, offer, containerConfig)
 }
 
-/* ========================= Containers Component Interface ======================== */
+// ============================== Containers Component Interface ================================
 
 func (node *Node) StopLocalContainer(containerID string) error {
 	return node.containersManager.StopContainer(containerID)
 }
 
-/*
-##############################################################################################
-#									     CLIENT API											 #
-##############################################################################################
-*/
+// ##############################################################################################
+// #									     CLIENT API											#
+// ##############################################################################################
 
-/* ========================= User Component Interface (USER API) ============================= */
+// =========================== User Component Interface (USER API) ==============================
 
-func (node *Node) SubmitContainers(containerImageKey string, portMappings []types.PortMapping, containerArgs []string,
-	cpus int, ram int) error {
+func (node *Node) SubmitContainers(containerImageKey string, portMappings []types.PortMapping,
+	containerArgs []string, cpus int, ram int) error {
 	return node.userManager.SubmitContainers(containerImageKey, portMappings, containerArgs, cpus, ram)
 }
 
@@ -191,4 +189,38 @@ func (node *Node) StopContainers(containersIDs []string) error {
 
 func (node *Node) ListContainers() []types.ContainerStatus {
 	return node.userManager.ListContainers()
+}
+
+// ##############################################################################################
+// #									   SIMULATION API									    #
+// ##############################################################################################
+
+// =========================== APIs exclusively used in Simulation ==============================
+
+func (node *Node) AvailableResourcesSim() types.Resources {
+	if !node.config.Simulation() {
+		panic(errors.New("AvailableResourcesSim request can only be used in simulation mode"))
+	}
+	return node.discovery.AvailableResourcesSim()
+}
+
+func (node *Node) MaximumResourcesSim() types.Resources {
+	if !node.config.Simulation() {
+		panic(errors.New("MaximumResourcesSim request can only be used in simulation mode"))
+	}
+	return node.discovery.MaximumResourcesSim()
+}
+
+func (node *Node) RefreshOffersSim() {
+	if !node.config.Simulation() {
+		panic(errors.New("RefreshOffersSim request can only be used in simulation mode"))
+	}
+	node.discovery.RefreshOffersSim()
+}
+
+func (node *Node) SpreadOffersSim() {
+	if !node.config.Simulation() {
+		panic(errors.New("SpreadOffersSim request can only be used in simulation mode"))
+	}
+	node.discovery.SpreadOffersSim()
 }

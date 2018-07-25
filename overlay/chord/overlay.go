@@ -166,7 +166,7 @@ func (co *Overlay) Neighbors(nodeID []byte) ([]*types.OverlayNode, error) {
 	id.SetBytes(nodeID)
 
 	res := make([]*types.OverlayNode, 0)
-	nodes, err := co.Lookup(nodeID)
+	nodes, err := co.Lookup(nodeID) // TODO: Optional, avoid this lookup.
 	if err != nil {
 		return make([]*types.OverlayNode, 0), err
 	}

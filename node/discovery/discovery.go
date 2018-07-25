@@ -2,6 +2,7 @@ package discovery
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
@@ -42,7 +43,7 @@ func NewDiscovery(config *configuration.Configuration, overlay external.Overlay,
 	}
 }
 
-/*============================== DiscoveryInternal Interface =============================== */
+// ============================== DiscoveryInternal Interface ===============================
 
 // Adds a new local "virtual" trader when the overlay notifies its presence.
 func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
@@ -67,7 +68,7 @@ func (disc *Discovery) ReturnResources(resources resources.Resources) {
 	disc.supplier.ReturnResources(resources)
 }
 
-/*============================== DiscoveryExternal Interface ============================== */
+// ============================== DiscoveryExternal Interface ==============================
 
 func (disc *Discovery) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
 	t, exist := disc.virtualTraders.Load(toNode.GUID)
@@ -107,11 +108,51 @@ func (disc *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, tra
 	}
 }
 
-/*
-===============================================================================
-							SubComponent Interface
-===============================================================================
-*/
+// Simulation
+func (disc *Discovery) AvailableResourcesSim() types.Resources {
+	return disc.supplier.AvailableResources()
+}
+
+// Simulation
+func (disc *Discovery) MaximumResourcesSim() types.Resources {
+	return disc.supplier.MaximumResources()
+}
+
+// Simulation
+func (disc *Discovery) RefreshOffersSim() {
+	refreshExecuted := false
+	disc.virtualTraders.Range(func(key, value interface{}) bool {
+		currentTrader, ok := value.(*trader.Trader)
+		if ok {
+			currentTrader.RefreshOffersSim()
+			refreshExecuted = true
+		}
+		return false
+	})
+	if !refreshExecuted {
+		panic(errors.New("RefreshOffersSim didn't execute. No traders."))
+	}
+}
+
+// Simulation
+func (disc *Discovery) SpreadOffersSim() {
+	spreadExecuted := false
+	disc.virtualTraders.Range(func(key, value interface{}) bool {
+		currentTrader, ok := value.(*trader.Trader)
+		if ok {
+			currentTrader.SpreadOffersSim()
+			spreadExecuted = true
+		}
+		return false
+	})
+	if !spreadExecuted {
+		panic(errors.New("SpreadOffersSim didn't execute. No traders."))
+	}
+}
+
+// ===============================================================================
+// =							SubComponent Interface                           =
+// ===============================================================================
 
 func (disc *Discovery) Start() {
 	disc.Started(disc.config.Simulation(), func() {
