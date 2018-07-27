@@ -12,7 +12,10 @@ type Range struct {
 
 // Creates a new GUID range given a lower GUID and higher GUID.
 func NewGUIDRange(lowerGUID GUID, higherGUID GUID) *Range {
-	return &Range{lowerGUID: &lowerGUID, higherGUID: &higherGUID}
+	return &Range{
+		lowerGUID:  &lowerGUID,
+		higherGUID: &higherGUID,
+	}
 }
 
 // Generate random GUID inside the range.
