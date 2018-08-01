@@ -13,10 +13,10 @@ type localContainer struct {
 	buyerIP string // IP of the node that submitted the container in the system TODO: Try use node's GUID and user ID?
 }
 
-func newContainer(imageKey string, args []string, portMaps []types.PortMapping, resources resources.Resources,
+func newContainer(name, imageKey string, args []string, portMaps []types.PortMapping, resources resources.Resources,
 	dockerID string, buyerIP string) *localContainer {
 	return &localContainer{
-		Container: common.NewContainer(imageKey, args, portMaps, resources, dockerID),
+		Container: common.NewContainer(name, imageKey, args, portMaps, resources, dockerID),
 		buyerIP:   buyerIP,
 	}
 }

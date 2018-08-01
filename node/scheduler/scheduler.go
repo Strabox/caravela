@@ -3,31 +3,30 @@ package scheduler
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
-	"github.com/strabox/caravela/node/containers"
-	apiInternal "github.com/strabox/caravela/node/discovery/api"
-	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 )
 
 // Scheduler is responsible for receiving local and remote requests for deploying containers
-// running in the system. It takes a request for running a container and decides where to deploy it
-// in conjunction with the Discovery module.
+// to run in the system. It takes a request for running a container and decides where to deploy it
+// in conjunction with the Discovery component.
 type Scheduler struct {
 	common.NodeComponent // Base component
 
-	config *configuration.Configuration // System's configuration
-	client external.Caravela            // Caravela's remote client
+	config *configuration.Configuration // System's configuration.
+	client userRemoteClient             // CARAVELA's remote client.
 
-	discovery         apiInternal.DiscoveryInternal // Local Discovery module
-	containersManager *containers.Manager           // Containers manager module
+	discovery         discoverylocal        // Local Discovery component.
+	containersManager containerManagerLocal // Local Containers Manager component.
 }
 
-func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.DiscoveryInternal,
-	containersManager *containers.Manager, client external.Caravela) *Scheduler {
+// NewScheduler creates a new local scheduler component.
+func NewScheduler(config *configuration.Configuration, internalDisc discoverylocal,
+	containersManager containerManagerLocal, client userRemoteClient) *Scheduler {
 
 	return &Scheduler{
 		config:            config,
@@ -37,57 +36,123 @@ func NewScheduler(config *configuration.Configuration, internalDisc apiInternal.
 	}
 }
 
-// Executed when a system's node wants to launch a container in this node.
+// Launch is executed when a system's node wants to launch a container in this node.
 func (scheduler *Scheduler) Launch(fromBuyer *types.Node, offer *types.Offer,
-	containerConfig *types.ContainerConfig) (*types.ContainerStatus, error) {
+	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("SCHEDULE")+"Launching... Img: %s, Res: <%d,%d>", containerConfig.ImageKey,
-		containerConfig.Resources.CPUs, containerConfig.Resources.RAM)
 
-	resourcesNecessary := resources.NewResources(containerConfig.Resources.CPUs, containerConfig.Resources.RAM)
-	containerStatus, err := scheduler.containersManager.StartContainer(fromBuyer, offer, containerConfig, *resourcesNecessary)
+	if len(containersConfigs) == 0 {
+		return make([]types.ContainerStatus, 0), errors.New("no container configurations")
+	}
+
+	totalResourcesNecessary := resources.NewResources(0, 0)
+	for i, contConfig := range containersConfigs {
+		log.Debugf(util.LogTag("SCHEDULE")+"Launching... [%d] Img: %s, Res: <%d,%d>", i, contConfig.ImageKey,
+			contConfig.Resources.CPUs, contConfig.Resources.RAM)
+		totalResourcesNecessary.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM))
+	}
+
+	containerStatus, err := scheduler.containersManager.StartContainer(fromBuyer, offer, containersConfigs, *totalResourcesNecessary)
 	return containerStatus, err
 }
 
-func (scheduler *Scheduler) SubmitContainers(containerImageKey string, portMappings []types.PortMapping, containerArgs []string,
-	cpus int, ram int) (string, string, error) {
-
+// SubmitContainers is called when the user submits a request to the node in order to deploy a set of containers.
+func (scheduler *Scheduler) SubmitContainers(contConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	if !scheduler.isWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
-	log.Debugf(util.LogTag("SCHEDULE")+"Deploying... Img: %s , Res: <%d;%d>", containerImageKey, cpus, ram)
 
-	offers := scheduler.discovery.FindOffers(*resources.NewResources(cpus, ram))
+	resContainersStatus := make([]types.ContainerStatus, 0)
 
-	for _, offer := range offers {
-		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER... SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
-			offer.SupplierIP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM)
+	// ================== Check for the containers group policy ==================
 
-		contStatus, err := scheduler.client.LaunchContainer(
+	coLocateTotalResources := resources.NewResources(0, 0)
+	coLocateContainers := make([]types.ContainerConfig, 0)
+	spreadContainers := make([]types.ContainerConfig, 0)
+
+	for i, contConfig := range contConfigs {
+		log.Debugf(util.LogTag("SCHEDULE")+"Deploying [#%d]... Img: %s , Res: <%d;%d>, GrpPolicy: %s", i, contConfig.ImageKey,
+			contConfig.Resources.CPUs, contConfig.Resources.RAM, contConfig.GroupPolicy)
+
+		if contConfig.GroupPolicy == types.CoLocationGroupPolicy {
+			coLocateContainers = append(coLocateContainers, contConfig)
+			coLocateTotalResources.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM))
+		} else if contConfig.GroupPolicy == types.SpreadGroupPolicy {
+			spreadContainers = append(spreadContainers, contConfig)
+		}
+	}
+
+	// ================== First try launch the co-located containers ==============
+
+	containersStatus, err := scheduler.launchContainers(coLocateContainers, *coLocateTotalResources)
+	if err != nil {
+		return nil, err
+	}
+	resContainersStatus = append(resContainersStatus, containersStatus...)
+
+	// ================ Then launch the containers that can be spread ==============
+
+	for _, contConfig := range spreadContainers {
+		resourcesNecessary := resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM)
+
+		containersStatus, err := scheduler.launchContainers([]types.ContainerConfig{contConfig}, *resourcesNecessary)
+		if err != nil {
+			for i := range resContainersStatus { // Stop all the previous launched containers
+				scheduler.client.StopLocalContainer(&types.Node{IP: resContainersStatus[i].SupplierIP}, resContainersStatus[i].ContainerID)
+			}
+			return nil, err
+		}
+
+		resContainersStatus = append(resContainersStatus, containersStatus...)
+	}
+
+	return resContainersStatus, nil
+}
+
+// launchContainer launches a container in a node with the resources necessary available.
+func (scheduler *Scheduler) launchContainers(containersConfigs []types.ContainerConfig,
+	resourcesNecessary resources.Resources) ([]types.ContainerStatus, error) {
+
+	resContainersStatus := make([]types.ContainerStatus, 0)
+
+	if len(containersConfigs) == 0 {
+		return resContainersStatus, nil
+	}
+
+	offers := scheduler.discovery.FindOffers(resourcesNecessary)
+
+	if len(offers) == 0 {
+		log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")
+		return resContainersStatus, errors.New("no offers found to deploy")
+	}
+
+	for offerIndex, offer := range offers {
+		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER [#%d]... SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
+			offerIndex, offer.SupplierIP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM)
+
+		containersStatus, err := scheduler.client.LaunchContainer(
 			&types.Node{IP: scheduler.config.HostIP()},
 			&types.Node{IP: offer.SupplierIP},
 			&types.Offer{ID: offer.ID},
-			&types.ContainerConfig{
-				ImageKey:     containerImageKey,
-				PortMappings: portMappings,
-				Args:         containerArgs,
-				Resources:    types.Resources{CPUs: cpus, RAM: ram},
-			},
-		)
+			containersConfigs)
 		if err != nil {
-			log.Debugf(util.LogTag("SCHEDULE")+"Deploy FAILED Offer: %d error: %s", offer.ID, err)
+			log.Debugf(util.LogTag("SCHEDULE")+"Deploy FAILED [#%d] Offer: %d error: %s", offerIndex, offer.ID, err)
+			if offerIndex == (len(offers) - 1) {
+				log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")
+				return resContainersStatus, errors.New("all offers were reject to deploy")
+			}
 			continue
 		}
 
-		log.Debugf(util.LogTag("SCHEDULE")+"Deploy SUCCESS Img: %s, Res: <%d,%d>", containerImageKey, cpus, ram)
-		return contStatus.ContainerID, offer.SupplierIP, nil
+		resContainersStatus = append(resContainersStatus, containersStatus...)
+		log.Debugf(util.LogTag("SCHEDULE") + "Deploy SUCCESS")
+		break
 	}
 
-	log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")
-	return "", "", fmt.Errorf("no offers found to deploy")
+	return resContainersStatus, nil
 }
 
 // ===============================================================================

@@ -30,7 +30,7 @@ ResourcesOvercommit = 50
     Percentage = 50
 
 [Overlay]
-OverlayPort = 8000
+OverlayPort = 8002
 ChordTimeout = "3s"
 ChordVirtualNodes = 12
 ChordNumSuccessors = 4

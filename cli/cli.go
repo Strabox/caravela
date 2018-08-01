@@ -31,7 +31,7 @@ func Run() {
 		},
 		cli.StringFlag{
 			Name:  "ip",
-			Value: DefaultCaravelaInstanceIP,
+			Value: defaultCaravelaInstanceIP,
 			Usage: "IP of the caravela instance/daemon to send the request",
 		},
 	}

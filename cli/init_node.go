@@ -17,7 +17,7 @@ func initNode(hostIP string, join bool, joinIP string) error {
 
 	// Create configuration structures from the configuration file (if it exists)
 	if join {
-		caravelaClient := remote.NewHttpClient(configuration.Default(hostIP))
+		caravelaClient := remote.NewClient(configuration.Default(hostIP))
 
 		systemConfigurations, err = caravelaClient.ObtainConfiguration(&types.Node{IP: joinIP})
 		if err != nil {
@@ -46,7 +46,7 @@ func initNode(hostIP string, join bool, joinIP string) error {
 		systemConfigurations.ChordVirtualNodes(), systemConfigurations.ChordNumSuccessors(), systemConfigurations.ChordTimeout())
 
 	// Create CARAVELA's Remote Client
-	caravelaCli := remote.NewHttpClient(systemConfigurations)
+	caravelaCli := remote.NewClient(systemConfigurations)
 
 	// Create Docker client
 	dockerClient := docker.NewDockerClient(systemConfigurations)

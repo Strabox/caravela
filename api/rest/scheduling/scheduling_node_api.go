@@ -5,5 +5,5 @@ import (
 )
 
 type Scheduling interface {
-	LaunchContainers(fromBuyer *types.Node, offer *types.Offer, containerConfig *types.ContainerConfig) (*types.ContainerStatus, error)
+	LaunchContainers(fromBuyer *types.Node, offer *types.Offer, containerConfig []types.ContainerConfig) ([]types.ContainerStatus, error)
 }

@@ -1,6 +1,9 @@
+/*
+Version package contains the information about the version of the code.
+*/
 package version
 
 var (
-	// Version of CARAVELA's system
-	Version = "0.1.0"
+	// Version of CARAVELA's system binary.
+	Version = "0.2.0"
 )

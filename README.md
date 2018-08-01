@@ -14,6 +14,9 @@ but with a fully decentralized, hence scalable architecture in order to be deplo
 
 This work is being developed in the context of my Masters Degree Thesis in Computer Science and Engineering @ Instituto Superior Técnico - Lisbon.
 
+The main goal of the work was to test resource constrained scheduling requests evaluating its performance compared
+with centralized versions.
+
 ## Getting Started
 
 This project is a standalone middleware to orchestrate Docker containers but it is highly inspired in the

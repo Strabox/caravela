@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-// HttpClient is used to contact the REST API of other nodes.
-type HttpClient struct {
+// Client is used to contact the REST API of other nodes.
+type Client struct {
 	httpClient *http.Client
 	config     *configuration.Configuration
 }
 
-func NewHttpClient(config *configuration.Configuration) *HttpClient {
-	return &HttpClient{
+func NewClient(config *configuration.Configuration) *Client {
+	return &Client{
 		httpClient: &http.Client{
 			Timeout: config.APITimeout(),
 		},
@@ -25,7 +25,7 @@ func NewHttpClient(config *configuration.Configuration) *HttpClient {
 	}
 }
 
-func (client *HttpClient) CreateOffer(fromNode, toNode *types.Node, offer *types.Offer) error {
+func (client *Client) CreateOffer(fromNode, toNode *types.Node, offer *types.Offer) error {
 
 	log.Infof("--> CREATE OFFER From: %s, ID: %d, Amt: %d, Res: <%d;%d>, To: <%s;%s>",
 		fromNode.IP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM, toNode.IP, toNode.GUID)
@@ -46,7 +46,7 @@ func (client *HttpClient) CreateOffer(fromNode, toNode *types.Node, offer *types
 	return nil
 }
 
-func (client *HttpClient) RefreshOffer(fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error) {
+func (client *Client) RefreshOffer(fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error) {
 	log.Infof("--> REFRESH OFFER From: %s, ID: %d, To: %s",
 		fromTrader.GUID, offer.ID, toSupp.IP)
 
@@ -67,7 +67,7 @@ func (client *HttpClient) RefreshOffer(fromTrader, toSupp *types.Node, offer *ty
 	return refreshOfferResp.Refreshed, nil
 }
 
-func (client *HttpClient) RemoveOffer(fromSupp, toTrader *types.Node, offer *types.Offer) error {
+func (client *Client) RemoveOffer(fromSupp, toTrader *types.Node, offer *types.Offer) error {
 	log.Infof("--> REMOVE OFFER From: <%s;%s>, ID: %d, To: <%s;%s>",
 		fromSupp.IP, fromSupp.GUID, offer.ID, toTrader.IP, toTrader.GUID)
 
@@ -86,7 +86,7 @@ func (client *HttpClient) RemoveOffer(fromSupp, toTrader *types.Node, offer *typ
 	return nil
 }
 
-func (client *HttpClient) GetOffers(fromNode, toTrader *types.Node, relay bool) ([]types.AvailableOffer, error) {
+func (client *Client) GetOffers(fromNode, toTrader *types.Node, relay bool) ([]types.AvailableOffer, error) {
 	log.Infof("--> GET OFFERS To: <%s;%s>, Relay: %t, From: %s", toTrader.IP, toTrader.GUID, relay, fromNode.GUID)
 
 	getOffersMsg := rest.GetOffersMsg{
@@ -94,20 +94,20 @@ func (client *HttpClient) GetOffers(fromNode, toTrader *types.Node, relay bool) 
 		ToTrader: *toTrader,
 		Relay:    relay,
 	}
-	var offersResp rest.OffersListMsg
+	var offers []types.AvailableOffer
 
 	url := rest.BuildHttpURL(false, toTrader.IP, client.config.APIPort(), rest.DiscoveryOfferBaseEndpoint)
 
 	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
-	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, getOffersMsg, &offersResp)
+	err, httpCode := rest.DoHttpRequestJSON(client.httpClient, url, http.MethodGet, getOffersMsg, &offers)
 	if err != nil {
 		return nil, NewRemoteClientError(err)
 	}
 
 	if httpCode == http.StatusOK {
-		if offersResp.Offers != nil {
-			res := make([]types.AvailableOffer, len(offersResp.Offers))
-			for i, v := range offersResp.Offers {
+		if offers != nil {
+			res := make([]types.AvailableOffer, len(offers))
+			for i, v := range offers {
 				res[i].ID = v.ID
 				res[i].SupplierIP = v.SupplierIP
 			}
@@ -120,7 +120,7 @@ func (client *HttpClient) GetOffers(fromNode, toTrader *types.Node, relay bool) 
 	}
 }
 
-func (client *HttpClient) AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, traderOffering *types.Node) error {
+func (client *Client) AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, traderOffering *types.Node) error {
 
 	log.Infof("--> NEIGHBOR OFFERS To: <%s;%s> TraderOffering: <%s;%s>", toNeighborTrader.IP, toNeighborTrader.GUID,
 		traderOffering.IP, traderOffering.GUID)
@@ -145,20 +145,22 @@ func (client *HttpClient) AdvertiseOffersNeighbor(fromTrader, toNeighborTrader, 
 	}
 }
 
-func (client *HttpClient) LaunchContainer(fromBuyer, toSupplier *types.Node, offer *types.Offer,
-	containerConfig *types.ContainerConfig) (*types.ContainerStatus, error) {
+func (client *Client) LaunchContainer(fromBuyer, toSupplier *types.Node, offer *types.Offer,
+	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 
-	log.Infof("--> LAUNCH From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
-		fromBuyer.IP, offer.ID, containerConfig.ImageKey, containerConfig.PortMappings, containerConfig.Args,
-		containerConfig.Resources.CPUs, containerConfig.Resources.RAM, toSupplier.IP)
-
-	launchContainerMsg := rest.LaunchContainerMsg{
-		FromBuyer:       *fromBuyer,
-		Offer:           *offer,
-		ContainerConfig: *containerConfig,
+	for i, contConfig := range containersConfigs {
+		log.Infof("--> LAUNCH [%d] From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
+			i, fromBuyer.IP, offer.ID, contConfig.ImageKey, contConfig.PortMappings, contConfig.Args,
+			contConfig.Resources.CPUs, contConfig.Resources.RAM, toSupplier.IP)
 	}
 
-	var contStatusResp types.ContainerStatus
+	launchContainerMsg := rest.LaunchContainerMsg{
+		FromBuyer:         *fromBuyer,
+		Offer:             *offer,
+		ContainersConfigs: containersConfigs,
+	}
+
+	var contStatusResp []types.ContainerStatus
 
 	url := rest.BuildHttpURL(false, toSupplier.IP, client.config.APIPort(), rest.ContainersBaseEndpoint)
 
@@ -169,13 +171,13 @@ func (client *HttpClient) LaunchContainer(fromBuyer, toSupplier *types.Node, off
 	}
 
 	if httpCode == http.StatusOK {
-		return &contStatusResp, nil
+		return contStatusResp, nil
 	} else {
 		return nil, NewRemoteClientError(errors.New("impossible launch container"))
 	}
 }
 
-func (client *HttpClient) StopLocalContainer(toSupplier *types.Node, containerID string) error {
+func (client *Client) StopLocalContainer(toSupplier *types.Node, containerID string) error {
 	log.Infof("--> STOP ID: %s, SuppIP: %s", containerID, toSupplier.IP)
 
 	stopLocalContainerMsg := rest.StopLocalContainerMsg{
@@ -196,7 +198,7 @@ func (client *HttpClient) StopLocalContainer(toSupplier *types.Node, containerID
 	}
 }
 
-func (client *HttpClient) ObtainConfiguration(systemsNode *types.Node) (*configuration.Configuration, error) {
+func (client *Client) ObtainConfiguration(systemsNode *types.Node) (*configuration.Configuration, error) {
 	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNode.IP)
 
 	var systemsNodeConfigsResp configuration.Configuration

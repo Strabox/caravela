@@ -16,13 +16,13 @@ import (
 	"strconv"
 )
 
-// DefaultClient that interfaces with docker SDK.
+// DefaultClient interfaces with docker SDK.
 type DefaultClient struct {
 	docker        *dockerClient.Client
 	imagesBackend storage.Backend
 }
 
-// Creates a new docker client to interact with the local Docker Engine.
+// NewDockerClient creates a new docker client to interact with the local Docker Engine.
 func NewDockerClient(config *configuration.Configuration) *DefaultClient {
 	var err error
 	res := &DefaultClient{}
@@ -33,15 +33,15 @@ func NewDockerClient(config *configuration.Configuration) *DefaultClient {
 	}
 
 	switch imagesBackend := config.ImagesStorageBackend(); imagesBackend {
-	case configuration.ImagesStorageDockerHub:
+	case "DockerHub":
 		res.imagesBackend = storage.NewDockerHubBackend(res.docker)
-	case configuration.ImagesStorageIPFS:
+	case "IPFS":
 		res.imagesBackend = storage.NewIPFSBackend(res.docker)
 	}
 	return res
 }
 
-// Verify if the Docker client is initialized or not.
+// isInit verify if the Docker client is initialized or not.
 func (client *DefaultClient) isInit() {
 	if client.docker != nil {
 		if _, err := client.docker.Ping(context.Background()); err != nil {
@@ -68,7 +68,7 @@ func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 	return cpu, int(ram)
 }
 
-// Check the container status (running, stopped, etc)
+// CheckContainerStatus checks the container status (running, stopped, etc)
 func (client *DefaultClient) CheckContainerStatus(containerID string) (myContainer.ContainerStatus, error) {
 	client.isInit()
 
@@ -85,24 +85,20 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (myContain
 	}
 }
 
-// Launches a container from an image in the local Docker Engine.
-func (client *DefaultClient) RunContainer(imageKey string, portMappings []caravelaTypes.PortMapping,
-	args []string, cpus int64, ram int) (string, error) {
-
+// RunContainer launches a container from an image in the local Docker Engine.
+func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConfig) (*caravelaTypes.ContainerStatus, error) {
 	client.isInit()
 
-	dockerImageKey, err := client.imagesBackend.Load(imageKey)
+	dockerImageKey, err := client.imagesBackend.Load(contConfig.ImageKey)
 	if err != nil {
 		log.Errorf(util.LogTag("DOCKER")+"Loading image error", err)
-		return "", err
+		return nil, err
 	}
-
-	ctx := context.Background()
 
 	// Port mappings creation
 	containerPortSet := nat.PortSet{}
 	hostPortMap := nat.PortMap{}
-	for _, portMap := range portMappings {
+	for _, portMap := range contConfig.PortMappings {
 		containerPort := strconv.Itoa(portMap.ContainerPort)
 		hostPort := strconv.Itoa(portMap.HostPort)
 		port, _ := nat.NewPort(fmt.Sprintf("tcp"), containerPort)
@@ -113,37 +109,45 @@ func (client *DefaultClient) RunContainer(imageKey string, portMappings []carave
 		containerPortSet[port] = struct{}{}
 	}
 
-	resp, err := client.docker.ContainerCreate(ctx, &container.Config{
-		Image:        dockerImageKey, // Image key name
-		Cmd:          args,           // Command arguments to the container
-		Tty:          true,
-		ExposedPorts: containerPortSet, // Container's exposed ports
-	}, &container.HostConfig{
-		Resources: container.Resources{
-			Memory:   int64(ram) * 1000000, // Maximum memory available to container
-			CPUCount: cpus,                 // Number of CPUs available to the container
-		},
-		PortBindings: hostPortMap, // Port mappings between container' port and host ports
-	}, nil, "")
+	resp, err := client.docker.ContainerCreate(context.Background(),
+		&container.Config{
+			Image:        dockerImageKey,  // Image key name
+			Cmd:          contConfig.Args, // Command arguments to the container
+			Tty:          true,
+			ExposedPorts: containerPortSet, // Container's exposed ports
+		}, &container.HostConfig{
+			Resources: container.Resources{
+				CPUCount: int64(contConfig.Resources.CPUs),          // Number of CPUs available to the container
+				Memory:   int64(contConfig.Resources.RAM) * 1000000, // Maximum memory available to container
+			},
+			PortBindings: hostPortMap, // Port mappings between container's port and host's port
+		}, nil, contConfig.Name)
 	if err != nil { // Error creating the container
-		client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
+		client.docker.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
 		log.Errorf(util.LogTag("DOCKER")+"Creating container error: %s", err)
-		return "", err
+		return nil, err
 	}
 
-	if err := client.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		client.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
+	if err := client.docker.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		client.docker.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
 		log.Errorf(util.LogTag("DOCKER")+"Starting container error: %s", err)
-		return "", err // Error starting the container
+		return nil, err // Error starting the container
 	}
 
 	log.Infof(util.LogTag("DOCKER")+"Container RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
-		imageKey, args, cpus, ram)
+		contConfig.ImageKey, contConfig.Args, contConfig.Resources.CPUs, contConfig.Resources.RAM)
 
-	return resp.ID, nil
+	containerInfo, _ := client.docker.ContainerInspect(context.Background(), resp.ID)
+
+	contConfig.Name = containerInfo.Name[1:]
+	return &caravelaTypes.ContainerStatus{
+		ContainerConfig: contConfig,
+		ContainerID:     resp.ID,
+		Status:          "Running", // TODO: De HardCode this!
+	}, nil
 }
 
-// Remove a container from the Docker engine (to avoid filling space in the node).
+// RemoveContainer removes a container from the Docker engine (to avoid filling space in the node).
 func (client *DefaultClient) RemoveContainer(containerID string) error {
 	client.isInit()
 

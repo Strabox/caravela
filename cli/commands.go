@@ -28,24 +28,29 @@ var (
 			Category:  "User's containers management",
 			Action:    runContainers,
 			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "name, n",
+					Value: defaultContainerName,
+					Usage: "Name for the container",
+				},
 				cli.StringSliceFlag{
 					Name:  "portMap, p",
 					Value: &cli.StringSlice{}, // No predefined port mapping
 					Usage: "Define a port mapping for a container, HostPort:ContainerPort",
 				},
-				cli.UintFlag{
+				cli.StringFlag{
 					Name:  "cpuPower, cp",
-					Value: 0,
-					Usage: "Power/Class of the cpu necessary for the container",
+					Value: defaultCPUPower,
+					Usage: "Power/Class of the CPU necessary for the container",
 				},
 				cli.UintFlag{
 					Name:  "cpus, c",
-					Value: 0,
+					Value: defaultCPUs,
 					Usage: "Maximum number of CPUs/Cores that the container need",
 				},
 				cli.UintFlag{
 					Name:  "ram, r",
-					Value: 0,
+					Value: defaultRAM,
 					Usage: "Maximum amount of RAM (in Megabytes) that container can use",
 				},
 			},
@@ -72,7 +77,7 @@ var (
 		{
 			Name:      "exit",
 			ShortName: "e",
-			Usage:     "Exit from the CARAVELA instance, makes the node leave",
+			Usage:     "Shutdown from the CARAVELA instance, makes the node leave",
 			Category:  "Caravela system management",
 			Before:    printBanner,
 			Action:    exitFromCaravela,

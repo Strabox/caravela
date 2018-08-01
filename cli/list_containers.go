@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/strabox/caravela/api/client"
 	"github.com/urfave/cli"
-	"os"
 	"strings"
 )
 
@@ -14,8 +13,7 @@ func listContainer(c *cli.Context) {
 
 	containersStatus, err := caravelaClient.ListContainers()
 	if err != nil {
-		fmt.Printf("Error with request: %s\n", err)
-		os.Exit(1)
+		fatalPrintf("Error with request: %s\n", err)
 	}
 
 	var columnSize = 30
@@ -23,18 +21,31 @@ func listContainer(c *cli.Context) {
 		"CONTAINER ID",
 		"IMAGE",
 		"STATUS",
-		"PORTS"}, columnSize)
+		"PORTS",
+		"NAME"}, columnSize)
 
 	for _, containerStatus := range containersStatus {
+
+		presentPortMappings := ""
+		for i, portMap := range containerStatus.PortMappings {
+			if i != 0 {
+				presentPortMappings += ", "
+			}
+			presentPortMappings += fmt.Sprintf("%s:%d->%d/tcp", containerStatus.SupplierIP, portMap.HostPort,
+				portMap.ContainerPort)
+		}
+
 		presentTableLine([]string{
 			containerStatus.ContainerID,
 			containerStatus.ImageKey,
 			containerStatus.Status,
-			fmt.Sprintf("%v", containerStatus.PortMappings)},
+			presentPortMappings,
+			containerStatus.Name},
 			columnSize)
 	}
 }
 
+// presentTableLine formats information
 func presentTableLine(information []string, columnSize int) {
 	for _, info := range information {
 		toPrintInfo := info

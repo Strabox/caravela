@@ -27,7 +27,7 @@ type Caravela interface {
 	// =============================== Scheduling ===============================
 
 	// Sends a launch container message to a supplier in order to deploy the container
-	LaunchContainer(fromBuyer, toSupplier *types.Node, offer *types.Offer, containerConfig *types.ContainerConfig) (*types.ContainerStatus, error)
+	LaunchContainer(fromBuyer, toSupplier *types.Node, offer *types.Offer, containerConfig []types.ContainerConfig) ([]types.ContainerStatus, error)
 
 	// =============================== Containers ===============================
 

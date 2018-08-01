@@ -2,31 +2,42 @@ package client
 
 import "strings"
 
-const Unknown = 1
-const CaravelaInstanceUnavailable = 2
+// CARAVELA's client error codes.
+const (
+	// UnknownError deals with unexpected errors.
+	UnknownError = iota
+	// CaravelaInstanceUnavailableError is obtained when the client tries to send a request to a CARAVELA's
+	// instance that is not working e.g. because it is turned off.
+	CaravelaInstanceUnavailableError
+)
 
-// Error returned by the CARAVELA's client
+// Error represents the errors returned by the CARAVELA's client.
+// It implements the error interface.
 type Error struct {
-	err  error
+	err error
+	// Error's code.
 	Code int
 }
 
-func NewClientError(err error) *Error {
+// newClientError creates a new CARAVELA's client error based on internal errors.
+func newClientError(err error) *Error {
 	res := &Error{
 		err: err,
 	}
 	if strings.Contains(err.Error(), "No connection") {
-		res.Code = CaravelaInstanceUnavailable
+		res.Code = CaravelaInstanceUnavailableError
 	} else {
-		res.Code = Unknown
+		res.Code = UnknownError
 	}
 	return res
 }
 
 func (ce *Error) Error() string {
 	switch ce.Code {
-	case CaravelaInstanceUnavailable:
+	case CaravelaInstanceUnavailableError:
 		return "Caravela instance unavailable"
+	case UnknownError:
+		return "Unknown error"
 	default:
 		return ce.err.Error()
 	}

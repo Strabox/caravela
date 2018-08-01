@@ -19,7 +19,7 @@ import (
 type Supplier struct {
 	nodeCommon.NodeComponent // Base component
 
-	config         *configuration.Configuration // Configurations of the system
+	config         *configuration.Configuration // System's configurations.
 	offersStrategy OffersManager                // Encapsulates the strategies to manage the offers in the system.
 	client         external.Caravela            // Client to collaborate with other CARAVELA's nodes
 
@@ -59,7 +59,7 @@ func NewSupplier(config *configuration.Configuration, overlay external.Overlay, 
 	}
 }
 
-// Controls the time dependant actions like supplying the resources.
+// startSupplying controls the time dependant actions like supplying the resources.
 func (sup *Supplier) startSupplying() {
 	for {
 		select {

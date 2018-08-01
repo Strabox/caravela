@@ -24,7 +24,7 @@ const configurationFileName = "configuration.toml"
 
 // CARAVELA system's configurations.
 type Configuration struct {
-	Host          host          `json:"-"` // Do not encode host configuration due to security concerns!!!
+	Host          host          `json:"Host"`
 	Caravela      caravela      `json:"Caravela"`
 	ImagesStorage imagesStorage `json:"ImagesStorage"`
 	Overlay       overlay       `json:"Overlay"`
@@ -32,7 +32,7 @@ type Configuration struct {
 
 // Configurations for the local host node.
 type host struct {
-	IP               string `json:"IP"`               // Local node host's IP
+	IP               string `json:"-"`                // Do not encode host IP due to security concerns!!!
 	DockerAPIVersion string `json:"DockerAPIVersion"` // API Version of the local node Docker's engine
 }
 
@@ -104,7 +104,7 @@ func Default(hostIP string) *Configuration {
 			ResourcesOvercommit: 50,
 		},
 		ImagesStorage: imagesStorage{
-			Backend: ImagesStorageDockerHub,
+			Backend: "DockerHub",
 		},
 		Overlay: overlay{
 			OverlayPort:        8000,
@@ -196,12 +196,6 @@ func (c *Configuration) validate() error {
 	}
 	if percentageAcc != 100 {
 		return fmt.Errorf("the sum of RAM partitions size must equal to 100")
-	}
-
-	configuredBackend := strings.ToLower(c.ImagesStorage.Backend)
-	if configuredBackend != strings.ToLower(ImagesStorageDockerHub) &&
-		configuredBackend != strings.ToLower(ImagesStorageIPFS) {
-		return fmt.Errorf("invalid storage backend: %s", configuredBackend)
 	}
 
 	if !util.IsValidPort(c.OverlayPort()) {
