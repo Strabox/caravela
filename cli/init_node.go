@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/api/types"
@@ -9,9 +10,10 @@ import (
 	"github.com/strabox/caravela/node"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/overlay/chord"
+	"strings"
 )
 
-func initNode(hostIP string, join bool, joinIP string) error {
+func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	var systemConfigurations *configuration.Configuration
 	var err error = nil
 
@@ -29,8 +31,10 @@ func initNode(hostIP string, join bool, joinIP string) error {
 			return err
 		}
 	} else {
-		systemConfigurations, err = configuration.ReadFromFile(hostIP)
-		if err != nil {
+		systemConfigurations, err = configuration.ReadFromFile(hostIP, configFilePath)
+		if err != nil && systemConfigurations != nil && strings.Contains(err.Error(), "cannot find the file") {
+			fmt.Println("Information: using the default configuration")
+		} else if err != nil && systemConfigurations == nil {
 			return err
 		}
 	}
@@ -56,6 +60,7 @@ func initNode(hostIP string, join bool, joinIP string) error {
 
 	// Create a CARAVELA Node passing all the external components and start it functions
 	thisNode := node.NewNode(systemConfigurations, overlay, caravelaCli, dockerClient, apiServer)
+
 	err = thisNode.Start(join, joinIP)
 	if err != nil {
 		return err

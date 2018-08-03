@@ -32,12 +32,9 @@ func NewDockerClient(config *configuration.Configuration) *DefaultClient {
 		log.Fatalf(util.LogTag("DOCKER")+"Init error: %s", err)
 	}
 
-	switch imagesBackend := config.ImagesStorageBackend(); imagesBackend {
-	case "DockerHub":
-		res.imagesBackend = storage.NewDockerHubBackend(res.docker)
-	case "IPFS":
-		res.imagesBackend = storage.NewIPFSBackend(res.docker)
-	}
+	res.imagesBackend = storage.CreateBackend(config)
+	res.imagesBackend.Init(res.docker)
+
 	return res
 }
 
@@ -89,7 +86,7 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (myContain
 func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConfig) (*caravelaTypes.ContainerStatus, error) {
 	client.isInit()
 
-	dockerImageKey, err := client.imagesBackend.Load(contConfig.ImageKey)
+	dockerImageKey, err := client.imagesBackend.LoadImage(contConfig.ImageKey)
 	if err != nil {
 		log.Errorf(util.LogTag("DOCKER")+"Loading image error", err)
 		return nil, err

@@ -17,12 +17,9 @@ const minimumDockerEngineVersion = "1.35"
 const caravelaAPIPort = 8001
 
 // Directory path to where search for the configuration file. (Directory of binary execution)
-const configurationFilePath = ""
+const DefaultFilePath = "configuration.toml"
 
-// Expected name of the configuration file.
-const configurationFileName = "configuration.toml"
-
-// CARAVELA system's configurations.
+// Configuration holds all the configurations parameters for the CARAVELA.
 type Configuration struct {
 	Host          host          `json:"Host"`
 	Caravela      caravela      `json:"Caravela"`
@@ -38,7 +35,7 @@ type host struct {
 
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
-	Simulation              bool                `json:"APIPort"`                 // If the CARAVELA node is simulated or not
+	Simulation              bool                `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
 	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
 	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
 	MaxRefreshesFailed      int                 `json:"MaxRefreshesFailed"`      // Maximum amount of refreshes that a supplier failed to reply
@@ -70,7 +67,7 @@ type overlay struct {
 	ChordHashSizeBits  int      `json:"ChordHashSizeBits"`  // Number of chord hash size (in bits)
 }
 
-// Produces the configuration structure with all the default values for the system to work.
+// Default returns the configuration structure with all the default values for the system to work.
 func Default(hostIP string) *Configuration {
 	refreshingInterval := duration{Duration: 15 * time.Second}
 
@@ -82,7 +79,7 @@ func Default(hostIP string) *Configuration {
 		Caravela: caravela{
 			Simulation:              false,
 			APIPort:                 caravelaAPIPort,
-			OffersStrategy:          "chordDefault",
+			OffersStrategy:          "chord-smart",
 			APITimeout:              duration{Duration: 5 * time.Second},
 			CheckContainersInterval: duration{Duration: 30 * time.Second},
 			SupplyingInterval:       duration{Duration: 45 * time.Second},
@@ -93,14 +90,17 @@ func Default(hostIP string) *Configuration {
 			MaxRefreshesMissed:      2,
 			RefreshMissedTimeout:    duration{Duration: refreshingInterval.Duration + (5 * time.Second)},
 			CPUPowerPartition: []CPUPowerPartition{
-				{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}},
+				{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 25}},
+				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
 			CPUCoresPartitions: []CPUCoresPartition{
-				{Cores: 1, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-				{Cores: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}}},
+				{Cores: 1, ResourcesPartition: ResourcesPartition{Percentage: 25}},
+				{Cores: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+				{Cores: 4, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
 			RAMPartitions: []RAMPartition{
-				{RAM: 256, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-				{RAM: 512, ResourcesPartition: ResourcesPartition{Percentage: 50}}},
+				{RAM: 256, ResourcesPartition: ResourcesPartition{Percentage: 25}},
+				{RAM: 512, ResourcesPartition: ResourcesPartition{Percentage: 50}},
+				{RAM: 1024, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
 			ResourcesOvercommit: 50,
 		},
 		ImagesStorage: imagesStorage{
@@ -116,13 +116,14 @@ func Default(hostIP string) *Configuration {
 	}
 }
 
-// Produces configuration structure reading from the configuration file and filling the rest
+// ReadFromFile returns a configuration structure reading from the configuration file and filling the rest
 // with the default values
-func ReadFromFile(hostIP string) (*Configuration, error) {
+func ReadFromFile(hostIP, configFilePath string) (*Configuration, error) {
 	config := Default(hostIP)
-	configFullFileName := configurationFilePath + configurationFileName
 
-	if _, err := toml.DecodeFile(configFullFileName, config); err != nil && !strings.Contains(err.Error(), "cannot find the file") {
+	if _, err := toml.DecodeFile(configFilePath, config); err != nil && strings.Contains(err.Error(), "cannot find the file") {
+		return config, fmt.Errorf("cannot find the file %s", configFilePath)
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -133,7 +134,7 @@ func ReadFromFile(hostIP string) (*Configuration, error) {
 	return config, nil
 }
 
-// Produces configuration structured based on a given structure that.
+// ObtainExternal returns configuration structured based on a given structure that.
 // Used to pass the system configurations between nodes, usually during the joining process.
 func ObtainExternal(hostIP string, config *Configuration) (*Configuration, error) {
 	res := *config
@@ -146,7 +147,7 @@ func ObtainExternal(hostIP string, config *Configuration) (*Configuration, error
 	return &res, nil
 }
 
-// Briefly validate the configuration to avoid/short-circuit many runtime errors due to
+// validate validates the configuration to avoid/short-circuit many runtime errors due to
 // typos or completely non sense configurations, like negative ports.
 func (c *Configuration) validate() error {
 	if net.ParseIP(c.HostIP()) == nil {
@@ -214,7 +215,7 @@ func (c *Configuration) validate() error {
 	return nil
 }
 
-// Print/log the current configurations in order to debug the programs behavior.
+// Print the current configurations in order to debug the programs behavior.
 func (c *Configuration) Print() {
 	log.Printf("##################################################################")
 	log.Printf("#                    CARAVELA's CONFIGURATIONS                   #")

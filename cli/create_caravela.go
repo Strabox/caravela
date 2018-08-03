@@ -6,16 +6,15 @@ import (
 )
 
 func create(c *cli.Context) {
-	if c.NArg() < 1 {
-		fatalPrintln("Please provide the host IP address")
+	hostIP := c.String("hostIP")
+	if hostIP == "" {
+		hostIP = getOutboundIP()
 	}
-
-	hostIP := c.Args().Get(0)
 	if net.ParseIP(hostIP) == nil {
 		fatalPrintf("Invalid host IP address: %s\n", hostIP)
 	}
 
-	if err := initNode(hostIP, false, ""); err != nil {
+	if err := initNode(hostIP, c.String("config"), false, ""); err != nil {
 		fatalPrintf("Problem: %s\n", err)
 	}
 }

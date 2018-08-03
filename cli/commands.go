@@ -12,6 +12,13 @@ var (
 			Category:  "Caravela system management",
 			Before:    printBanner,
 			Action:    join,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "hostIP, hip",
+					Usage: "Host's IP address",
+					Value: defaultHostIP,
+				},
+			},
 		},
 		{
 			Name:      "create",
@@ -20,6 +27,18 @@ var (
 			Category:  "Caravela system management",
 			Before:    printBanner,
 			Action:    create,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "hostIP, hip",
+					Usage: "Host's IP address",
+					Value: defaultHostIP,
+				},
+				cli.StringFlag{
+					Name:  "config, c",
+					Usage: "Configuration's file path",
+					Value: defaultConfigurationFile,
+				},
+			},
 		},
 		{
 			Name:      "run",
@@ -30,28 +49,28 @@ var (
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "name, n",
-					Value: defaultContainerName,
 					Usage: "Name for the container",
+					Value: defaultContainerName,
 				},
 				cli.StringSliceFlag{
 					Name:  "portMap, p",
-					Value: &cli.StringSlice{}, // No predefined port mapping
 					Usage: "Define a port mapping for a container, HostPort:ContainerPort",
+					Value: &cli.StringSlice{}, // No predefined port mapping
 				},
 				cli.StringFlag{
 					Name:  "cpuPower, cp",
-					Value: defaultCPUPower,
 					Usage: "Power/Class of the CPU necessary for the container",
+					Value: defaultCPUPower,
 				},
 				cli.UintFlag{
 					Name:  "cpus, c",
-					Value: defaultCPUs,
 					Usage: "Maximum number of CPUs/Cores that the container need",
+					Value: defaultCPUs,
 				},
 				cli.UintFlag{
 					Name:  "ram, r",
-					Value: defaultRAM,
 					Usage: "Maximum amount of RAM (in Megabytes) that container can use",
+					Value: defaultRAM,
 				},
 			},
 		},
