@@ -14,11 +14,11 @@ func Init(router *mux.Router, nodeScheduling Scheduling) {
 	router.Handle(rest.ContainersBaseEndpoint, rest.AppHandler(launchContainer)).Methods(http.MethodPost)
 }
 
-func launchContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func launchContainer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var err error
 	var launchContainerMsg rest.LaunchContainerMsg
 
-	err = rest.ReceiveJSONFromHttp(w, r, &launchContainerMsg)
+	err = rest.ReceiveJSONFromHttp(w, req, &launchContainerMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func launchContainer(w http.ResponseWriter, r *http.Request) (interface{}, error
 			contConfig.PortMappings, contConfig.Args, contConfig.Resources.CPUs, contConfig.Resources.RAM)
 	}
 
-	containersStatus, err := nodeSchedulingAPI.LaunchContainers(&launchContainerMsg.FromBuyer,
+	containersStatus, err := nodeSchedulingAPI.LaunchContainers(req.Context(), &launchContainerMsg.FromBuyer,
 		&launchContainerMsg.Offer, launchContainerMsg.ContainersConfigs)
 	if err != nil {
 		return nil, err

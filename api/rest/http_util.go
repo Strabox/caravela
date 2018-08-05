@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -24,10 +25,11 @@ func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill inte
 }
 
 // Build and execute an HTTP Request and frees all the resources getting all the data before.
-func DoHttpRequestJSON(httpClient *http.Client, url string, httpMethod string, jsonToSend interface{},
+func DoHttpRequestJSON(c context.Context, httpClient *http.Client, url string, httpMethod string, jsonToSend interface{},
 	jsonToGet interface{}) (error, int) {
 
 	req, err := http.NewRequest(httpMethod, url, ToJSONBuffer(jsonToSend))
+	req = req.WithContext(c)
 	if err != nil {
 		log.Errorf(util.LogTag("DoHttp")+"Error building request: %s", err)
 		return err, -1

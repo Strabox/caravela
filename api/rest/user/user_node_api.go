@@ -1,12 +1,13 @@
 package user
 
 import (
+	"context"
 	"github.com/strabox/caravela/api/types"
 )
 
 type User interface {
-	SubmitContainers([]types.ContainerConfig) error
-	ListContainers() []types.ContainerStatus
-	StopContainers(containersIDs []string) error
-	Stop()
+	SubmitContainers(ctx context.Context, containersConfigs []types.ContainerConfig) error
+	ListContainers(ctx context.Context) []types.ContainerStatus
+	StopContainers(ctx context.Context, containersIDs []string) error
+	Stop(ctx context.Context)
 }

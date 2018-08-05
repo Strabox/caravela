@@ -18,11 +18,11 @@ func Init(router *mux.Router, userNode User) {
 	router.Handle(rest.UserExitEndpoint, rest.AppHandler(exit)).Methods(http.MethodGet)
 }
 
-func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func runContainer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var err error
 	var runContainerConfigs []types.ContainerConfig
 
-	err = rest.ReceiveJSONFromHttp(w, r, &runContainerConfigs)
+	err = rest.ReceiveJSONFromHttp(w, req, &runContainerConfigs)
 	if err != nil {
 		return nil, err
 	}
@@ -33,31 +33,31 @@ func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 			containerConfig.GroupPolicy)
 	}
 
-	return nil, userNodeAPI.SubmitContainers(runContainerConfigs)
+	return nil, userNodeAPI.SubmitContainers(req.Context(), runContainerConfigs)
 }
 
-func stopContainers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func stopContainers(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var err error
 	var stopContainersIDs []string
 
-	err = rest.ReceiveJSONFromHttp(w, r, &stopContainersIDs)
+	err = rest.ReceiveJSONFromHttp(w, req, &stopContainersIDs)
 	if err != nil {
 		return nil, err
 	}
 	log.Infof("<-- STOP Containers: %v", stopContainersIDs)
 
-	return nil, userNodeAPI.StopContainers(stopContainersIDs)
+	return nil, userNodeAPI.StopContainers(req.Context(), stopContainersIDs)
 }
 
-func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
+func listContainers(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	log.Infof("<-- LIST Containers")
 
-	return userNodeAPI.ListContainers(), nil
+	return userNodeAPI.ListContainers(req.Context()), nil
 }
 
-func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
+func exit(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	log.Infof("<-- EXITING CARAVELA")
 
-	userNodeAPI.Stop()
+	userNodeAPI.Stop(req.Context())
 	return nil, nil
 }

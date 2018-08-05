@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
@@ -56,8 +57,8 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 		(&traderGUID).Short(), newTraderResources.String())
 }
 
-func (disc *Discovery) FindOffers(resources resources.Resources) []types.AvailableOffer {
-	return disc.supplier.FindOffers(resources)
+func (disc *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
+	return disc.supplier.FindOffers(ctx, resources)
 }
 
 func (disc *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {

@@ -14,7 +14,7 @@ func Init(router *mux.Router, nodeConfiguration Configurations) {
 	router.Handle(rest.ConfigurationBaseEndpoint, rest.AppHandler(obtainConfiguration)).Methods(http.MethodGet)
 }
 
-func obtainConfiguration(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
+func obtainConfiguration(_ http.ResponseWriter, req *http.Request) (interface{}, error) {
 	log.Infof("<-- OBTAIN CONFIGS")
-	return nodeConfigurationAPI.Configuration(), nil
+	return nodeConfigurationAPI.Configuration(req.Context()), nil
 }

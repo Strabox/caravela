@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"github.com/strabox/caravela/api/client"
 	"github.com/strabox/caravela/api/types"
@@ -103,7 +104,7 @@ func runContainers(c *cli.Context) {
 	// Create a user client of the CARAVELA system
 	caravelaClient := client.NewCaravelaTimeoutIP(c.GlobalString("ip"), 30*time.Second) // TODO: Timeout hack to handler the submit container request
 
-	err := caravelaClient.SubmitContainers(containersConfigs)
+	err := caravelaClient.SubmitContainers(context.Background(), containersConfigs)
 	if err != nil {
 		fatalPrintln(err)
 	}

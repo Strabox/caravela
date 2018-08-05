@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/remote"
@@ -21,7 +22,7 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	if join {
 		caravelaClient := remote.NewClient(configuration.Default(hostIP))
 
-		systemConfigurations, err = caravelaClient.ObtainConfiguration(&types.Node{IP: joinIP})
+		systemConfigurations, err = caravelaClient.ObtainConfiguration(context.Background(), &types.Node{IP: joinIP})
 		if err != nil {
 			return err
 		}
@@ -46,7 +47,7 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	guid.Init(systemConfigurations.ChordHashSizeBits())
 
 	// Create Overlay Component (Chord overlay initial)
-	overlay := chord.NewChordOverlay(guid.SizeBytes(), systemConfigurations.HostIP(), systemConfigurations.OverlayPort(),
+	overlay := chord.New(guid.SizeBytes(), systemConfigurations.HostIP(), systemConfigurations.OverlayPort(),
 		systemConfigurations.ChordVirtualNodes(), systemConfigurations.ChordNumSuccessors(), systemConfigurations.ChordTimeout())
 
 	// Create CARAVELA's Remote Client

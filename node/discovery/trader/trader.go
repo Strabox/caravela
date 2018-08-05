@@ -1,6 +1,7 @@
 package trader
 
 import (
+	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
@@ -72,6 +73,7 @@ func (trader *Trader) start() {
 				if offer.Refresh() {
 					go func(offer *traderOffer) {
 						refreshed, err := trader.client.RefreshOffer(
+							context.Background(),
 							&types.Node{GUID: trader.guid.String()},
 							&types.Node{IP: offer.supplierIP},
 							&types.Offer{ID: int64(offer.ID())},
@@ -146,6 +148,7 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 			successorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
 			if trader.handledResources.Equals(*successorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
+					context.Background(),
 					&types.Node{
 						GUID: trader.guid.String(),
 					},
@@ -168,6 +171,7 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 			predecessorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if trader.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
+					context.Background(),
 					&types.Node{GUID: trader.guid.String()},
 					&types.Node{IP: predecessor.IP(), GUID: predecessor.GUID().String()},
 					false,
@@ -263,7 +267,7 @@ func (trader *Trader) haveOffers() bool {
 func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool) {
 	log.Debugf(util.LogTag("TRADER")+"ADVERTISE offers, From: %s", trader.guid.Short())
 
-	overlayNeighbors, err := trader.overlay.Neighbors(trader.guid.Bytes())
+	overlayNeighbors, err := trader.overlay.Neighbors(context.Background(), trader.guid.Bytes())
 	if err != nil {
 		return
 	}
@@ -275,6 +279,7 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 
 			if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {
 				trader.client.AdvertiseOffersNeighbor(
+					context.Background(),
 					&types.Node{GUID: trader.guid.String()},
 					&types.Node{IP: overlayNeighbor.IP(), GUID: nodeGUID.String()},
 					&types.Node{IP: trader.config.Host.IP, GUID: trader.guid.String()},
@@ -300,6 +305,7 @@ func (trader *Trader) RefreshOffersSim() {
 	for _, offer := range trader.offers {
 		if offer.Refresh() {
 			refreshed, err := trader.client.RefreshOffer(
+				context.Background(),
 				&types.Node{GUID: trader.guid.String()},
 				&types.Node{IP: offer.supplierIP},
 				&types.Offer{ID: int64(offer.ID())},

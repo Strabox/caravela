@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"github.com/strabox/caravela/api/client"
 	"github.com/urfave/cli"
 )
@@ -18,7 +19,7 @@ func stopContainers(c *cli.Context) {
 	// Create a user client of the CARAVELA system
 	caravelaClient := client.NewCaravelaIP(c.GlobalString("ip"))
 
-	err := caravelaClient.StopContainers(containersIDs)
+	err := caravelaClient.StopContainers(context.Background(), containersIDs)
 	if err != nil {
 		fatalPrintf("Problem stopping the containers: %s\n", err)
 	}

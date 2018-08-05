@@ -1,9 +1,10 @@
 package user
 
 import (
+	"context"
 	"github.com/strabox/caravela/api/types"
 )
 
 type localScheduler interface {
-	SubmitContainers([]types.ContainerConfig) ([]types.ContainerStatus, error)
+	SubmitContainers(ctx context.Context, containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error)
 }

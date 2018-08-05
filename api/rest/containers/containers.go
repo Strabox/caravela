@@ -14,15 +14,15 @@ func Init(router *mux.Router, nodeContainers Containers) {
 	router.Handle(rest.ContainersBaseEndpoint, rest.AppHandler(stopLocalContainer)).Methods(http.MethodDelete)
 }
 
-func stopLocalContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func stopLocalContainer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var stopContainerMsg rest.StopLocalContainerMsg
 
-	err := rest.ReceiveJSONFromHttp(w, r, &stopContainerMsg)
+	err := rest.ReceiveJSONFromHttp(w, req, &stopContainerMsg)
 	if err != nil {
 		return nil, err
 	}
 	log.Infof("<-- STOP Local Container ID: %s", stopContainerMsg.ContainerID)
 
-	err = nodeContainersAPI.StopLocalContainer(stopContainerMsg.ContainerID)
+	err = nodeContainersAPI.StopLocalContainer(req.Context(), stopContainerMsg.ContainerID)
 	return nil, err
 }

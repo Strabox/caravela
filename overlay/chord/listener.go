@@ -11,7 +11,7 @@ import (
 //Used to handle events fired by the chord overlay.
 //The listener let the important events bubble up into Node layer using a provided interface called OverlayMembership.
 type Listener struct {
-	chordOverlay *Overlay // Chord's overlay
+	chordOverlay *Chord // Chord's overlay
 }
 
 // Fired when the a new predecessor of the local node appears in the overlay.

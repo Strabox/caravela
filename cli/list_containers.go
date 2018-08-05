@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"github.com/strabox/caravela/api/client"
 	"github.com/urfave/cli"
@@ -11,7 +12,7 @@ func listContainer(c *cli.Context) {
 	// Create a user client of the CARAVELA system
 	caravelaClient := client.NewCaravelaIP(c.GlobalString("ip"))
 
-	containersStatus, err := caravelaClient.ListContainers()
+	containersStatus, err := caravelaClient.ListContainers(context.Background())
 	if err != nil {
 		fatalPrintf("Error with request: %s\n", err)
 	}

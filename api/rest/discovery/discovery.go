@@ -18,10 +18,10 @@ func Init(router *mux.Router, nodeDiscovery Discovery) {
 	router.Handle(rest.DiscoveryNeighborOfferBaseEndpoint, rest.AppHandler(neighborOffers)).Methods(http.MethodPatch)
 }
 
-func createOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func createOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var createOfferMsg rest.CreateOfferMsg
 
-	err := rest.ReceiveJSONFromHttp(w, r, &createOfferMsg)
+	err := rest.ReceiveJSONFromHttp(w, req, &createOfferMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -29,14 +29,14 @@ func createOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		createOfferMsg.ToNode.GUID, createOfferMsg.Offer.ID, createOfferMsg.Offer.Amount,
 		createOfferMsg.Offer.Resources.CPUs, createOfferMsg.Offer.Resources.RAM, createOfferMsg.FromNode.IP)
 
-	nodeDiscoveryAPI.CreateOffer(&createOfferMsg.FromNode, &createOfferMsg.ToNode, &createOfferMsg.Offer)
+	nodeDiscoveryAPI.CreateOffer(req.Context(), &createOfferMsg.FromNode, &createOfferMsg.ToNode, &createOfferMsg.Offer)
 	return nil, nil
 }
 
-func refreshOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func refreshOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var offerRefreshMsg rest.RefreshOfferMsg
 
-	err := rest.ReceiveJSONFromHttp(w, r, &offerRefreshMsg)
+	err := rest.ReceiveJSONFromHttp(w, req, &offerRefreshMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -44,14 +44,14 @@ func refreshOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	log.Infof("<-- REFRESH OFFER ID: %d, From: %s", offerRefreshMsg.Offer.ID,
 		offerRefreshMsg.FromTrader.GUID)
 
-	res := nodeDiscoveryAPI.RefreshOffer(&offerRefreshMsg.FromTrader, &offerRefreshMsg.Offer)
+	res := nodeDiscoveryAPI.RefreshOffer(req.Context(), &offerRefreshMsg.FromTrader, &offerRefreshMsg.Offer)
 	return rest.RefreshOfferResponseMsg{Refreshed: res}, nil
 }
 
-func removeOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func removeOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var offerRemoveMsg rest.OfferRemoveMsg
 
-	err := rest.ReceiveJSONFromHttp(w, r, &offerRemoveMsg)
+	err := rest.ReceiveJSONFromHttp(w, req, &offerRemoveMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -59,33 +59,33 @@ func removeOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	log.Infof("<-- REMOVE OFFER To: %s, ID: %d, From: %s", offerRemoveMsg.ToTrader.GUID,
 		offerRemoveMsg.Offer.ID, offerRemoveMsg.FromSupplier.IP)
 
-	nodeDiscoveryAPI.RemoveOffer(&offerRemoveMsg.FromSupplier, &offerRemoveMsg.ToTrader, &offerRemoveMsg.Offer)
+	nodeDiscoveryAPI.RemoveOffer(req.Context(), &offerRemoveMsg.FromSupplier, &offerRemoveMsg.ToTrader, &offerRemoveMsg.Offer)
 	return nil, nil
 }
 
-func getOffers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func getOffers(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var getOffersMsg rest.GetOffersMsg
 
-	err := rest.ReceiveJSONFromHttp(w, r, &getOffersMsg)
+	err := rest.ReceiveJSONFromHttp(w, req, &getOffersMsg)
 	if err != nil {
 		return nil, err
 	}
 	log.Infof("<-- GET OFFERS To: %s", getOffersMsg.ToTrader.GUID)
 
-	return nodeDiscoveryAPI.GetOffers(&getOffersMsg.FromNode, &getOffersMsg.ToTrader, getOffersMsg.Relay), nil
+	return nodeDiscoveryAPI.GetOffers(req.Context(), &getOffersMsg.FromNode, &getOffersMsg.ToTrader, getOffersMsg.Relay), nil
 }
 
-func neighborOffers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func neighborOffers(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var neighborOffersMsg rest.NeighborOffersMsg
 
-	err := rest.ReceiveJSONFromHttp(w, r, &neighborOffersMsg)
+	err := rest.ReceiveJSONFromHttp(w, req, &neighborOffersMsg)
 	if err != nil {
 		return nil, err
 	}
 	log.Infof("<-- NEIGHBOR OFFERS To: %s, TraderOffering: <%s;%s>",
 		neighborOffersMsg.ToNeighbor.GUID, neighborOffersMsg.NeighborOffering.IP, neighborOffersMsg.NeighborOffering.GUID)
 
-	nodeDiscoveryAPI.AdvertiseOffersNeighbor(&neighborOffersMsg.FromNeighbor, &neighborOffersMsg.ToNeighbor,
+	nodeDiscoveryAPI.AdvertiseOffersNeighbor(req.Context(), &neighborOffersMsg.FromNeighbor, &neighborOffersMsg.ToNeighbor,
 		&neighborOffersMsg.NeighborOffering)
 
 	return nil, nil

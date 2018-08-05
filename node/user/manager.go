@@ -1,11 +1,13 @@
 package user
 
 import (
+	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
+	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -31,8 +33,10 @@ func NewManager(config *configuration.Configuration, localScheduler localSchedul
 	}
 }
 
-func (man *Manager) SubmitContainers(containerConfigs []types.ContainerConfig) error {
-	containersStatus, err := man.localScheduler.SubmitContainers(containerConfigs)
+func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) error {
+	newCtx := context.WithValue(ctx, types.RequestCtxKey(types.RequestIDKey), guid.NewGUIDRandom().String())
+	log.Debug(newCtx.Value(types.RequestCtxKey(types.RequestIDKey)))
+	containersStatus, err := man.localScheduler.SubmitContainers(newCtx, containerConfigs)
 	if err != nil {
 		return err
 	}
@@ -48,14 +52,14 @@ func (man *Manager) SubmitContainers(containerConfigs []types.ContainerConfig) e
 	return nil
 }
 
-func (man *Manager) StopContainers(containerIDs []string) error {
+func (man *Manager) StopContainers(ctx context.Context, containerIDs []string) error {
 	errMsg := "Failed to stop:"
 	fail := false
 	for _, contID := range containerIDs {
 		contTmp, contExist := man.containers.Load(contID)
 		container, ok := contTmp.(*deployedContainer)
 		if contExist && ok {
-			if err := man.userRemoteCli.StopLocalContainer(&types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
+			if err := man.userRemoteCli.StopLocalContainer(ctx, &types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
 				man.containers.Delete(contID)
 			} else {
 				fail = true

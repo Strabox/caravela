@@ -1,6 +1,7 @@
 package supplier
 
 import (
+	"context"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
@@ -16,7 +17,7 @@ type OffersManager interface {
 
 	// FindOffers searches in the system (with help of the overlay) for node's that have offers that offer at least the
 	// same resources as targetResources.
-	FindOffers(targetResources resources.Resources) []types.AvailableOffer
+	FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer
 
 	// CreateOffer creates a new offer in the system given the current local's available resources.
 	CreateOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error)

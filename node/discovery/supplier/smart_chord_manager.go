@@ -1,6 +1,7 @@
 package supplier
 
 import (
+	"context"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
@@ -34,7 +35,7 @@ func (man *SmartChordOffersManager) Init(resourcesMap *resources.Mapping, overla
 	man.remoteClient = remoteClient
 }
 
-func (man *SmartChordOffersManager) FindOffers(targetResources resources.Resources) []types.AvailableOffer {
+func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
 	var destinationGUID *guid.GUID = nil
 	findPhase := 0
 	for {
@@ -52,11 +53,12 @@ func (man *SmartChordOffersManager) FindOffers(targetResources resources.Resourc
 		res, _ := man.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS %s", res)
 
-		overlayNodes, _ := man.overlay.Lookup(destinationGUID.Bytes())
+		overlayNodes, _ := man.overlay.Lookup(ctx, destinationGUID.Bytes())
 		overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 		for _, node := range overlayNodes {
 			offers, err := man.remoteClient.GetOffers(
+				ctx,
 				&types.Node{GUID: ""},
 				&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 				true,
@@ -74,13 +76,13 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
 	destinationGUID, _ := man.resourcesMapping.RandGUID(availableResources)
-	overlayNodes, _ = man.overlay.Lookup(destinationGUID.Bytes())
+	overlayNodes, _ = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
 	overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 	// .. try search nodes in the beginning of the original target resource range region
 	if len(overlayNodes) == 0 {
 		destinationGUID := man.resourcesMapping.FirstGUID(availableResources)
-		overlayNodes, _ = man.overlay.Lookup(destinationGUID.Bytes())
+		overlayNodes, _ = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
 		overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 	}
 
@@ -92,7 +94,7 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 				availableResources.String(), err)
 			return nil, errors.New("no nodes available to accept offer") // Wait fot the next tick to try supply resources
 		}
-		overlayNodes, _ = man.overlay.Lookup(destinationGUID.Bytes())
+		overlayNodes, _ = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
 		overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 	}
 
@@ -100,7 +102,7 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 	chosenNode := overlayNodes[0]
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
-	err = man.remoteClient.CreateOffer(
+	err = man.remoteClient.CreateOffer(context.Background(),
 		&types.Node{IP: man.configs.HostIP(), GUID: ""},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{
