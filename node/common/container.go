@@ -5,8 +5,11 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 )
 
-// Base structure for a container running in the system.
+const ContainerShortIDSize = 12
+
+// Container base structure for a container running in the system.
 type Container struct {
+	name      string
 	imageKey  string
 	args      []string
 	portMaps  []types.PortMapping
@@ -15,10 +18,11 @@ type Container struct {
 	id string
 }
 
-func NewContainer(imageKey string, args []string, portMaps []types.PortMapping,
+func NewContainer(name, imageKey string, args []string, portMaps []types.PortMapping,
 	resources resources.Resources, id string) *Container {
 
 	return &Container{
+		name:     name,
 		imageKey: imageKey,
 		args:     args,
 		portMaps: portMaps,
@@ -26,6 +30,10 @@ func NewContainer(imageKey string, args []string, portMaps []types.PortMapping,
 		resources: resources,
 		id:        id,
 	}
+}
+
+func (cont *Container) Name() string {
+	return cont.name
 }
 
 func (cont *Container) ImageKey() string {
@@ -49,5 +57,5 @@ func (cont *Container) ID() string {
 }
 
 func (cont *Container) ShortID() string {
-	return cont.id[:12]
+	return cont.id[:ContainerShortIDSize]
 }

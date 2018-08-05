@@ -5,8 +5,7 @@ import (
 )
 
 type User interface {
-	SubmitContainers(containerImageKey string, portMappings []types.PortMapping, containerArgs []string,
-		cpus int, ram int) error
+	SubmitContainers([]types.ContainerConfig) error
 	ListContainers() []types.ContainerStatus
 	StopContainers(containersIDs []string) error
 	Stop()

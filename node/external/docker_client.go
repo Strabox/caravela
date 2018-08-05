@@ -15,8 +15,7 @@ type DockerClient interface {
 	CheckContainerStatus(containerID string) (container.ContainerStatus, error)
 
 	// Runs a container in the Docker engine.
-	RunContainer(imageKey string, portMappings []types.PortMapping, args []string, cpus int64,
-		ram int) (string, error)
+	RunContainer(contConfig types.ContainerConfig) (*types.ContainerStatus, error)
 
 	// Remove a container from the Docker engine.
 	RemoveContainer(containerID string) error

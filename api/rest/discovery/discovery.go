@@ -45,8 +45,7 @@ func refreshOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 		offerRefreshMsg.FromTrader.GUID)
 
 	res := nodeDiscoveryAPI.RefreshOffer(&offerRefreshMsg.FromTrader, &offerRefreshMsg.Offer)
-	refreshOfferResp := rest.RefreshOfferResponseMsg{Refreshed: res}
-	return refreshOfferResp, nil
+	return rest.RefreshOfferResponseMsg{Refreshed: res}, nil
 }
 
 func removeOffer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
@@ -73,8 +72,7 @@ func getOffers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	}
 	log.Infof("<-- GET OFFERS To: %s", getOffersMsg.ToTrader.GUID)
 
-	offers := nodeDiscoveryAPI.GetOffers(&getOffersMsg.FromNode, &getOffersMsg.ToTrader, getOffersMsg.Relay)
-	return rest.OffersListMsg{Offers: offers}, nil
+	return nodeDiscoveryAPI.GetOffers(&getOffersMsg.FromNode, &getOffersMsg.ToTrader, getOffersMsg.Relay), nil
 }
 
 func neighborOffers(w http.ResponseWriter, r *http.Request) (interface{}, error) {

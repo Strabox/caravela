@@ -4,7 +4,7 @@ Backend = "DockerHub"
 [Caravela]
 APIPort = 8001
 APITimeout = "5s"
-OffersStrategy = "chordDefault"
+OffersStrategy = "chord-smart"
 SupplyingInterval = "30s"
 SpreadOffersInterval = "30s"
 RefreshesCheckInterval = "30s"
@@ -17,20 +17,26 @@ ResourcesOvercommit = 50
     # Cpu Cores Partitions
     [[Caravela.CpuCoresPartitions]]
     Cores = 1
-    Percentage = 50
+    Percentage = 25
     [[Caravela.CpuCoresPartitions]]
     Cores = 2
     Percentage = 50
+    [[Caravela.CpuCoresPartitions]]
+    Cores = 4
+    Percentage = 25
     # Ram Partitions
     [[Caravela.RamPartitions]]
     Ram = 256
-    Percentage = 50
+    Percentage = 25
     [[Caravela.RamPartitions]]
     Ram = 512
     Percentage = 50
+     [[Caravela.RamPartitions]]
+    Ram = 1024
+    Percentage = 25
 
 [Overlay]
-OverlayPort = 8000
+OverlayPort = 8002
 ChordTimeout = "3s"
 ChordVirtualNodes = 12
 ChordNumSuccessors = 4

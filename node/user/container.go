@@ -11,11 +11,11 @@ type deployedContainer struct {
 	suppIP            string // IP of the supplier node
 }
 
-func newContainer(imageKey string, args []string, portMaps []types.PortMapping,
+func newContainer(name, imageKey string, args []string, portMaps []types.PortMapping,
 	resources resources.Resources, id string, supplierIP string) *deployedContainer {
 
 	return &deployedContainer{
-		Container: common.NewContainer(imageKey, args, portMaps, resources, id),
+		Container: common.NewContainer(name, imageKey, args, portMaps, resources, id),
 		suppIP:    supplierIP,
 	}
 }

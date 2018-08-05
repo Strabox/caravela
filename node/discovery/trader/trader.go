@@ -290,6 +290,8 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 	}
 }
 
+// ======================= External Services (Consumed during simulation ONLY) =========================
+
 //Simulation
 func (trader *Trader) RefreshOffersSim() {
 	trader.offersMutex.Lock()

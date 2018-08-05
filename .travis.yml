@@ -19,5 +19,5 @@ after_success:
     # Logout from the docker daemon
     - docker logout
 notifications:
-    on_success: never
-    on_failure: always
+  on_success: change
+  on_failure: change

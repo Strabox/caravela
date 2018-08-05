@@ -24,7 +24,7 @@ BINARY_NAME_WIN=$(BINARY_NAME)_win$(EXE)
 
 ############################## COMMANDS ############################
 
-all: test build
+all: build test
 
 build:
 	@echo Building for the current machine settings...

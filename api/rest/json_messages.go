@@ -2,10 +2,6 @@ package rest
 
 import "github.com/strabox/caravela/api/types"
 
-/* =================================================================================
-									Request Messages
-   ================================================================================= */
-
 // Create offer struct/JSON used in REST APIs when a supplier offer resources to be used by others.
 type CreateOfferMsg struct {
 	ToNode   types.Node  `json:"ToNode"`
@@ -40,9 +36,9 @@ type GetOffersMsg struct {
 
 // Launch container struct/JSON used in the REST APIs.
 type LaunchContainerMsg struct {
-	FromBuyer       types.Node            `json:"FromBuyer"`
-	Offer           types.Offer           `json:"Offer"`
-	ContainerConfig types.ContainerConfig `json:"Container"`
+	FromBuyer         types.Node              `json:"FromBuyer"`
+	Offer             types.Offer             `json:"Offer"`
+	ContainersConfigs []types.ContainerConfig `json:"ContainersConfigs"`
 }
 
 // Stop container struct/JSON used in the REST APIs
@@ -55,13 +51,4 @@ type NeighborOffersMsg struct {
 	FromNeighbor     types.Node `json:"FromNeighbor"`
 	ToNeighbor       types.Node `json:"ToNeighbor"`
 	NeighborOffering types.Node `json:"NeighborOffering"`
-}
-
-/* =================================================================================
-									Response Messages
-   ================================================================================= */
-
-// List of offers struct/JSON used in the REST APIs.
-type OffersListMsg struct {
-	Offers []types.AvailableOffer `json:"Offers"` // A list of offers that a trader has
 }

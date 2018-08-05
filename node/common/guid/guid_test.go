@@ -110,12 +110,36 @@ func TestGuid_GenerateRandom_BetweenTwoDifferentGUIDs(t *testing.T) {
 	}
 
 	// Hack: Generate several randoms to check in order to improve our statistical success :)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 100000; i++ {
 		randGUID, _ := lowerGUID.GenerateInnerRandomGUID(*higherGUID)
 
 		_, exist := acceptableOutputs[randGUID.Int64()]
 		assert.True(t, exist, "Random GUID is not in acceptable range")
 		assert.Equal(t, SizeBytes(), len(randGUID.Bytes()), "Byte array return has different length from the GUID size")
+	}
+}
+
+func TestGuid_GenerateRandom_BetweenTwoDifferentGUIDsConcurrently(t *testing.T) {
+	lowerBound := int64(0)
+	higherBound := int64(5)
+	lowerGUID := NewGUIDInteger(lowerBound)
+	higherGUID := NewGUIDInteger(higherBound)
+	// Set of acceptable outputs of the random GUID generation
+	acceptableOutputs := make(map[int64]interface{})
+	for i := lowerBound; i < higherBound; i++ {
+		acceptableOutputs[i] = nil
+	}
+
+	// Hack: Generate several randoms to check in order to improve our statistical success :)
+	for i := 0; i < 100000; i++ {
+		// Use multiple goroutines to check if it is safe.
+		go func() {
+			randGUID, _ := lowerGUID.GenerateInnerRandomGUID(*higherGUID)
+
+			_, exist := acceptableOutputs[randGUID.Int64()]
+			assert.True(t, exist, "Random GUID is not in acceptable range")
+			assert.Equal(t, SizeBytes(), len(randGUID.Bytes()), "Byte array return has different length from the GUID size")
+		}()
 	}
 }
 

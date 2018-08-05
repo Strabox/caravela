@@ -4,6 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/types"
 	"net/http"
 )
 
@@ -19,43 +20,39 @@ func Init(router *mux.Router, userNode User) {
 
 func runContainer(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var runContainerMsg rest.RunContainerMsg
+	var runContainerConfigs []types.ContainerConfig
 
-	err = rest.ReceiveJSONFromHttp(w, r, &runContainerMsg)
+	err = rest.ReceiveJSONFromHttp(w, r, &runContainerConfigs)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("<-- RUN Img: %s, Args: %v, PortMaps: %v, Res: <%d;%d>",
-		runContainerMsg.ContainerImageKey, runContainerMsg.Arguments, runContainerMsg.PortMappings,
-		runContainerMsg.CPUs, runContainerMsg.RAM)
+	for i, containerConfig := range runContainerConfigs {
+		log.Infof("<-- RUN [%d] Img: %s, Args: %v, PortMaps: %v, Res: <%d;%d;%d>, GrpPolicy: %d",
+			i, containerConfig.ImageKey, containerConfig.Args, containerConfig.PortMappings,
+			containerConfig.Resources.CPUPower, containerConfig.Resources.CPUs, containerConfig.Resources.RAM,
+			containerConfig.GroupPolicy)
+	}
 
-	err = userNodeAPI.SubmitContainers(runContainerMsg.ContainerImageKey, runContainerMsg.PortMappings,
-		runContainerMsg.Arguments, runContainerMsg.CPUs, runContainerMsg.RAM)
-	return nil, err
+	return nil, userNodeAPI.SubmitContainers(runContainerConfigs)
 }
 
 func stopContainers(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	var err error
-	var stopContainersMsg rest.StopContainersMsg
+	var stopContainersIDs []string
 
-	err = rest.ReceiveJSONFromHttp(w, r, &stopContainersMsg)
+	err = rest.ReceiveJSONFromHttp(w, r, &stopContainersIDs)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("<-- STOP Containers: %v", stopContainersMsg.ContainersIDs)
+	log.Infof("<-- STOP Containers: %v", stopContainersIDs)
 
-	err = userNodeAPI.StopContainers(stopContainersMsg.ContainersIDs)
-	return nil, err
+	return nil, userNodeAPI.StopContainers(stopContainersIDs)
 }
 
 func listContainers(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
 	log.Infof("<-- LIST Containers")
 
-	containersStatus := userNodeAPI.ListContainers()
-
-	return rest.ContainersStatusMsg{
-		ContainersStatus: containersStatus,
-	}, nil
+	return userNodeAPI.ListContainers(), nil
 }
 
 func exit(_ http.ResponseWriter, _ *http.Request) (interface{}, error) {
