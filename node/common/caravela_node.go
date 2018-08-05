@@ -4,17 +4,17 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 )
 
-// Represents a remote CARAVELA node.
+// RemoteNode represents a remote CARAVELA node.
 type RemoteNode struct {
 	ip   string
 	guid *guid.GUID
 }
 
-func NewRemoteNode(ipAddress string, guid guid.GUID) *RemoteNode {
-	res := &RemoteNode{}
-	res.ip = ipAddress
-	res.guid = &guid
-	return res
+func NewRemoteNode(IPAddress string, guid guid.GUID) *RemoteNode {
+	return &RemoteNode{
+		ip:   IPAddress,
+		guid: &guid,
+	}
 }
 
 func (rm *RemoteNode) IP() string {

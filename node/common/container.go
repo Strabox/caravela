@@ -7,7 +7,7 @@ import (
 
 const ContainerShortIDSize = 12
 
-// Base structure for a container running in the system.
+// Container base structure for a container running in the system.
 type Container struct {
 	name      string
 	imageKey  string

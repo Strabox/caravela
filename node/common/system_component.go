@@ -2,7 +2,7 @@ package common
 
 import "sync"
 
-// Provides a common interface for all the internal independent components of a node.
+// Component provides a common interface for all the internal independent components of a node.
 // Providing the common interface of a component.
 type Component interface {
 	// Starts the component
@@ -13,14 +13,12 @@ type Component interface {
 	isWorking() bool
 }
 
-// Base object for all system's internal components.
+// NodeComponent is the base object for all system's internal components.
 type NodeComponent struct {
 	mutex      sync.Mutex
 	working    bool
 	simulation bool
 }
-
-//func NewNodeComponent() *NodeComponent
 
 func (comp *NodeComponent) Started(simulation bool, startFunction func()) {
 	comp.mutex.Lock()
