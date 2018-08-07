@@ -8,7 +8,6 @@ import (
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
-	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -49,8 +48,7 @@ func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []typ
 	}
 
 	// Contact local scheduler to submit the request into the system
-	reqCtx := context.WithValue(ctx, types.RequestIDKey, guid.NewGUIDRandom().String())
-	containersStatus, err := man.localScheduler.SubmitContainers(reqCtx, containerConfigs)
+	containersStatus, err := man.localScheduler.SubmitContainers(ctx, containerConfigs)
 	if err != nil {
 		return err
 	}
