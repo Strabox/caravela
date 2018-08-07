@@ -36,6 +36,7 @@ func (man *SmartChordOffersManager) Init(resourcesMap *resources.Mapping, overla
 func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
 	var destinationGUID *guid.GUID = nil
 	findPhase := 0
+	availableOffers := make([]types.AvailableOffer, 0)
 	for {
 		var err error = nil
 
@@ -43,9 +44,9 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 			destinationGUID, _ = man.resourcesMapping.RandGUID(targetResources)
 		} else { // Random trader in higher resources zone
 			destinationGUID, err = man.resourcesMapping.HigherRandGUID(*destinationGUID, targetResources)
-			if err != nil {
-				return make([]types.AvailableOffer, 0)
-			} // No more resource partitions to search
+			if err != nil { // No more resource partitions to search
+				return availableOffers
+			}
 		}
 
 		res, _ := man.resourcesMapping.ResourcesByGUID(*destinationGUID)
@@ -62,9 +63,14 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 				true,
 			)
 			if (err == nil) && (len(offers) != 0) {
-				return offers // TODO: Request to other nodes (successors for the offers)
+				availableOffers = append(availableOffers, offers...)
 			}
 		}
+
+		if len(availableOffers) > 0 {
+			return availableOffers
+		}
+
 		findPhase++
 	}
 }
