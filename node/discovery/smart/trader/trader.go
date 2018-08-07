@@ -135,6 +135,11 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 		for _, traderOffer := range trader.offers {
 			allOffers[index].SupplierIP = traderOffer.SupplierIP()
 			allOffers[index].ID = int64(traderOffer.ID())
+			allOffers[index].Amount = traderOffer.Amount()
+			allOffers[index].Resources = types.Resources{
+				CPUs: traderOffer.Resources().CPUs(),
+				RAM:  traderOffer.Resources().RAM(),
+			}
 			index++
 		}
 		return allOffers
@@ -363,6 +368,6 @@ func (trader *Trader) Stop() {
 	})
 }
 
-func (trader *Trader) isWorking() bool {
+func (trader *Trader) IsWorking() bool {
 	return trader.Working()
 }

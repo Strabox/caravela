@@ -97,7 +97,7 @@ func (sup *Supplier) startSupplying() {
 
 // Find a list active Offers that best suit the target resources given.
 func (sup *Supplier) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	if !sup.isWorking() {
+	if !sup.IsWorking() {
 		panic(errors.New("can't find offers, supplier not working"))
 	}
 
@@ -110,7 +110,7 @@ func (sup *Supplier) FindOffers(ctx context.Context, targetResources resources.R
 
 // Tries refresh an offer. Called when a refresh message was received.
 func (sup *Supplier) RefreshOffer(fromTrader *types.Node, refreshOffer *types.Offer) bool {
-	if !sup.isWorking() {
+	if !sup.IsWorking() {
 		panic(errors.New("can't refresh offer, supplier not working"))
 	}
 
@@ -137,7 +137,7 @@ func (sup *Supplier) RefreshOffer(fromTrader *types.Node, refreshOffer *types.Of
 // Tries to obtain a subset of the resources represented by the given offer in order to deploy  a container.
 // It updates the respective trader that manages the offer.
 func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
-	if !sup.isWorking() {
+	if !sup.IsWorking() {
 		panic(errors.New("can't obtain resources, supplier not working"))
 	}
 
@@ -183,7 +183,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 
 // Release resources of an used offer into the supplier again in order to offer them again into the system.
 func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
-	if !sup.isWorking() {
+	if !sup.IsWorking() {
 		panic(errors.New("can't return resources, supplier not working"))
 	}
 
@@ -287,6 +287,6 @@ func (sup *Supplier) Stop() {
 	})
 }
 
-func (sup *Supplier) isWorking() bool {
+func (sup *Supplier) IsWorking() bool {
 	return sup.Working()
 }

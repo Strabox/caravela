@@ -14,18 +14,22 @@ import (
 const minimumDockerEngineVersion = "1.35"
 
 // Default port for the CARAVELA's API endpoints
-const caravelaAPIPort = 8001
+const defaultCaravelaAPIPort = 8001
 
 // Directory path to where search for the configuration file. (Directory of binary execution)
 const DefaultFilePath = "configuration.toml"
 
 // Configuration holds all the configurations parameters for the CARAVELA.
 type Configuration struct {
-	Host          host          `json:"Host"`
-	Caravela      caravela      `json:"Caravela"`
-	ImagesStorage imagesStorage `json:"ImagesStorage"`
-	Overlay       overlay       `json:"Overlay"`
+	Host          host                 `json:"Host"`
+	Caravela      caravela             `json:"Caravela"`
+	ImagesStorage imagesStorageBackend `json:"ImagesStorage"`
+	Overlay       overlay              `json:"Overlay"`
 }
+
+// ##################################################################################################
+// #                                          Host                                                  #
+// ##################################################################################################
 
 // Configurations for the local host node.
 type host struct {
@@ -33,39 +37,68 @@ type host struct {
 	DockerAPIVersion string `json:"DockerAPIVersion"` // API Version of the local node Docker's engine
 }
 
+// ##################################################################################################
+// #                                         Caravela                                               #
+// ##################################################################################################
+
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
 	Simulation              bool                `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
+	DiscoveryBackend        discoveryBackends   `json:"DiscoveryBackend"`        // Define what strategy is used to manage the offers
 	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
 	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
-	MaxRefreshesFailed      int                 `json:"MaxRefreshesFailed"`      // Maximum amount of refreshes that a supplier failed to reply
-	MaxRefreshesMissed      int                 `json:"MaxRefreshesMissed"`      // Maximum amount of refreshes a trader failed to send to the supplier
-	OffersStrategy          string              `json:"OffersStrategy"`          // Define what strategy is used to manage the offers
 	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
-	SupplyingInterval       duration            `json:"SupplyingInterval"`       // Interval for supplier to check if it is necessary offer resources
-	SpreadOffersInterval    duration            `json:"SpreadOffersInterval"`    // Interval for the trader to spread offer information into neighbors
-	RefreshesCheckInterval  duration            `json:"RefreshesCheckInterval"`  // Interval to check if the refreshes to its offers are being done
-	RefreshingInterval      duration            `json:"RefreshingInterval"`      // Interval for trader to send refresh messages to suppliers
-	RefreshMissedTimeout    duration            `json:"RefreshMissedTimeout"`    // Timeout for a refresh message
 	CPUPowerPartition       []CPUPowerPartition `json:"CPUPowerPartition"`       // GUID partitions for CPU power
 	CPUCoresPartitions      []CPUCoresPartition `json:"CPUCoresPartitions"`      // GUID partitions for the amount of CPU cores
 	RAMPartitions           []RAMPartition      `json:"RAMPartitions"`           // GUID partitions for the amount of RAM
 	ResourcesOvercommit     int                 `json:"ResourcesOvercommit"`     // Percentage of overcommit to apply to available resources
 }
 
+type discoveryBackends struct {
+	Backend            string                 `json:"Backend"` // Selected discovery backend.
+	SmartChordBackend  smartChordDiscBackend  //
+	RandomChordBackend randomChordDiscBackend //
+}
+
+type smartChordDiscBackend struct {
+	SupplyingInterval      duration `json:"SupplyingInterval"`      // Interval for supplier to check if it is necessary offer resources
+	SpreadOffersInterval   duration `json:"SpreadOffersInterval"`   // Interval for the trader to spread offer information into neighbors
+	RefreshesCheckInterval duration `json:"RefreshesCheckInterval"` // Interval to check if the refreshes to its offers are being done
+	RefreshingInterval     duration `json:"RefreshingInterval"`     // Interval for trader to send refresh messages to suppliers
+	RefreshMissedTimeout   duration `json:"RefreshMissedTimeout"`   // Timeout for a refresh message
+	MaxRefreshesFailed     int      `json:"MaxRefreshesFailed"`     // Maximum amount of refreshes that a supplier failed to reply
+	MaxRefreshesMissed     int      `json:"MaxRefreshesMissed"`     // Maximum amount of refreshes a trader failed to send to the supplier
+}
+
+type randomChordDiscBackend struct {
+	RandBackendMaxRetries int `json:"RandBackendMaxRetries"` // Maximum retries when discovering resources.
+}
+
+// ##################################################################################################
+// #                                    Images Storage                                              #
+// ##################################################################################################
+
 // Configuration for the CARAVELA's container image storage
-type imagesStorage struct {
+type imagesStorageBackend struct {
 	Backend string `json:"Backend"` // Type of storage of images used to share them
 }
 
+// ##################################################################################################
+// #                                        Overlay                                                 #
+// ##################################################################################################
+
 // Configurations for the node overlay
 type overlay struct {
-	Overlay            string   `json:"Overlay"`            // Overlay configured
-	OverlayPort        int      `json:"OverlayPort"`        // Port of the overlay endpoints
-	ChordTimeout       duration `json:"ChordTimeout"`       // Timeout for the chord messages
-	ChordVirtualNodes  int      `json:"ChordVirtualNodes"`  // Number of chord virtual nodes per physical node
-	ChordNumSuccessors int      `json:"ChordNumSuccessors"` // Number of chord successor nodes for a node
-	ChordHashSizeBits  int      `json:"ChordHashSizeBits"`  // Number of chord hash size (in bits)
+	Overlay     string `json:"Overlay"`     // Overlay configured
+	OverlayPort int    `json:"OverlayPort"` // Port of the overlay endpoints
+	Chord       chord  `json:"Chord"`       // overlay configurations
+}
+
+type chord struct {
+	Timeout       duration `json:"Timeout"`       // Timeout for the chord messages
+	VirtualNodes  int      `json:"VirtualNodes"`  // Number of chord virtual nodes per physical node
+	NumSuccessors int      `json:"NumSuccessors"` // Number of chord successor nodes for a node
+	HashSizeBits  int      `json:"HashSizeBits"`  // Number of chord hash size (in bits)
 }
 
 // Default returns the configuration structure with all the default values for the system to work.
@@ -78,18 +111,25 @@ func Default(hostIP string) *Configuration {
 			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
-			Simulation:              false,
-			APIPort:                 caravelaAPIPort,
-			OffersStrategy:          "chord-smart",
+			Simulation: false,
+			APIPort:    defaultCaravelaAPIPort,
+			DiscoveryBackend: discoveryBackends{
+				Backend: "chord-smart",
+				SmartChordBackend: smartChordDiscBackend{
+					SupplyingInterval:      duration{Duration: 45 * time.Second},
+					SpreadOffersInterval:   duration{Duration: 40 * time.Second},
+					RefreshesCheckInterval: duration{Duration: 30 * time.Second},
+					RefreshingInterval:     refreshingInterval,
+					MaxRefreshesFailed:     2,
+					MaxRefreshesMissed:     2,
+					RefreshMissedTimeout:   duration{Duration: refreshingInterval.Duration + (5 * time.Second)},
+				},
+				RandomChordBackend: randomChordDiscBackend{
+					RandBackendMaxRetries: 6,
+				},
+			},
 			APITimeout:              duration{Duration: 5 * time.Second},
 			CheckContainersInterval: duration{Duration: 30 * time.Second},
-			SupplyingInterval:       duration{Duration: 45 * time.Second},
-			SpreadOffersInterval:    duration{Duration: 40 * time.Second},
-			RefreshesCheckInterval:  duration{Duration: 30 * time.Second},
-			RefreshingInterval:      refreshingInterval,
-			MaxRefreshesFailed:      2,
-			MaxRefreshesMissed:      2,
-			RefreshMissedTimeout:    duration{Duration: refreshingInterval.Duration + (5 * time.Second)},
 			CPUPowerPartition: []CPUPowerPartition{
 				{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 25}},
 				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}},
@@ -104,16 +144,18 @@ func Default(hostIP string) *Configuration {
 				{RAM: 1024, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
 			ResourcesOvercommit: 50,
 		},
-		ImagesStorage: imagesStorage{
+		ImagesStorage: imagesStorageBackend{
 			Backend: "DockerHub",
 		},
 		Overlay: overlay{
-			Overlay:            "chord",
-			OverlayPort:        8000,
-			ChordTimeout:       duration{Duration: 5 * time.Second},
-			ChordVirtualNodes:  3,
-			ChordNumSuccessors: 3,
-			ChordHashSizeBits:  160,
+			Overlay:     "chord",
+			OverlayPort: 8000,
+			Chord: chord{
+				Timeout:       duration{Duration: 5 * time.Second},
+				VirtualNodes:  3,
+				NumSuccessors: 3,
+				HashSizeBits:  160,
+			},
 		},
 	}
 }
@@ -152,20 +194,16 @@ func ObtainExternal(hostIP string, config *Configuration) (*Configuration, error
 // validate validates the configuration to avoid/short-circuit many runtime errors due to
 // typos or completely non sense configurations, like negative ports.
 func (c *Configuration) validate() error {
+	// ==================================== Host ==============================================
+
 	if net.ParseIP(c.HostIP()) == nil {
 		return fmt.Errorf("invalid host ip address: %s", c.HostIP())
 	}
+
+	// =================================== Caravela ===========================================
+
 	if !util.IsValidPort(c.APIPort()) {
-		return fmt.Errorf("invalid api port: %d", c.APIPort())
-	}
-	if c.MaxRefreshesFailed() < 0 {
-		return fmt.Errorf("maximum number of failed refreshes must be a positive integer")
-	}
-	if c.MaxRefreshesMissed() < 0 {
-		return fmt.Errorf("maximum number of missed refreshes must be a positive integer")
-	}
-	if c.ResourcesOvercommit() <= 0 {
-		return fmt.Errorf("node's resources overcommit ratio must be a positive integer")
+		return fmt.Errorf("invalid backend port: %d", c.APIPort())
 	}
 
 	percentageAcc := 0
@@ -201,15 +239,42 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("the sum of RAM partitions size must equal to 100")
 	}
 
+	// ======================= Smart Chord Discovery Backend specific ==========================
+
+	if c.MaxRefreshesFailed() < 0 {
+		return fmt.Errorf("maximum number of failed refreshes must be a positive integer")
+	}
+
+	if c.MaxRefreshesMissed() < 0 {
+		return fmt.Errorf("maximum number of missed refreshes must be a positive integer")
+	}
+
+	if c.ResourcesOvercommit() <= 0 {
+		return fmt.Errorf("node's resources overcommit ratio must be a positive integer")
+	}
+
+	// ======================= Random Chord Discovery Backend specific ==========================
+
+	if c.RandBackendMaxRetries() <= 0 {
+		return fmt.Errorf("random discovery backend maximum retries must be a positive integer")
+	}
+
+	// ===================================== Overlay ============================================
+
 	if !util.IsValidPort(c.OverlayPort()) {
 		return fmt.Errorf("invalid overlay port: %d", c.OverlayPort())
 	}
+
+	// =================================== Chord Overlay =========================================
+
 	if c.ChordVirtualNodes() <= 0 {
 		return fmt.Errorf("chord's number of virtual nodes must be a positive integer")
 	}
+
 	if c.ChordNumSuccessors() <= 0 {
 		return fmt.Errorf("chord's number of successor nodes must be a positive integer")
 	}
+
 	if c.ChordHashSizeBits() < 56 {
 		return fmt.Errorf("chord's hash size bits nodes must be a positive integer greater or equal to 56")
 	}
@@ -231,7 +296,7 @@ func (c *Configuration) Print() {
 	log.Printf("Simulation:                  %t", c.Simulation())
 	log.Printf("Port:                        %d", c.APIPort())
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
-	log.Printf("Offer's Strategy:            %s", c.OffersStrategy())
+	log.Printf("Discovery Backend:           %s", c.DiscoveryBackend())
 	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
 	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
 	log.Printf("Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
@@ -283,6 +348,8 @@ func (c *Configuration) Print() {
 	log.Printf("##################################################################")
 }
 
+// ============================ Host ==============================
+
 func (c *Configuration) HostIP() string {
 	return c.Host.IP
 }
@@ -291,9 +358,7 @@ func (c *Configuration) DockerAPIVersion() string {
 	return c.Host.DockerAPIVersion
 }
 
-func (c *Configuration) ImagesStorageBackend() string {
-	return c.ImagesStorage.Backend
-}
+// ========================== Caravela =============================
 
 func (c *Configuration) Simulation() bool {
 	return c.Caravela.Simulation
@@ -309,38 +374,6 @@ func (c *Configuration) APITimeout() time.Duration {
 
 func (c *Configuration) CheckContainersInterval() time.Duration {
 	return c.Caravela.CheckContainersInterval.Duration
-}
-
-func (c *Configuration) SpreadOffersInterval() time.Duration {
-	return c.Caravela.SpreadOffersInterval.Duration
-}
-
-func (c *Configuration) OffersStrategy() string {
-	return c.Caravela.OffersStrategy
-}
-
-func (c *Configuration) SupplyingInterval() time.Duration {
-	return c.Caravela.SupplyingInterval.Duration
-}
-
-func (c *Configuration) RefreshesCheckInterval() time.Duration {
-	return c.Caravela.RefreshesCheckInterval.Duration
-}
-
-func (c *Configuration) RefreshingInterval() time.Duration {
-	return c.Caravela.RefreshingInterval.Duration
-}
-
-func (c *Configuration) MaxRefreshesMissed() int {
-	return c.Caravela.MaxRefreshesMissed
-}
-
-func (c *Configuration) MaxRefreshesFailed() int {
-	return c.Caravela.MaxRefreshesFailed
-}
-
-func (c *Configuration) RefreshMissedTimeout() time.Duration {
-	return c.Caravela.RefreshMissedTimeout.Duration
 }
 
 func (c *Configuration) CPUPowerPartitions() []CPUPowerPartition {
@@ -359,6 +392,56 @@ func (c *Configuration) ResourcesOvercommit() int {
 	return c.Caravela.ResourcesOvercommit
 }
 
+// ========================== Discovery Backend ================================
+
+func (c *Configuration) DiscoveryBackend() string {
+	return c.Caravela.DiscoveryBackend.Backend
+}
+
+// ================== Smart Chord Discovery Backend specific ===================
+
+func (c *Configuration) SpreadOffersInterval() time.Duration {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.SpreadOffersInterval.Duration
+}
+
+func (c *Configuration) SupplyingInterval() time.Duration {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.SupplyingInterval.Duration
+}
+
+func (c *Configuration) RefreshesCheckInterval() time.Duration {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.RefreshesCheckInterval.Duration
+}
+
+func (c *Configuration) RefreshingInterval() time.Duration {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.RefreshingInterval.Duration
+}
+
+func (c *Configuration) MaxRefreshesMissed() int {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.MaxRefreshesMissed
+}
+
+func (c *Configuration) MaxRefreshesFailed() int {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.MaxRefreshesFailed
+}
+
+func (c *Configuration) RefreshMissedTimeout() time.Duration {
+	return c.Caravela.DiscoveryBackend.SmartChordBackend.RefreshMissedTimeout.Duration
+}
+
+// =================== Random Chord Discovery Backend specific ==============
+
+func (c *Configuration) RandBackendMaxRetries() int {
+	return c.Caravela.DiscoveryBackend.RandomChordBackend.RandBackendMaxRetries
+}
+
+// ========================= Images Storage Backend =========================
+
+func (c *Configuration) ImagesStorageBackend() string {
+	return c.ImagesStorage.Backend
+}
+
+// =============================== Overlay ==================================
+
 func (c *Configuration) OverlayName() string {
 	return c.Overlay.Overlay
 }
@@ -367,18 +450,20 @@ func (c *Configuration) OverlayPort() int {
 	return c.Overlay.OverlayPort
 }
 
+// =========================== Chord's Specific =============================
+
 func (c *Configuration) ChordTimeout() time.Duration {
-	return c.Overlay.ChordTimeout.Duration
+	return c.Overlay.Chord.Timeout.Duration
 }
 
 func (c *Configuration) ChordVirtualNodes() int {
-	return c.Overlay.ChordVirtualNodes
+	return c.Overlay.Chord.VirtualNodes
 }
 
 func (c *Configuration) ChordNumSuccessors() int {
-	return c.Overlay.ChordNumSuccessors
+	return c.Overlay.Chord.NumSuccessors
 }
 
 func (c *Configuration) ChordHashSizeBits() int {
-	return c.Overlay.ChordHashSizeBits
+	return c.Overlay.Chord.HashSizeBits
 }

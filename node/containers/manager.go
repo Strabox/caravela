@@ -82,7 +82,7 @@ func (man *Manager) checkDeployedContainers() {
 // Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
 func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, containersConfigs []types.ContainerConfig,
 	totalResourcesNecessary resources.Resources) ([]types.ContainerStatus, error) {
-	if !man.isWorking() {
+	if !man.IsWorking() {
 		panic(fmt.Errorf("can't start container, container manager not working"))
 	}
 
@@ -187,6 +187,6 @@ func (man *Manager) Stop() {
 	})
 }
 
-func (man *Manager) isWorking() bool {
+func (man *Manager) IsWorking() bool {
 	return man.Working()
 }

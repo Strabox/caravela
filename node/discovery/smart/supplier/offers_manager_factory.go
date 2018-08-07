@@ -17,7 +17,6 @@ var manageOffers = make(map[string]ManageOffersFactory)
 // init initializes our predefined offers managers.
 func init() {
 	RegisterOffersStrategy("chord-smart", newSmartChordManageOffers)
-	RegisterOffersStrategy("chord-random", newRandomOffersManager)
 }
 
 // RegisterOffersStrategy can be used to register a new strategy in order to be available.
@@ -34,7 +33,7 @@ func RegisterOffersStrategy(strategyName string, factory ManageOffersFactory) {
 
 // CreateOffersStrategy is used to obtain an offers manager based on the configurations.
 func CreateOffersStrategy(config *configuration.Configuration) OffersManager {
-	configuredStrategy := config.OffersStrategy()
+	configuredStrategy := config.DiscoveryBackend()
 
 	strategyFactory, exist := manageOffers[configuredStrategy]
 	if !exist {

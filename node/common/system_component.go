@@ -6,11 +6,11 @@ import "sync"
 // Providing the common interface of a component.
 type Component interface {
 	// Starts the component
-	Start(simulation bool)
+	Start()
 	// Stops the component
 	Stop()
 	// Verifies if the component is working
-	isWorking() bool
+	IsWorking() bool
 }
 
 // NodeComponent is the base object for all system's internal components.

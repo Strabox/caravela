@@ -62,7 +62,7 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 				true,
 			)
 			if (err == nil) && (len(offers) != 0) {
-				return offers
+				return offers // TODO: Request to other nodes (successors for the offers)
 			}
 		}
 		findPhase++

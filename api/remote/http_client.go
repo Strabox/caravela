@@ -29,7 +29,7 @@ func NewClient(config *configuration.Configuration) *Client {
 func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.Node, offer *types.Offer) error {
 
 	log.Infof("--> CREATE OFFER From: %s, ID: %d, Amt: %d, Res: <%d;%d>, To: <%s;%s>",
-		fromNode.IP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM, toNode.IP, toNode.GUID)
+		fromNode.IP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM, toNode.IP, toNode.GUID[0:12])
 
 	createOfferMsg := rest.CreateOfferMsg{
 		FromNode: *fromNode,
@@ -49,7 +49,7 @@ func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.N
 
 func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error) {
 	log.Infof("--> REFRESH OFFER From: %s, ID: %d, To: %s",
-		fromTrader.GUID, offer.ID, toSupp.IP)
+		fromTrader.GUID[0:12], offer.ID, toSupp.IP)
 
 	offerRefreshMsg := rest.RefreshOfferMsg{
 		FromTrader: *fromTrader,
@@ -70,7 +70,7 @@ func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *type
 
 func (client *Client) RemoveOffer(ctx context.Context, fromSupp, toTrader *types.Node, offer *types.Offer) error {
 	log.Infof("--> REMOVE OFFER From: <%s;%s>, ID: %d, To: <%s;%s>",
-		fromSupp.IP, fromSupp.GUID, offer.ID, toTrader.IP, toTrader.GUID)
+		fromSupp.IP, fromSupp.GUID[0:12], offer.ID, toTrader.IP, toTrader.GUID[0:12])
 
 	offerRemoveMsg := rest.OfferRemoveMsg{
 		FromSupplier: *fromSupp,
@@ -88,7 +88,7 @@ func (client *Client) RemoveOffer(ctx context.Context, fromSupp, toTrader *types
 }
 
 func (client *Client) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) ([]types.AvailableOffer, error) {
-	log.Infof("--> GET OFFERS To: <%s;%s>, Relay: %t, From: %s", toTrader.IP, toTrader.GUID, relay, fromNode.GUID)
+	log.Infof("--> GET OFFERS To: <%s;%s>, Relay: %t, From: %s", toTrader.IP, toTrader.GUID[0:12], relay, fromNode.GUID)
 
 	getOffersMsg := rest.GetOffersMsg{
 		FromNode: *fromNode,
@@ -107,24 +107,18 @@ func (client *Client) GetOffers(ctx context.Context, fromNode, toTrader *types.N
 
 	if httpCode == http.StatusOK {
 		if offers != nil {
-			res := make([]types.AvailableOffer, len(offers))
-			for i, v := range offers {
-				res[i].ID = v.ID
-				res[i].SupplierIP = v.SupplierIP
-			}
-			return res, nil
-		} else {
-			return nil, nil
+			return offers, nil
 		}
-	} else {
 		return nil, nil
 	}
+
+	return nil, nil
 }
 
 func (client *Client) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) error {
 
-	log.Infof("--> NEIGHBOR OFFERS To: <%s;%s> TraderOffering: <%s;%s>", toNeighborTrader.IP, toNeighborTrader.GUID,
-		traderOffering.IP, traderOffering.GUID)
+	log.Infof("--> NEIGHBOR OFFERS To: <%s;%s> TraderOffering: <%s;%s>", toNeighborTrader.IP, toNeighborTrader.GUID[0:12],
+		traderOffering.IP, traderOffering.GUID[0:12])
 
 	neighborOfferMsg := rest.NeighborOffersMsg{
 		FromNeighbor:     *fromTrader,
