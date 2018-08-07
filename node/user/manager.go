@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
@@ -16,30 +17,45 @@ import (
 type Manager struct {
 	common.NodeComponent // Base component
 
-	containers     sync.Map         // Map ID<->Container submitted by the user
-	localScheduler localScheduler   // Container's scheduler component
-	userRemoteCli  userRemoteClient //
+	containers          sync.Map // Map ID<->Container submitted by the user
+	minRequestResources resources.Resources
+	localScheduler      localScheduler   // Container's scheduler component
+	userRemoteCli       userRemoteClient //
 
 	config *configuration.Configuration // System's configurations.
 }
 
-func NewManager(config *configuration.Configuration, localScheduler localScheduler, userRemoteCli userRemoteClient) *Manager {
+func NewManager(config *configuration.Configuration, localScheduler localScheduler, userRemoteCli userRemoteClient,
+	minRequestResources resources.Resources) *Manager {
 	return &Manager{
-		config:         config,
-		localScheduler: localScheduler,
-		userRemoteCli:  userRemoteCli,
+		minRequestResources: minRequestResources,
+		config:              config,
+		localScheduler:      localScheduler,
+		userRemoteCli:       userRemoteCli,
 
 		containers: sync.Map{},
 	}
 }
 
 func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) error {
+	// Validate request
+	for i, contConfig := range containerConfigs {
+		if contConfig.Resources.RAM == 0 && contConfig.Resources.CPUs == 0 {
+			containerConfigs[i].Resources.CPUs = man.minRequestResources.CPUs()
+			containerConfigs[i].Resources.RAM = man.minRequestResources.RAM()
+		} else if contConfig.Resources.RAM == 0 || contConfig.Resources.CPUs == 0 {
+			return fmt.Errorf("invalid resources resquest")
+		}
+	}
+
+	// Contact local scheduler to submit the request into the system
 	reqCtx := context.WithValue(ctx, types.RequestIDKey, guid.NewGUIDRandom().String())
 	containersStatus, err := man.localScheduler.SubmitContainers(reqCtx, containerConfigs)
 	if err != nil {
 		return err
 	}
 
+	// Update internals
 	for _, contStatus := range containersStatus {
 		container := newContainer(contStatus.Name, contStatus.ImageKey, contStatus.Args, contStatus.PortMappings,
 			*resources.NewResources(contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,

@@ -16,6 +16,7 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/containers"
 	"github.com/strabox/caravela/node/discovery"
+	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/node/user"
@@ -25,7 +26,7 @@ import (
 // Node is the top level entry structure, facade, for all the functionality of a CARAVELA's node.
 type Node struct {
 	apiServerComp         api.Server           // API server component.
-	discoveryComp         *discovery.Discovery // Discovery component.
+	discoveryComp         backend.Discovery    // Discovery component.
 	schedulerComp         *scheduler.Scheduler // Scheduler component.
 	containersManagerComp *containers.Manager  // Container's Manager component.
 	userManagerComp       *user.Manager        // User's Manager component.
@@ -49,13 +50,13 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 
 	// Create all the internal components
 
-	discoveryComp := discovery.NewDiscovery(config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
+	discoveryComp := discovery.CreateDiscoveryBackend(config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
 
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)
 
 	schedulerComp := scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli)
 
-	userManagerComp := user.NewManager(config, schedulerComp, caravelaCli)
+	userManagerComp := user.NewManager(config, schedulerComp, caravelaCli, *resourcesMap.LowestResources())
 
 	return &Node{
 		apiServerComp:         apiServer,

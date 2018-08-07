@@ -1,4 +1,4 @@
-package discovery
+package smart
 
 import (
 	"context"
@@ -8,8 +8,9 @@ import (
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
-	"github.com/strabox/caravela/node/discovery/supplier"
-	"github.com/strabox/caravela/node/discovery/trader"
+	"github.com/strabox/caravela/node/discovery/backend"
+	"github.com/strabox/caravela/node/discovery/smart/supplier"
+	"github.com/strabox/caravela/node/discovery/smart/trader"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -29,8 +30,8 @@ type Discovery struct {
 	virtualTraders sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
 }
 
-func NewDiscovery(config *configuration.Configuration, overlay external.Overlay,
-	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) *Discovery {
+func NewSmartDiscovery(config *configuration.Configuration, overlay external.Overlay,
+	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{
 		config:  config,
@@ -40,7 +41,7 @@ func NewDiscovery(config *configuration.Configuration, overlay external.Overlay,
 		resourcesMap:   resourcesMap,
 		supplier:       supplier.NewSupplier(config, overlay, client, resourcesMap, maxResources),
 		virtualTraders: sync.Map{},
-	}
+	}, nil
 }
 
 // ====================== Local Services (Consumed by other Components) ============================
@@ -52,8 +53,7 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 
 	newTrader.Start() // Start the node's trader module.
 	newTraderResources, _ := disc.resourcesMap.ResourcesByGUID(traderGUID)
-	log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s",
-		(&traderGUID).Short(), newTraderResources.String())
+	log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s", traderGUID.Short(), newTraderResources.String())
 }
 
 func (disc *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
@@ -165,6 +165,6 @@ func (disc *Discovery) Stop() {
 	})
 }
 
-func (disc *Discovery) isWorking() bool {
+func (disc *Discovery) IsWorking() bool {
 	return disc.Working()
 }

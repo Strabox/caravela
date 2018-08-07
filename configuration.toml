@@ -1,44 +1,49 @@
-[ImagesStorage]
-Backend = "DockerHub"
-
 [Caravela]
 APIPort = 8001
-APITimeout = "5s"
-OffersStrategy = "chord-smart"
-SupplyingInterval = "30s"
-SpreadOffersInterval = "30s"
-RefreshesCheckInterval = "30s"
-RefreshingInterval = "30s"
-MaxRefreshesFailed = 3
-MaxRefreshesMissed = 2
-RefreshMissedTimeout = "20s"
+APITimeout = "3s"
 CheckContainersInterval = "30s"
 ResourcesOvercommit = 50
-    # Cpu Cores Partitions
-    [[Caravela.CpuCoresPartitions]]
-    Cores = 1
-    Percentage = 25
-    [[Caravela.CpuCoresPartitions]]
-    Cores = 2
-    Percentage = 50
-    [[Caravela.CpuCoresPartitions]]
-    Cores = 4
-    Percentage = 25
-    # Ram Partitions
-    [[Caravela.RamPartitions]]
-    Ram = 256
-    Percentage = 25
-    [[Caravela.RamPartitions]]
-    Ram = 512
-    Percentage = 50
-    [[Caravela.RamPartitions]]
-    Ram = 1024
-    Percentage = 25
+# Cpu Cores Partitions
+[[Caravela.CpuCoresPartitions]]
+Cores = 1
+Percentage = 25
+[[Caravela.CpuCoresPartitions]]
+Cores = 2
+Percentage = 50
+[[Caravela.CpuCoresPartitions]]
+Cores = 4
+Percentage = 25
+# Ram Partitions
+[[Caravela.RamPartitions]]
+Ram = 256
+Percentage = 25
+[[Caravela.RamPartitions]]
+Ram = 512
+Percentage = 50
+[[Caravela.RamPartitions]]
+Ram = 1024
+Percentage = 25
+    [Caravela.DiscoveryBackend]
+    Backend = "chord-random"
+        [Caravela.DiscoveryBackend.SmartChordBackend]
+        SupplyingInterval = "30s"
+        SpreadOffersInterval = "30s"
+        RefreshesCheckInterval = "30s"
+        RefreshingInterval = "30s"
+        MaxRefreshesFailed = 3
+        MaxRefreshesMissed = 2
+        RefreshMissedTimeout = "20s"
+        [Caravela.DiscoveryBackend.RandomChordBackend]
+        RandBackendMaxRetries = 6
+
+[ImagesStorage]
+Backend = "DockerHub"
 
 [Overlay]
 Overlay = "chord"
 OverlayPort = 8000
-ChordTimeout = "3s"
-ChordVirtualNodes = 12
-ChordNumSuccessors = 4
-ChordHashSizeBits = 128
+    [Overlay.Chord]
+    Timeout = "3s"
+    VirtualNodes = 12
+    NumSuccessors = 4
+    HashSizeBits = 128

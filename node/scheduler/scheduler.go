@@ -41,7 +41,7 @@ func NewScheduler(config *configuration.Configuration, internalDisc discoveryLoc
 func (scheduler *Scheduler) Launch(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 
-	if !scheduler.isWorking() {
+	if !scheduler.IsWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
 	}
 
@@ -62,7 +62,7 @@ func (scheduler *Scheduler) Launch(ctx context.Context, fromBuyer *types.Node, o
 
 // SubmitContainers is called when the user submits a request to the node in order to deploy a set of containers.
 func (scheduler *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
-	if !scheduler.isWorking() {
+	if !scheduler.IsWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
 
@@ -169,6 +169,6 @@ func (scheduler *Scheduler) Stop() {
 	scheduler.Stopped(func() { /* Do Nothing */ })
 }
 
-func (scheduler *Scheduler) isWorking() bool {
+func (scheduler *Scheduler) IsWorking() bool {
 	return scheduler.Working()
 }
