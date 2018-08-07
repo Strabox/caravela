@@ -5,5 +5,5 @@ package version
 
 var (
 	// Version of CARAVELA's system binary.
-	Version = "0.3.0"
+	Version = "0.3.1"
 )
