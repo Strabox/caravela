@@ -61,6 +61,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 
 	for retry := 0; retry < d.config.RandBackendMaxRetries(); retry++ {
 		destinationGUID := guid.NewGUIDRandom()
+
 		nodes, err := d.overlay.Lookup(ctx, destinationGUID.Bytes())
 		if err != nil {
 			continue

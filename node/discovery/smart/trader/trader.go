@@ -200,24 +200,27 @@ func (trader *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
 	// Basically verify if the offer is bigger than the handled resources of the trader.
 	if resourcesOffered.Contains(*trader.handledResources) {
 		trader.offersMutex.Lock()
-		defer trader.offersMutex.Unlock()
 
 		offerKey := offerKey{supplierIP: fromSupp.IP, id: common.OfferID(newOffer.ID)}
 		offer := newTraderOffer(*guid.NewGUIDString(fromSupp.GUID), fromSupp.IP, common.OfferID(newOffer.ID),
 			newOffer.Amount, *resourcesOffered)
 
-		if len(trader.offers) == 0 { // If node had no offers, advertise it has now for all the neighbors
+		advertise := len(trader.offers) == 0
+
+		trader.offers[offerKey] = offer
+		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
+			trader.guid.Short(), newOffer.Amount, newOffer.Resources.CPUs, newOffer.Resources.RAM,
+			fromSupp.IP, newOffer.ID)
+
+		trader.offersMutex.Unlock()
+
+		if advertise { // If node had no offers, advertise it has now for all the neighbors
 			if trader.config.Simulation() {
 				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
 			} else {
 				go trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
 			}
 		}
-
-		trader.offers[offerKey] = offer
-		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
-			trader.guid.Short(), newOffer.Amount, newOffer.Resources.CPUs, newOffer.Resources.RAM,
-			fromSupp.IP, newOffer.ID)
 	}
 }
 
