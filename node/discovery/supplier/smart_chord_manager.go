@@ -27,9 +27,7 @@ func newSmartChordManageOffers(config *configuration.Configuration) (OffersManag
 	}, nil
 }
 
-func (man *SmartChordOffersManager) Init(resourcesMap *resources.Mapping, overlay external.Overlay,
-	remoteClient external.Caravela) {
-
+func (man *SmartChordOffersManager) Init(resourcesMap *resources.Mapping, overlay external.Overlay, remoteClient external.Caravela) {
 	man.resourcesMapping = resourcesMap
 	man.overlay = overlay
 	man.remoteClient = remoteClient
@@ -63,7 +61,6 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 				&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 				true,
 			)
-
 			if (err == nil) && (len(offers) != 0) {
 				return offers
 			}
@@ -119,7 +116,7 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 	return nil, errors.New("impossible advertise offer")
 }
 
-// Remove nodes that do not belong to that target GUID partition. (Probably because we were target a frontier node)
+// Remove nodes that do not belong to that target GUID partition. (Probably because we were target a partition frontier node)
 func (man *SmartChordOffersManager) removeNonTargetNodes(remoteNodes []*overlayTypes.OverlayNode,
 	targetGuid guid.GUID) []*overlayTypes.OverlayNode {
 

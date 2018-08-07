@@ -60,6 +60,7 @@ type imagesStorage struct {
 
 // Configurations for the node overlay
 type overlay struct {
+	Overlay            string   `json:"Overlay"`            // Overlay configured
 	OverlayPort        int      `json:"OverlayPort"`        // Port of the overlay endpoints
 	ChordTimeout       duration `json:"ChordTimeout"`       // Timeout for the chord messages
 	ChordVirtualNodes  int      `json:"ChordVirtualNodes"`  // Number of chord virtual nodes per physical node
@@ -107,6 +108,7 @@ func Default(hostIP string) *Configuration {
 			Backend: "DockerHub",
 		},
 		Overlay: overlay{
+			Overlay:            "chord",
 			OverlayPort:        8000,
 			ChordTimeout:       duration{Duration: 5 * time.Second},
 			ChordVirtualNodes:  3,
@@ -271,6 +273,7 @@ func (c *Configuration) Print() {
 	log.Printf("Backend:                     %s", c.ImagesStorageBackend())
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ OVERLAY $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	log.Printf("Overlay:                     %s", c.OverlayName())
 	log.Printf("Port:                        %d", c.OverlayPort())
 	log.Printf("Messages Timeout:            %s", c.ChordTimeout().String())
 	log.Printf("Number of Virtual Nodes:     %d", c.ChordVirtualNodes())
@@ -354,6 +357,10 @@ func (c *Configuration) RAMPartitions() []RAMPartition {
 
 func (c *Configuration) ResourcesOvercommit() int {
 	return c.Caravela.ResourcesOvercommit
+}
+
+func (c *Configuration) OverlayName() string {
+	return c.Overlay.Overlay
 }
 
 func (c *Configuration) OverlayPort() int {

@@ -11,9 +11,9 @@ import (
 )
 
 // Validate the HTTP message content extracting the JSON into a Go structure if necessary.
-func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill interface{}) error {
-	if r.Body != nil { // Verify if HTTP message body is not empty
-		err := json.NewDecoder(r.Body).Decode(jsonToFill)
+func ReceiveJSONFromHttp(_ http.ResponseWriter, req *http.Request, jsonToFill interface{}) error {
+	if req.Body != nil { // Verify if HTTP message body is not empty
+		err := json.NewDecoder(req.Body).Decode(jsonToFill)
 		if err == nil { // Verify if JSON was decoded with success
 			return nil
 		} else {
@@ -25,11 +25,11 @@ func ReceiveJSONFromHttp(_ http.ResponseWriter, r *http.Request, jsonToFill inte
 }
 
 // Build and execute an HTTP Request and frees all the resources getting all the data before.
-func DoHttpRequestJSON(c context.Context, httpClient *http.Client, url string, httpMethod string, jsonToSend interface{},
-	jsonToGet interface{}) (error, int) {
+func DoHttpRequestJSON(ctx context.Context, httpClient *http.Client, url string, httpMethod string,
+	jsonToSend interface{}, jsonToGet interface{}) (error, int) {
 
 	req, err := http.NewRequest(httpMethod, url, ToJSONBuffer(jsonToSend))
-	req = req.WithContext(c)
+	req = req.WithContext(ctx)
 	if err != nil {
 		log.Errorf(util.LogTag("DoHttp")+"Error building request: %s", err)
 		return err, -1

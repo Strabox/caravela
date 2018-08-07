@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
@@ -14,7 +15,7 @@ import (
 	"time"
 )
 
-// Represents a Chord overlay local (for each node) structure.
+// Chord represents a Chord overlay local (for each node) structure.
 type Chord struct {
 	// Used to communicate interesting events to the application.
 	appNode types.OverlayMembership
@@ -42,34 +43,31 @@ type Chord struct {
 	chordRing *chord.Ring
 }
 
-// Create a new Chord overlay structure.
-func New(hashSizeBytes int, hostIP string, hostPort int,
-	numVirtualNodes int, numSuccessors int, timeout time.Duration) *Chord {
-
-	chordOverlay := &Chord{
+// new create a new chord overlay structure.
+func New(config *configuration.Configuration) (types.Overlay, error) {
+	return &Chord{
 		appNode:             nil,
 		predecessors:        sync.Map{},
 		virtualNodesRunning: 0,
 		localID:             nil,
 
-		hashSizeBytes:   hashSizeBytes,
-		hostIP:          hostIP,
-		hostPort:        hostPort,
-		numVirtualNodes: numVirtualNodes,
-		numSuccessors:   numSuccessors,
-		timeout:         timeout,
+		hashSizeBytes:   config.ChordHashSizeBits() / 8,
+		hostIP:          config.HostIP(),
+		hostPort:        config.OverlayPort(),
+		numVirtualNodes: config.ChordVirtualNodes(),
+		numSuccessors:   config.ChordNumSuccessors(),
+		timeout:         config.ChordTimeout(),
 		chordRing:       nil,
-	}
-	return chordOverlay
+	}, nil
 }
 
-// Initialize the chord overlay and its respective inner structures.
+// initialize the chord overlay and its respective inner structures.
 func (co *Chord) initialize(appNode types.OverlayMembership) (*chord.Config, chord.Transport, error) {
 	co.appNode = appNode
 	hostname := co.hostIP + ":" + strconv.Itoa(co.hostPort)
 	chordListener := &Listener{chordOverlay: co}
-	config := chord.DefaultConfig(hostname)
 
+	config := chord.DefaultConfig(hostname)
 	config.Delegate = chordListener
 	config.NumVnodes = co.numVirtualNodes
 	config.NumSuccessors = co.numSuccessors
@@ -77,7 +75,6 @@ func (co *Chord) initialize(appNode types.OverlayMembership) (*chord.Config, cho
 
 	// Initialize the TCP transport stack used in the chord implementation
 	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d", co.hostPort), co.timeout)
-
 	if err != nil {
 		return nil, nil, err
 	}

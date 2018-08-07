@@ -34,9 +34,8 @@ func NewManager(config *configuration.Configuration, localScheduler localSchedul
 }
 
 func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) error {
-	newCtx := context.WithValue(ctx, types.RequestCtxKey(types.RequestIDKey), guid.NewGUIDRandom().String())
-	log.Debug(newCtx.Value(types.RequestCtxKey(types.RequestIDKey)))
-	containersStatus, err := man.localScheduler.SubmitContainers(newCtx, containerConfigs)
+	reqCtx := context.WithValue(ctx, types.RequestIDKey, guid.NewGUIDRandom().String())
+	containersStatus, err := man.localScheduler.SubmitContainers(reqCtx, containerConfigs)
 	if err != nil {
 		return err
 	}

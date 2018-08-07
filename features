@@ -1,0 +1,4 @@
+customizable overlay via interface decoupling e.g. CAN, Pastry, Tapestry, ID based overlays.
+images storage backend expansible.
+customizable strategies to manage offers.
+CLI similar to Docker/swarm.

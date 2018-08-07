@@ -3,7 +3,6 @@ package discovery
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
-	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
@@ -123,34 +122,24 @@ func (disc *Discovery) MaximumResourcesSim() types.Resources {
 
 // Simulation
 func (disc *Discovery) RefreshOffersSim() {
-	refreshExecuted := false
 	disc.virtualTraders.Range(func(key, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
 			currentTrader.RefreshOffersSim()
-			refreshExecuted = true
 		}
-		return false
+		return true
 	})
-	if !refreshExecuted {
-		panic(errors.New("RefreshOffersSim didn't execute. No traders."))
-	}
 }
 
 // Simulation
 func (disc *Discovery) SpreadOffersSim() {
-	spreadExecuted := false
 	disc.virtualTraders.Range(func(key, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
 			currentTrader.SpreadOffersSim()
-			spreadExecuted = true
 		}
-		return false
+		return true
 	})
-	if !spreadExecuted {
-		panic(errors.New("SpreadOffersSim didn't execute. No traders."))
-	}
 }
 
 // ===============================================================================

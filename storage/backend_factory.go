@@ -20,22 +20,22 @@ func init() {
 }
 
 // RegisterBackend can be used to register a new storage backend in order to be available.
-func RegisterBackend(strategyName string, factory BackendFactory) {
+func RegisterBackend(backendName string, factory BackendFactory) {
 	if factory == nil {
-		log.Panic("nil offers factory registering")
+		log.Panic("nil storage backend factory registering")
 	}
-	_, exist := backends[strategyName]
+	_, exist := backends[backendName]
 	if exist {
-		log.Warnf("offers strategy %s is being overridden", strategyName)
+		log.Warnf("storage backend %s is being overridden", backendName)
 	}
-	backends[strategyName] = factory
+	backends[backendName] = factory
 }
 
 // CreateBackend is used to obtain a storage backend based on the configurations.
 func CreateBackend(config *configuration.Configuration) Backend {
 	configuredBackend := config.ImagesStorageBackend()
 
-	strategyFactory, exist := backends[configuredBackend]
+	backendFactory, exist := backends[configuredBackend]
 	if !exist {
 		existingBackends := make([]string, len(backends))
 		for backendName := range backends {
@@ -46,10 +46,10 @@ func CreateBackend(config *configuration.Configuration) Backend {
 		log.Panic(err)
 	}
 
-	offersStrategy, err := strategyFactory()
+	backend, err := backendFactory()
 	if err != nil {
 		log.Panic(err)
 	}
 
-	return offersStrategy
+	return backend
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/strabox/caravela/docker"
 	"github.com/strabox/caravela/node"
 	"github.com/strabox/caravela/node/common/guid"
-	"github.com/strabox/caravela/overlay/chord"
+	"github.com/strabox/caravela/overlay"
 	"strings"
 )
 
@@ -46,9 +46,8 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	// Global GUID size initialization
 	guid.Init(systemConfigurations.ChordHashSizeBits())
 
-	// Create Overlay Component (Chord overlay initial)
-	overlay := chord.New(guid.SizeBytes(), systemConfigurations.HostIP(), systemConfigurations.OverlayPort(),
-		systemConfigurations.ChordVirtualNodes(), systemConfigurations.ChordNumSuccessors(), systemConfigurations.ChordTimeout())
+	// Create Overlay Component
+	overlayConfigured := overlay.Create(systemConfigurations)
 
 	// Create CARAVELA's Remote Client
 	caravelaCli := remote.NewClient(systemConfigurations)
@@ -60,7 +59,7 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	apiServer := api.NewServer(systemConfigurations.APIPort())
 
 	// Create a CARAVELA Node passing all the external components and start it functions
-	thisNode := node.NewNode(systemConfigurations, overlay, caravelaCli, dockerClient, apiServer)
+	thisNode := node.NewNode(systemConfigurations, overlayConfigured, caravelaCli, dockerClient, apiServer)
 
 	err = thisNode.Start(join, joinIP)
 	if err != nil {
