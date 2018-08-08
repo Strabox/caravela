@@ -65,6 +65,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 		destinationGUID := guid.NewGUIDRandom()
 
 		reqCtx := context.WithValue(ctx, types.NodeGUIDKey, d.nodeGUID.String())
+		log.Debugf(util.LogTag("RandDisc") + "LOOKING UP")
 		nodes, err := d.overlay.Lookup(reqCtx, destinationGUID.Bytes())
 		if err != nil {
 			continue
