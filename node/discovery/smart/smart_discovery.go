@@ -48,6 +48,8 @@ func NewSmartDiscovery(config *configuration.Configuration, overlay external.Ove
 
 // Adds a new local "virtual" trader when the overlay notifies its presence.
 func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
+	disc.supplier.SetNodeGUID(traderGUID)
+
 	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap)
 	disc.virtualTraders.Store(traderGUID.String(), newTrader)
 

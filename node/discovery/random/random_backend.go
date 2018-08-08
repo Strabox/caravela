@@ -23,6 +23,7 @@ type Discovery struct {
 
 	maxResources resources.Resources
 	resourcesMap *resources.Mapping // GUID<->Resources mapping
+	nodeGUID     *guid.GUID
 
 	availableResources resources.Resources
 	resourcesMutex     sync.Mutex
@@ -38,6 +39,7 @@ func NewRandomDiscovery(config *configuration.Configuration, overlay external.Ov
 
 		maxResources: maxResources,
 		resourcesMap: resourcesMap,
+		nodeGUID:     nil,
 
 		availableResources: maxResources,
 		resourcesMutex:     sync.Mutex{},
@@ -47,7 +49,7 @@ func NewRandomDiscovery(config *configuration.Configuration, overlay external.Ov
 // ========================== Internal Services =============================
 
 func (d *Discovery) AddTrader(traderGUID guid.GUID) {
-	// Do Nothing - Not necessary for this backend.
+	d.nodeGUID = guid.NewGUIDBytes(traderGUID.Bytes())
 	log.Debugf(util.LogTag("RandDisc")+"NEW TRADER GUID: %s", traderGUID.Short())
 }
 
@@ -62,7 +64,8 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 	for retry := 0; retry < d.config.RandBackendMaxRetries(); retry++ {
 		destinationGUID := guid.NewGUIDRandom()
 
-		nodes, err := d.overlay.Lookup(ctx, destinationGUID.Bytes())
+		reqCtx := context.WithValue(ctx, types.NodeGUIDKey, d.nodeGUID.String())
+		nodes, err := d.overlay.Lookup(reqCtx, destinationGUID.Bytes())
 		if err != nil {
 			continue
 		}

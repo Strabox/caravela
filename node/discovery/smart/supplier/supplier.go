@@ -24,6 +24,8 @@ type Supplier struct {
 	offersStrategy OffersManager                // Encapsulates the strategies to manage the offers in the system.
 	client         external.Caravela            // Client to collaborate with other CARAVELA's nodes
 
+	nodeGUID *guid.GUID
+
 	resourcesMap       *resources.Mapping                // The resources<->GUID mapping
 	maxResources       *resources.Resources              // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources              // CURRENT Available resources to offer
@@ -46,6 +48,8 @@ func NewSupplier(config *configuration.Configuration, overlay external.Overlay, 
 		config:         config,
 		offersStrategy: offersStrategy,
 		client:         client,
+
+		nodeGUID: nil,
 
 		resourcesMap:       resourcesMap,
 		maxResources:       maxResources.Copy(),
@@ -105,6 +109,9 @@ func (sup *Supplier) FindOffers(ctx context.Context, targetResources resources.R
 		targetResources = *sup.resourcesMap.LowestResources()
 	}
 
+	if sup.nodeGUID != nil {
+		ctx = context.WithValue(ctx, types.NodeGUIDKey, sup.nodeGUID.String())
+	}
 	return sup.offersStrategy.FindOffers(ctx, targetResources)
 }
 
@@ -236,6 +243,13 @@ func (sup *Supplier) createOffer() {
 			sup.availableResources.SetZero()
 		}
 		sup.offersIDGen++
+	}
+}
+
+// Simulation
+func (sup *Supplier) SetNodeGUID(GUID guid.GUID) {
+	if sup.nodeGUID == nil {
+		sup.nodeGUID = guid.NewGUIDBytes(GUID.Bytes())
 	}
 }
 
