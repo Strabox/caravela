@@ -124,7 +124,7 @@ func (trader *Trader) start() {
 }
 
 // Returns all the offers that the trader is managing.
-func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.AvailableOffer {
+func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay bool) []types.AvailableOffer {
 	if trader.haveOffers() { // Trader has offers so return them immediately
 		trader.offersMutex.Lock()
 		defer trader.offersMutex.Unlock()
@@ -153,7 +153,7 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 			successorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
 			if trader.handledResources.Equals(*successorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
-					context.Background(),
+					ctx,
 					&types.Node{
 						GUID: trader.guid.String(),
 					},
@@ -176,7 +176,7 @@ func (trader *Trader) GetOffers(fromNode *types.Node, relay bool) []types.Availa
 			predecessorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if trader.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
-					context.Background(),
+					ctx,
 					&types.Node{GUID: trader.guid.String()},
 					&types.Node{IP: predecessor.IP(), GUID: predecessor.GUID().String()},
 					false,

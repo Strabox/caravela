@@ -92,11 +92,11 @@ func (disc *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, o
 	}
 }
 
-func (disc *Discovery) GetOffers(fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+func (disc *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
 	t, exist := disc.virtualTraders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		return targetTrader.GetOffers(fromNode, relay)
+		return targetTrader.GetOffers(ctx, fromNode, relay)
 	} else {
 		return nil
 	}

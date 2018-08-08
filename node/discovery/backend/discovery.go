@@ -19,7 +19,7 @@ type Discovery interface {
 	CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer)
 	RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool
 	RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer)
-	GetOffers(fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer
+	GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer
 	AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node)
 	// ============== External/Remote Services (Only Simulation) ================
 	AvailableResourcesSim() types.Resources

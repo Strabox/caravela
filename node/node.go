@@ -177,8 +177,8 @@ func (node *Node) RemoveOffer(_ context.Context, fromSupp *types.Node, toTrader 
 	node.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
 }
 
-func (node *Node) GetOffers(_ context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
-	return node.discoveryComp.GetOffers(fromNode, toTrader, relay)
+func (node *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+	return node.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
 }
 
 func (node *Node) AdvertiseOffersNeighbor(_ context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) {

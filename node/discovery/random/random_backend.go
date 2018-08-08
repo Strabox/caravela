@@ -131,7 +131,7 @@ func (d *Discovery) RemoveOffer(_ *types.Node, _ *types.Node, _ *types.Offer) {
 	// Do Nothing - Not necessary for this backend.
 }
 
-func (d *Discovery) GetOffers(_, _ *types.Node, _ bool) []types.AvailableOffer {
+func (d *Discovery) GetOffers(_ context.Context, _, _ *types.Node, _ bool) []types.AvailableOffer {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
