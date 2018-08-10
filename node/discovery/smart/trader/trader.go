@@ -42,7 +42,7 @@ type Trader struct {
 func NewTrader(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
 	guid guid.GUID, resourcesMapping *resources.Mapping) *Trader {
 
-	handledResources, _ := resourcesMapping.ResourcesByGUID(guid)
+	handledResources := resourcesMapping.ResourcesByGUID(guid)
 
 	return &Trader{
 		config:           config,
@@ -150,7 +150,7 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 		// Ask the successor (higher GUID)
 		successor := trader.nearbyTradersOffering.Successor()
 		if successor != nil && (relay || (!relay && (trader.guid.Higher(*fromNodeGuid)))) {
-			successorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
+			successorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
 			if trader.handledResources.Equals(*successorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
 					ctx,
@@ -173,7 +173,7 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 		// Ask the predecessor (lower GUID)
 		predecessor := trader.nearbyTradersOffering.Predecessor()
 		if predecessor != nil && (relay || (!relay && (trader.guid.Lower(*fromNodeGuid)))) {
-			predecessorResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
+			predecessorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if trader.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
 					ctx,
@@ -283,7 +283,7 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 	for _, overlayNeighbor := range overlayNeighbors { // Advertise to all neighbors (inside resource partition)
 		advertise := func(overlayNeighbor *overlayTypes.OverlayNode) {
 			nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
-			nodeResourcesHandled, _ := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+			nodeResourcesHandled := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
 
 			if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {
 				trader.client.AdvertiseOffersNeighbor(

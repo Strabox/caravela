@@ -54,7 +54,7 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 	disc.virtualTraders.Store(traderGUID.String(), newTrader)
 
 	newTrader.Start() // Start the node's trader module.
-	newTraderResources, _ := disc.resourcesMap.ResourcesByGUID(traderGUID)
+	newTraderResources := disc.resourcesMap.ResourcesByGUID(traderGUID)
 	log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s", traderGUID.Short(), newTraderResources.String())
 }
 

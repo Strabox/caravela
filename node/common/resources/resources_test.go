@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -33,7 +34,7 @@ func TestSetRAM(t *testing.T) {
 func TestAddCPU(t *testing.T) {
 	resources := NewResources(2, 256)
 
-	resources.AddCPU(1)
+	resources.AddCPUs(1)
 
 	assert.Equal(t, 2+1, resources.CPUs(), "Invalid CPUs value!")
 	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
@@ -58,6 +59,26 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, 256+256, resources.RAM(), "Invalid RAM value!")
 }
 
+func TestSub_Equals(t *testing.T) {
+	resources := NewResources(2, 256)
+	subResources := NewResources(2, 256)
+
+	resources.Sub(*subResources)
+
+	assert.Equal(t, 2-2, resources.CPUs(), "Invalid CPUs value!")
+	assert.Equal(t, 256-256, resources.RAM(), "Invalid RAM value!")
+}
+
+func TestSub_Different(t *testing.T) {
+	resources := NewResources(2, 256)
+	subResources := NewResources(1, 128)
+
+	resources.Sub(*subResources)
+
+	assert.Equal(t, 2-1, resources.CPUs(), "Invalid CPUs value!")
+	assert.Equal(t, 256-128, resources.RAM(), "Invalid RAM value!")
+}
+
 func TestSetZero(t *testing.T) {
 	resources := NewResources(2, 256)
 
@@ -77,12 +98,44 @@ func TestSetTo(t *testing.T) {
 	assert.Equal(t, 2046, resources.RAM(), "Invalid RAM value!")
 }
 
+func TestIsValid_True(t *testing.T) {
+	resources := NewResources(1, 256)
+
+	res := resources.IsValid()
+
+	assert.True(t, res, "It should have returned true!")
+}
+
+func TestIsValid_False_1(t *testing.T) {
+	resources := NewResources(1, 0)
+
+	res := resources.IsValid()
+
+	assert.False(t, res, "It should have returned false!")
+}
+
+func TestIsValid_False_2(t *testing.T) {
+	resources := NewResources(0, 1024)
+
+	res := resources.IsValid()
+
+	assert.False(t, res, "It should have returned false!")
+}
+
+func TestIsValid_False_3(t *testing.T) {
+	resources := NewResources(0, 0)
+
+	res := resources.IsValid()
+
+	assert.False(t, res, "It should have returned false!")
+}
+
 func TestIsZeroTrue(t *testing.T) {
 	resources := NewResources(0, 0)
 
 	res := resources.IsZero()
 
-	assert.Equal(t, true, res, "It should have returned true!")
+	assert.True(t, res, "It should have returned true!")
 }
 
 func TestIsZeroFalse(t *testing.T) {
@@ -90,7 +143,7 @@ func TestIsZeroFalse(t *testing.T) {
 
 	res := resources.IsZero()
 
-	assert.Equal(t, false, res, "It should have returned false!")
+	assert.False(t, res, "It should have returned false!")
 }
 
 func TestContainsTrue(t *testing.T) {
@@ -99,7 +152,7 @@ func TestContainsTrue(t *testing.T) {
 
 	res := resources.Contains(*containedResources)
 
-	assert.Equal(t, true, res, "It should have returned true!")
+	assert.True(t, res, "It should have returned true!")
 }
 
 func TestContainsFalseCPUGreater(t *testing.T) {
@@ -108,7 +161,7 @@ func TestContainsFalseCPUGreater(t *testing.T) {
 
 	res := resources.Contains(*containedResources)
 
-	assert.Equal(t, false, res, "It should have returned false!")
+	assert.False(t, res, "It should have returned false!")
 }
 
 func TestContainsFalseRAMGreater(t *testing.T) {
@@ -145,4 +198,12 @@ func TestCopy(t *testing.T) {
 
 	assert.Equal(t, resources.CPUs(), res.CPUs(), "CPUs mismatch!")
 	assert.Equal(t, resources.RAM(), res.RAM(), "RAM mismatch!")
+}
+
+func TestString(t *testing.T) {
+	resources := NewResources(8, 16384)
+
+	string := resources.String()
+
+	assert.Equal(t, fmt.Sprintf("Resources: <%d;%d>", resources.cpus, resources.ram), string, "String mismatch!")
 }

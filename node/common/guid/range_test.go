@@ -30,7 +30,7 @@ func TestRange_GenerateRandomInside(t *testing.T) {
 	}
 	// Hack: Generate several randoms to check in order to improve our statistical success :)
 	for i := 0; i < 100; i++ {
-		randGUID, _ := guidRange.GenerateRandomInside()
+		randGUID, _ := guidRange.GenerateRandom()
 
 		_, exist := acceptableOutputs[randGUID.Int64()]
 		assert.True(t, exist, "Random GUID is not in acceptable range")
@@ -97,11 +97,12 @@ func TestRange_Inside(t *testing.T) {
 
 	insideIDs := []int64{1500, 1550, 1599}
 	for _, insideID := range insideIDs {
-		assert.True(t, guidRange.Inside(*NewGUIDInteger(insideID)), "GUID should be inside the range")
+		assert.True(t, guidRange.Inside(*NewGUIDInteger(insideID)), "GUID %d should be inside the range %s", insideID, guidRange.String())
 	}
+
 	outsideIDs := []int64{1300, 1499, 1600, 1601, 1700}
 	for _, outsideID := range outsideIDs {
-		assert.False(t, guidRange.Inside(*NewGUIDInteger(outsideID)), "GUID should be outside the range")
+		assert.False(t, guidRange.Inside(*NewGUIDInteger(outsideID)), "GUID %d should be outside the range %s", outsideID, guidRange.String())
 	}
 }
 
@@ -113,5 +114,5 @@ func TestRange_String(t *testing.T) {
 	guidRange := NewGUIDRange(*lowerGUID, *higherGUID)
 
 	assert.Equal(t, fmt.Sprintf("[%d, %d)", lowerBound, higherBound), guidRange.String(),
-		"Stringification of the range is wrong")
+		"String of the range is wrong")
 }

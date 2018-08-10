@@ -152,7 +152,6 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 	defer sup.offersMutex.Unlock()
 
 	supOffer, exist := sup.activeOffers[common.OfferID(offerID)]
-
 	// Offer does not exist in the supplier OR asking more resources than the offer has available
 	if !exist || !supOffer.Resources().Contains(resourcesNecessary) {
 		return false

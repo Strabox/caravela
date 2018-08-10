@@ -24,7 +24,7 @@ Percentage = 50
 Ram = 1024
 Percentage = 25
     [Caravela.DiscoveryBackend]
-    Backend = "chord-random"
+    Backend = "chord-smart"
         [Caravela.DiscoveryBackend.SmartChordBackend]
         SupplyingInterval = "30s"
         SpreadOffersInterval = "30s"
@@ -35,6 +35,28 @@ Percentage = 25
         RefreshMissedTimeout = "20s"
         [Caravela.DiscoveryBackend.RandomChordBackend]
         RandBackendMaxRetries = 6
+[Caravela.Resources]
+    [[Caravela.Resources.CPUPowers]]
+    Value = 0
+    Percentage = 100
+        [[Caravela.Resources.CPUPowers.CPUCores]]
+        Value = 1
+        Percentage = 50
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 256
+            Percentage = 50
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 512
+            Percentage = 50
+        [[Caravela.Resources.CPUPowers.CPUCores]]
+        Value = 2
+        Percentage = 50
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 256
+            Percentage = 50
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 512
+            Percentage = 50
 
 [ImagesStorage]
 Backend = "DockerHub"

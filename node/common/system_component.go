@@ -5,11 +5,11 @@ import "sync"
 // Component provides a common interface for all the internal independent components of a node.
 // Providing the common interface of a component.
 type Component interface {
-	// Starts the component
+	// Start starts the component.
 	Start()
-	// Stops the component
+	// Stop stops the component.
 	Stop()
-	// Verifies if the component is working
+	// IsWorking verifies if the component is working.
 	IsWorking() bool
 }
 

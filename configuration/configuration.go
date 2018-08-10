@@ -43,15 +43,16 @@ type host struct {
 
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
-	Simulation              bool                `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
-	DiscoveryBackend        discoveryBackends   `json:"DiscoveryBackend"`        // Define what strategy is used to manage the offers
-	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
-	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
-	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
-	CPUPowerPartition       []CPUPowerPartition `json:"CPUPowerPartition"`       // GUID partitions for CPU power
-	CPUCoresPartitions      []CPUCoresPartition `json:"CPUCoresPartitions"`      // GUID partitions for the amount of CPU cores
-	RAMPartitions           []RAMPartition      `json:"RAMPartitions"`           // GUID partitions for the amount of RAM
-	ResourcesOvercommit     int                 `json:"ResourcesOvercommit"`     // Percentage of overcommit to apply to available resources
+	Simulation              bool                 `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
+	DiscoveryBackend        discoveryBackends    `json:"DiscoveryBackend"`        // Define what strategy is used to manage the offers
+	APIPort                 int                  `json:"APIPort"`                 // Port of API REST endpoints
+	APITimeout              duration             `json:"APITimeout"`              // Timeout for API REST requests
+	CheckContainersInterval duration             `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
+	CPUPowerPartition       []CPUPowerPartition  `json:"CPUPowerPartition"`       // GUID partitions for CPU power
+	CPUCoresPartitions      []CPUCoresPartition  `json:"CPUCoresPartitions"`      // GUID partitions for the amount of CPU cores
+	RAMPartitions           []RAMPartition       `json:"RAMPartitions"`           // GUID partitions for the amount of RAM
+	Resources               ResourcePartitionsV2 `json:"Resources"`
+	ResourcesOvercommit     int                  `json:"ResourcesOvercommit"` // Percentage of overcommit to apply to available resources
 }
 
 type discoveryBackends struct {
@@ -382,6 +383,10 @@ func (c *Configuration) CPUPowerPartitions() []CPUPowerPartition {
 
 func (c *Configuration) CPUCoresPartitions() []CPUCoresPartition {
 	return c.Caravela.CPUCoresPartitions
+}
+
+func (c *Configuration) ResourcesPartitions() ResourcePartitionsV2 {
+	return c.Caravela.Resources
 }
 
 func (c *Configuration) RAMPartitions() []RAMPartition {

@@ -22,3 +22,26 @@ type RAMPartition struct {
 	ResourcesPartition
 	RAM int
 }
+
+type ResourcesPartitionV2 struct {
+	Value      int `json:"Value"`
+	Percentage int `json:"Percentage"`
+}
+
+type ResourcePartitionsV2 struct {
+	CPUPowers []CPUPowerPartitionV2 `json:"CPUPowers"`
+}
+
+type CPUPowerPartitionV2 struct {
+	ResourcesPartitionV2 `json:"ResourcesPartitionV2"`
+	CPUCores             []CPUCoresPartitionV2 `json:"CPUCoresPartitions"`
+}
+
+type CPUCoresPartitionV2 struct {
+	ResourcesPartitionV2 `json:"ResourcesPartitionV2"`
+	RAMs                 []RAMPartitionV2 `json:"RAMPartitions"`
+}
+
+type RAMPartitionV2 struct {
+	ResourcesPartitionV2 `json:"ResourcesPartitionV2"`
+}

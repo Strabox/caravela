@@ -29,6 +29,14 @@ func TestGuidSizeBytes(t *testing.T) {
 	assert.Equal(t, 256/8, SizeBytes(), "GUID size bytes returned wrong value!")
 }
 
+func TestNewZero(t *testing.T) {
+	zeroGUID := NewZero()
+
+	assert.Equal(t, "0", zeroGUID.String(), "Zero GUID value is wrong!")
+	assert.Equal(t, int64(0), zeroGUID.Int64(), "Zero GUID value is wrong!")
+	assert.Equal(t, SizeBytes(), len(zeroGUID.Bytes()), "Byte array return has different length from the GUID size")
+}
+
 func TestMaximumGUID(t *testing.T) {
 	expectedMax := big.NewInt(0)
 	expectedMax.Exp(big.NewInt(2), big.NewInt(int64(SizeBits())), nil)
@@ -38,6 +46,13 @@ func TestMaximumGUID(t *testing.T) {
 
 	assert.Equal(t, expectedMax.String(), max.String(), "Maximum GUID value is wrong!")
 	assert.Equal(t, SizeBytes(), len(max.Bytes()), "Byte array return has different length from the GUID size")
+}
+
+func TestNewGUIDRandom(t *testing.T) {
+	randGUID := NewGUIDRandom()
+
+	assert.True(t, randGUID.Lower(*MaximumGUID()), "GUID should be smaller than MAX GUID")
+	assert.True(t, randGUID.Higher(*NewGUIDInteger(0)), "GUID should be higher than 0")
 }
 
 func TestNewGUIDString(t *testing.T) {
@@ -225,6 +240,42 @@ func TestGuid_Cmp_Lower(t *testing.T) {
 	assert.Equal(t, -1, res, "Receiver should be lower")
 }
 
+func TestGuid_Higher_True(t *testing.T) {
+	guid1 := NewGUIDInteger(68)
+	guid2 := NewGUIDInteger(67)
+
+	res := guid1.Higher(*guid2)
+
+	assert.True(t, res, "Receiver should be higher")
+}
+
+func TestGuid_Higher_False(t *testing.T) {
+	guid1 := NewGUIDInteger(888)
+	guid2 := NewGUIDInteger(887)
+
+	res := guid1.Lower(*guid2)
+
+	assert.False(t, res, "Receiver should be lower")
+}
+
+func TestGuid_Lower_True(t *testing.T) {
+	guid1 := NewGUIDInteger(999)
+	guid2 := NewGUIDInteger(1000)
+
+	res := guid1.Lower(*guid2)
+
+	assert.True(t, res, "Receiver should be lower")
+}
+
+func TestGuid_Lower_False(t *testing.T) {
+	guid1 := NewGUIDInteger(2)
+	guid2 := NewGUIDInteger(1)
+
+	res := guid1.Lower(*guid2)
+
+	assert.False(t, res, "Receiver should be lower")
+}
+
 func TestGuid_Equals_True(t *testing.T) {
 	guid1 := NewGUIDInteger(999)
 	guid2 := NewGUIDInteger(999)
@@ -250,6 +301,15 @@ func TestGuid_Equals_False_2(t *testing.T) {
 	equal := guid1.Equals(*guid2)
 
 	assert.False(t, equal, "GUIDs should be equal")
+}
+
+func TestGuid_Short(t *testing.T) {
+	const GUID = "77546568768548746546877"
+
+	guid := NewGUIDString(GUID)
+	shortGUID := guid.Short()
+
+	assert.Equal(t, guid.String()[0:guidShortStringSize], shortGUID, "Byte array return has different length from the GUID")
 }
 
 func TestGuid_Copy(t *testing.T) {

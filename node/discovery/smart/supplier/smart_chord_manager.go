@@ -41,15 +41,15 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 		var err error = nil
 
 		if findPhase == 0 { // Random trader inside resources zone
-			destinationGUID, _ = man.resourcesMapping.RandGUID(targetResources)
+			destinationGUID, _ = man.resourcesMapping.RandGUIDSearch(targetResources)
 		} else { // Random trader in higher resources zone
-			destinationGUID, err = man.resourcesMapping.HigherRandGUID(*destinationGUID, targetResources)
+			destinationGUID, err = man.resourcesMapping.HigherRandGUIDSearch(*destinationGUID, targetResources)
 			if err != nil { // No more resource partitions to search
 				return availableOffers
 			}
 		}
 
-		res, _ := man.resourcesMapping.ResourcesByGUID(*destinationGUID)
+		res := man.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS %s", res)
 
 		overlayNodes, _ := man.overlay.Lookup(ctx, destinationGUID.Bytes())
@@ -78,20 +78,23 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error) {
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
-	destinationGUID, _ := man.resourcesMapping.RandGUID(availableResources)
+	destinationGUID, _ := man.resourcesMapping.RandGUIDOffer(availableResources)
 	overlayNodes, _ = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
 	overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 	// .. try search nodes in the beginning of the original target resource range region
 	if len(overlayNodes) == 0 {
-		destinationGUID := man.resourcesMapping.FirstGUID(availableResources)
+		destinationGUID, err := man.resourcesMapping.FirstGUIDOffer(availableResources)
+		if err != nil {
+			return nil, err
+		}
 		overlayNodes, _ = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
 		overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 	}
 
 	// ... try search for random nodes that handle less powerful resource combinations
 	for len(overlayNodes) == 0 {
-		destinationGUID, err = man.resourcesMapping.LowerRandGUID(*destinationGUID, availableResources)
+		destinationGUID, err = man.resourcesMapping.LowerRandGUIDOffer(*destinationGUID, availableResources)
 		if err != nil {
 			log.Errorf(util.LogTag("SUPPLIER")+"NO NODES to handle resources offer: %s. Error: %s",
 				availableResources.String(), err)
@@ -127,9 +130,9 @@ func (man *SmartChordOffersManager) removeNonTargetNodes(remoteNodes []*overlayT
 	targetGuid guid.GUID) []*overlayTypes.OverlayNode {
 
 	resultNodes := make([]*overlayTypes.OverlayNode, 0)
-	targetGuidResources, _ := man.resourcesMapping.ResourcesByGUID(targetGuid)
+	targetGuidResources := man.resourcesMapping.ResourcesByGUID(targetGuid)
 	for _, remoteNode := range remoteNodes {
-		remoteNodeResources, _ := man.resourcesMapping.ResourcesByGUID(*guid.NewGUIDBytes(remoteNode.GUID()))
+		remoteNodeResources := man.resourcesMapping.ResourcesByGUID(*guid.NewGUIDBytes(remoteNode.GUID()))
 		if targetGuidResources.Equals(*remoteNodeResources) {
 			resultNodes = append(resultNodes, remoteNode)
 		}

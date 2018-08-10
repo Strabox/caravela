@@ -1,11 +1,6 @@
 package resources
 
-import (
-	"fmt"
-	"github.com/strabox/caravela/configuration"
-	"github.com/strabox/caravela/node/common/guid"
-)
-
+/*
 // Partition of a given resource through a percentage.
 type ResourcePartition struct {
 	Value      int
@@ -13,20 +8,20 @@ type ResourcePartition struct {
 }
 
 // Mapping representation between the GUIDs and resources combinations.
-// THREAD SAFE, because it is not expected to dynamic mapping of resources.
+// THREAD SAFE, because it is not testExpectedTestPartitions to dynamic mapping of resources.
 type Mapping struct {
 	resourcesIDMap     [][]*guid.Range // Matrix of GUID ranges for each resource combination
 	cpuIndexes         map[int]int     // Obtain the CPUs indexes (given CPUs value)
 	ramIndexes         map[int]int     // Obtain the RAM indexes (given RAM value)
 	invertCpuIndexes   map[int]int     // Obtain the CPUs value (given CPUs index)
 	invertRamIndexes   map[int]int     // Obtain the RAM value (given RAM index)
-	cpuPartitions      []int           // The CPUs partitions e.g. (1, 2, 4, ...)
-	ramPartitions      []int           // The RAM partitions e.g. (256, 512, 1024, ...)
-	numOfCPUPartitions int             // Number of CPUs partitions
-	numOfRAMPartitions int             // Number of RAM partitions
+	cpuPartitions      []int           // The CPUs testPartitions e.g. (1, 2, 4, ...)
+	ramPartitions      []int           // The RAM testPartitions e.g. (256, 512, 1024, ...)
+	numOfCPUPartitions int             // Number of CPUs testPartitions
+	numOfRAMPartitions int             // Number of RAM testPartitions
 }
 
-// Creates a new resource map given the CPUs and RAM partitions and the respective GUID distributions.
+// Creates a new resource map given the CPUs and RAM testPartitions and the respective GUID distributions.
 func NewResourcesMap(cpuPartitionsPerc []ResourcePartition, ramPartitionsPerc []ResourcePartition) *Mapping {
 	rm := &Mapping{
 		numOfCPUPartitions: len(cpuPartitionsPerc),
@@ -87,11 +82,11 @@ func GetRamPartitions(ramPartitions []configuration.RAMPartition) []ResourcePart
 }
 
 // Returns a random GUID in the range of the respective "fittest" target resource combination.
-func (rm *Mapping) RandGUID(targetResources Resources) (*guid.GUID, error) {
+func (rm *Mapping) RandGUIDSearch(targetResources Resources) (*guid.GUID, error) {
 	indexesRes := rm.getFittestResources(targetResources)
 	cpuIndex := rm.cpuIndexes[indexesRes.CPUs()]
 	ramIndex := rm.ramIndexes[indexesRes.RAM()]
-	return rm.resourcesIDMap[cpuIndex][ramIndex].GenerateRandomInside()
+	return rm.resourcesIDMap[cpuIndex][ramIndex].GenerateRandom()
 }
 
 // Returns a random GUID in the next range of resources.
@@ -108,10 +103,10 @@ func (rm *Mapping) HigherRandGUID(currentGUID guid.GUID, targetResources Resourc
 			return nil, fmt.Errorf("no more resources combination available")
 		} else {
 			targetRamIndex := rm.ramIndexes[targetFittestRes.RAM()]
-			return rm.resourcesIDMap[currentCpuIndex+1][targetRamIndex].GenerateRandomInside()
+			return rm.resourcesIDMap[currentCpuIndex+1][targetRamIndex].GenerateRandom()
 		}
 	} else {
-		return rm.resourcesIDMap[currentCpuIndex][currentRamIndex+1].GenerateRandomInside()
+		return rm.resourcesIDMap[currentCpuIndex][currentRamIndex+1].GenerateRandom()
 	}
 }
 
@@ -129,10 +124,10 @@ func (rm *Mapping) LowerRandGUID(currentGUID guid.GUID, targetResources Resource
 			return nil, fmt.Errorf("no more resources combination available")
 		} else {
 			targetRamIndex := rm.ramIndexes[targetFittestRes.RAM()]
-			return rm.resourcesIDMap[cpuIndex-1][targetRamIndex].GenerateRandomInside()
+			return rm.resourcesIDMap[cpuIndex-1][targetRamIndex].GenerateRandom()
 		}
 	} else {
-		return rm.resourcesIDMap[cpuIndex][ramIndex-1].GenerateRandomInside()
+		return rm.resourcesIDMap[cpuIndex][ramIndex-1].GenerateRandom()
 	}
 }
 
@@ -196,3 +191,5 @@ func (rm *Mapping) String() (res string) {
 	res += "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	return
 }
+
+*/

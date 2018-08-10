@@ -7,11 +7,13 @@ import (
 	"time"
 )
 
+const guidShortStringSize = 12
+
 // randomSource random source to generate random GUIDs
 var randomSource = util.NewSourceSafe(rand.NewSource(time.Now().Unix()))
 
 // Used to allow only one initialization of the GUID module
-var isGuidInitialized = false
+var isGUIDInitialized = false
 
 // 160-bits default (To maintain compatibility with used chord overlay implementation)
 var guidSizeBits = 160
@@ -23,9 +25,9 @@ type GUID struct {
 
 // Init initializes the GUID package with the size of the GUID.
 func Init(guidBitsSize int) {
-	if !isGuidInitialized {
+	if !isGUIDInitialized {
 		guidSizeBits = guidBitsSize
-		isGuidInitialized = true
+		isGUIDInitialized = true
 	}
 }
 
@@ -34,7 +36,7 @@ func SizeBits() int {
 	return guidSizeBits
 }
 
-//  SizeBytes returns the size of the GUID (in bytes).
+// SizeBytes returns the size of the GUID (in bytes).
 func SizeBytes() int {
 	return guidSizeBits / 8
 }
@@ -47,7 +49,14 @@ func MaximumGUID() *GUID {
 	return newGUIDBigInt(maxId)
 }
 
-//  NewGUIDRandom creates a random GUID in the range [0,MaxGUID).
+// NewZero creates the 0 GUID.
+func NewZero() *GUID {
+	return &GUID{
+		id: big.NewInt(0),
+	}
+}
+
+// NewGUIDRandom creates a random GUID in the range [0,MaxGUID).
 func NewGUIDRandom() *GUID {
 	guid := &GUID{}
 
@@ -176,12 +185,12 @@ func (guid *GUID) Copy() *GUID {
 	return NewGUIDString(guid.String())
 }
 
-// String returns the value of the GUID in a string representation (as an integer in base 10)
+// String returns the value of the GUID in a string representation (as an integer in base 10).
 func (guid *GUID) String() string {
 	return guid.id.String()
 }
 
-// Short returns the first digits of the GUID in a string representation
+// Short returns the first digits of the GUID in a string representation.
 func (guid *GUID) Short() string {
-	return guid.id.String()[0:12]
+	return guid.id.String()[0:guidShortStringSize]
 }
