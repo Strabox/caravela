@@ -41,7 +41,10 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 		var err error = nil
 
 		if findPhase == 0 { // Random trader inside resources zone
-			destinationGUID, _ = man.resourcesMapping.RandGUIDSearch(targetResources)
+			destinationGUID, err = man.resourcesMapping.RandGUIDSearch(targetResources)
+			if err != nil { // System can't handle that many resources
+				return availableOffers
+			}
 		} else { // Random trader in higher resources zone
 			destinationGUID, err = man.resourcesMapping.HigherRandGUIDSearch(*destinationGUID, targetResources)
 			if err != nil { // No more resource partitions to search

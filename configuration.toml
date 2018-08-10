@@ -3,38 +3,18 @@ APIPort = 8001
 APITimeout = "3s"
 CheckContainersInterval = "30s"
 ResourcesOvercommit = 50
-# Cpu Cores Partitions
-[[Caravela.CpuCoresPartitions]]
-Cores = 1
-Percentage = 25
-[[Caravela.CpuCoresPartitions]]
-Cores = 2
-Percentage = 50
-[[Caravela.CpuCoresPartitions]]
-Cores = 4
-Percentage = 25
-# Ram Partitions
-[[Caravela.RamPartitions]]
-Ram = 256
-Percentage = 25
-[[Caravela.RamPartitions]]
-Ram = 512
-Percentage = 50
-[[Caravela.RamPartitions]]
-Ram = 1024
-Percentage = 25
-    [Caravela.DiscoveryBackend]
-    Backend = "chord-smart"
-        [Caravela.DiscoveryBackend.SmartChordBackend]
-        SupplyingInterval = "30s"
-        SpreadOffersInterval = "30s"
-        RefreshesCheckInterval = "30s"
-        RefreshingInterval = "30s"
-        MaxRefreshesFailed = 3
-        MaxRefreshesMissed = 2
-        RefreshMissedTimeout = "20s"
-        [Caravela.DiscoveryBackend.RandomChordBackend]
-        RandBackendMaxRetries = 6
+[Caravela.DiscoveryBackend]
+Backend = "chord-smart"
+    [Caravela.DiscoveryBackend.SmartChordBackend]
+    SupplyingInterval = "30s"
+    SpreadOffersInterval = "30s"
+    RefreshesCheckInterval = "30s"
+    RefreshingInterval = "30s"
+    MaxRefreshesFailed = 3
+    MaxRefreshesMissed = 2
+    RefreshMissedTimeout = "20s"
+    [Caravela.DiscoveryBackend.RandomChordBackend]
+    RandBackendMaxRetries = 6
 [Caravela.Resources]
     [[Caravela.Resources.CPUPowers]]
     Value = 0
