@@ -1,7 +1,7 @@
 package resources
 
 // Partition of a given resource through a percentage.
-type ResourcePartitionV2 struct {
+type ResourcePartition struct {
 	Value      float64
 	Percentage int
 }
@@ -10,10 +10,10 @@ type ResourcePartitions struct {
 	cpuPowerPartitions []CPUPowerPartition
 }
 
-func (r *ResourcePartitions) CPUPowerPartitions() []ResourcePartitionV2 {
-	res := make([]ResourcePartitionV2, 0)
+func (r *ResourcePartitions) CPUPowerPartitions() []ResourcePartition {
+	res := make([]ResourcePartition, 0)
 	for _, partition := range r.cpuPowerPartitions {
-		res = append(res, partition.ResourcePartitionV2)
+		res = append(res, partition.ResourcePartition)
 	}
 	return res
 }
@@ -21,20 +21,20 @@ func (r *ResourcePartitions) CPUPowerPartitions() []ResourcePartitionV2 {
 func (r *ResourcePartitions) CPUPowerPercentages() []int {
 	res := make([]int, 0)
 	for _, partition := range r.cpuPowerPartitions {
-		res = append(res, partition.ResourcePartitionV2.Percentage)
+		res = append(res, partition.ResourcePartition.Percentage)
 	}
 	return res
 }
 
 type CPUPowerPartition struct {
-	ResourcePartitionV2
+	ResourcePartition
 	cpuCoresPartitions []CPUCoresPartition
 }
 
-func (c *CPUPowerPartition) CPUCoresPartitions() []ResourcePartitionV2 {
-	res := make([]ResourcePartitionV2, 0)
+func (c *CPUPowerPartition) CPUCoresPartitions() []ResourcePartition {
+	res := make([]ResourcePartition, 0)
 	for _, partition := range c.cpuCoresPartitions {
-		res = append(res, partition.ResourcePartitionV2)
+		res = append(res, partition.ResourcePartition)
 	}
 	return res
 }
@@ -42,20 +42,20 @@ func (c *CPUPowerPartition) CPUCoresPartitions() []ResourcePartitionV2 {
 func (c *CPUPowerPartition) CPUCoresPercentages() []int {
 	res := make([]int, 0)
 	for _, partition := range c.cpuCoresPartitions {
-		res = append(res, partition.ResourcePartitionV2.Percentage)
+		res = append(res, partition.ResourcePartition.Percentage)
 	}
 	return res
 }
 
 type CPUCoresPartition struct {
-	ResourcePartitionV2
+	ResourcePartition
 	ramPartitions []RAMPartition
 }
 
-func (c *CPUCoresPartition) RAMPartitions() []ResourcePartitionV2 {
-	res := make([]ResourcePartitionV2, 0)
+func (c *CPUCoresPartition) RAMPartitions() []ResourcePartition {
+	res := make([]ResourcePartition, 0)
 	for _, partition := range c.ramPartitions {
-		res = append(res, partition.ResourcePartitionV2)
+		res = append(res, partition.ResourcePartition)
 	}
 	return res
 }
@@ -63,11 +63,11 @@ func (c *CPUCoresPartition) RAMPartitions() []ResourcePartitionV2 {
 func (c *CPUCoresPartition) RAMPercentages() []int {
 	res := make([]int, 0)
 	for _, partition := range c.ramPartitions {
-		res = append(res, partition.ResourcePartitionV2.Percentage)
+		res = append(res, partition.ResourcePartition.Percentage)
 	}
 	return res
 }
 
 type RAMPartition struct {
-	ResourcePartitionV2
+	ResourcePartition
 }

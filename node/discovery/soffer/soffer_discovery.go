@@ -1,4 +1,4 @@
-package smart
+package soffer
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
-	"github.com/strabox/caravela/node/discovery/smart/supplier"
-	"github.com/strabox/caravela/node/discovery/smart/trader"
+	"github.com/strabox/caravela/node/discovery/soffer/supplier"
+	"github.com/strabox/caravela/node/discovery/soffer/trader"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -30,7 +30,7 @@ type Discovery struct {
 	virtualTraders sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
 }
 
-func NewSmartDiscovery(config *configuration.Configuration, overlay external.Overlay,
+func NewSOfferDiscovery(config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{

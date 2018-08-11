@@ -4,7 +4,7 @@ APITimeout = "3s"
 CheckContainersInterval = "30s"
 ResourcesOvercommit = 50
 [Caravela.DiscoveryBackend]
-Backend = "chord-smart"
+Backend = "chord-multiple-offers"
     [Caravela.DiscoveryBackend.SmartChordBackend]
     SupplyingInterval = "30s"
     SpreadOffersInterval = "30s"

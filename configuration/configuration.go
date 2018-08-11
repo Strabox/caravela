@@ -43,22 +43,19 @@ type host struct {
 
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
-	Simulation              bool                 `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
-	DiscoveryBackend        discoveryBackends    `json:"DiscoveryBackend"`        // Define what strategy is used to manage the offers
-	APIPort                 int                  `json:"APIPort"`                 // Port of API REST endpoints
-	APITimeout              duration             `json:"APITimeout"`              // Timeout for API REST requests
-	CheckContainersInterval duration             `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
-	CPUPowerPartition       []CPUPowerPartition  `json:"CPUPowerPartition"`       // GUID partitions for CPU power
-	CPUCoresPartitions      []CPUCoresPartition  `json:"CPUCoresPartitions"`      // GUID partitions for the amount of CPU cores
-	RAMPartitions           []RAMPartition       `json:"RAMPartitions"`           // GUID partitions for the amount of RAM
-	Resources               ResourcePartitionsV2 `json:"Resources"`
-	ResourcesOvercommit     int                  `json:"ResourcesOvercommit"` // Percentage of overcommit to apply to available resources
+	Simulation              bool                `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
+	DiscoveryBackend        discoveryBackend    `json:"DiscoveryBackend"`        // Define what strategy is used to manage the offers
+	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
+	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
+	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
+	Resources               ResourcesPartitions `json:"Resources"`
+	ResourcesOvercommit     int                 `json:"ResourcesOvercommit"` // Percentage of overcommit to apply to available resources
 }
 
-type discoveryBackends struct {
-	Backend            string                 `json:"Backend"` // Selected discovery backend.
-	SmartChordBackend  smartChordDiscBackend  //
-	RandomChordBackend randomChordDiscBackend //
+type discoveryBackend struct {
+	Backend            string                 `json:"Backend"`           // Selected discovery backend.
+	SmartChordBackend  smartChordDiscBackend  `json:"SmartChordBackend"` //
+	RandomChordBackend randomChordDiscBackend `json:"SmartChordBackend"` //
 }
 
 type smartChordDiscBackend struct {
@@ -112,10 +109,13 @@ func Default(hostIP string) *Configuration {
 			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
-			Simulation: false,
-			APIPort:    defaultCaravelaAPIPort,
-			DiscoveryBackend: discoveryBackends{
-				Backend: "chord-smart",
+			Simulation:              false,
+			APIPort:                 defaultCaravelaAPIPort,
+			ResourcesOvercommit:     50,
+			APITimeout:              duration{Duration: 5 * time.Second},
+			CheckContainersInterval: duration{Duration: 30 * time.Second},
+			DiscoveryBackend: discoveryBackend{
+				Backend: "chord-soffer",
 				SmartChordBackend: smartChordDiscBackend{
 					SupplyingInterval:      duration{Duration: 45 * time.Second},
 					SpreadOffersInterval:   duration{Duration: 40 * time.Second},
@@ -129,21 +129,31 @@ func Default(hostIP string) *Configuration {
 					RandBackendMaxRetries: 6,
 				},
 			},
-			APITimeout:              duration{Duration: 5 * time.Second},
-			CheckContainersInterval: duration{Duration: 30 * time.Second},
-			CPUPowerPartition: []CPUPowerPartition{
-				{Class: 1, ResourcesPartition: ResourcesPartition{Percentage: 25}},
-				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-				{Class: 2, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
-			CPUCoresPartitions: []CPUCoresPartition{
-				{Cores: 1, ResourcesPartition: ResourcesPartition{Percentage: 25}},
-				{Cores: 2, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-				{Cores: 4, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
-			RAMPartitions: []RAMPartition{
-				{RAM: 256, ResourcesPartition: ResourcesPartition{Percentage: 25}},
-				{RAM: 512, ResourcesPartition: ResourcesPartition{Percentage: 50}},
-				{RAM: 1024, ResourcesPartition: ResourcesPartition{Percentage: 25}}},
-			ResourcesOvercommit: 50,
+			Resources: ResourcesPartitions{
+				CPUPowers: []CPUPowerPartition{
+					{
+						ResourcesPartition: ResourcesPartition{Value: 0, Percentage: 100},
+						CPUCores: []CPUCoresPartition{
+							{
+								ResourcesPartition: ResourcesPartition{Value: 1, Percentage: 50},
+								RAMs: []RAMPartition{
+									{ResourcesPartition: ResourcesPartition{Value: 256, Percentage: 25}},
+									{ResourcesPartition: ResourcesPartition{Value: 512, Percentage: 50}},
+									{ResourcesPartition: ResourcesPartition{Value: 1024, Percentage: 25}},
+								},
+							},
+							{
+								ResourcesPartition: ResourcesPartition{Value: 2, Percentage: 50},
+								RAMs: []RAMPartition{
+									{ResourcesPartition: ResourcesPartition{Value: 512, Percentage: 25}},
+									{ResourcesPartition: ResourcesPartition{Value: 1024, Percentage: 50}},
+									{ResourcesPartition: ResourcesPartition{Value: 2048, Percentage: 25}},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		ImagesStorage: imagesStorageBackend{
 			Backend: "DockerHub",
@@ -207,37 +217,26 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("invalid backend port: %d", c.APIPort())
 	}
 
-	percentageAcc := 0
-	for _, value := range c.CPUPowerPartitions() {
-		percentageAcc += value.Percentage
-		if value.Class < 0 {
-			return fmt.Errorf("partitions CPU power class must be a positive integer")
+	powerPercAcc := 0
+	for _, powerPart := range c.Caravela.Resources.CPUPowers {
+		powerPercAcc += powerPart.Percentage
+		currCoresPercAcc := 0
+		for _, corePart := range powerPart.CPUCores {
+			currCoresPercAcc += corePart.Percentage
+			currRamPercAcc := 0
+			for _, ramPart := range corePart.RAMs {
+				currRamPercAcc += ramPart.Percentage
+			}
+			if currRamPercAcc != 100 {
+				return fmt.Errorf("ram partitions of <Power: %d, Cores: %d> percentages must sum 100", powerPart.Value, corePart.Value)
+			}
+		}
+		if currCoresPercAcc != 100 {
+			return fmt.Errorf("core partitions of <Power: %d> percentages must sum 100", powerPart.Value)
 		}
 	}
-	if percentageAcc != 100 {
-		return fmt.Errorf("the sum of CPU power partitions size must equal to 100")
-	}
-
-	percentageAcc = 0
-	for _, value := range c.CPUCoresPartitions() {
-		percentageAcc += value.Percentage
-		if value.Cores <= 0 {
-			return fmt.Errorf("partitions CPU cores must be a positive integer")
-		}
-	}
-	if percentageAcc != 100 {
-		return fmt.Errorf("the sum of CPU cores partitions size must equal to 100")
-	}
-
-	percentageAcc = 0
-	for _, value := range c.RAMPartitions() {
-		percentageAcc += value.Percentage
-		if value.RAM <= 0 {
-			return fmt.Errorf("partitions RAM amount must be a positive integer")
-		}
-	}
-	if percentageAcc != 100 {
-		return fmt.Errorf("the sum of RAM partitions size must equal to 100")
+	if powerPercAcc != 100 {
+		return fmt.Errorf("cpu power partitions percentages must sum 100")
 	}
 
 	// ======================= Smart Chord Discovery Backend specific ==========================
@@ -297,43 +296,29 @@ func (c *Configuration) Print() {
 	log.Printf("Simulation:                  %t", c.Simulation())
 	log.Printf("Port:                        %d", c.APIPort())
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
-	log.Printf("Discovery Backend:           %s", c.DiscoveryBackend())
 	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
-	log.Printf("Supply Resources Interval:   %s", c.SupplyingInterval().String())
-	log.Printf("Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
-	log.Printf("Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
-	log.Printf("Refreshes Interval:          %s", c.RefreshingInterval().String())
-	log.Printf("Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
-	log.Printf("Max num of refreshes failed: %d", c.MaxRefreshesFailed())
-	log.Printf("Max num of refreshes missed: %d", c.MaxRefreshesMissed())
 	log.Printf("Resources overcommit:        %d", c.ResourcesOvercommit())
 
-	partitions := ""
-	for i, value := range c.CPUPowerPartitions() {
-		if i > 0 {
-			partitions += ", "
-		}
-		partitions += fmt.Sprintf("<%d,%d>", value.Class, value.Percentage)
-	}
-	log.Printf("CPU Power Partitions:        %s", partitions)
+	log.Printf("Discovery Backends:")
+	log.Printf("   Backend:                     %s", c.DiscoveryBackend())
+	log.Printf("   Supply Resources Interval:   %s", c.SupplyingInterval().String())
+	log.Printf("   Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
+	log.Printf("   Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
+	log.Printf("   Refreshes Interval:          %s", c.RefreshingInterval().String())
+	log.Printf("   Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
+	log.Printf("   Max num of refreshes failed: %d", c.MaxRefreshesFailed())
+	log.Printf("   Max num of refreshes missed: %d", c.MaxRefreshesMissed())
 
-	partitions = ""
-	for i, value := range c.CPUCoresPartitions() {
-		if i > 0 {
-			partitions += ", "
+	log.Printf("Resources Partitions:")
+	for _, powerPart := range c.Caravela.Resources.CPUPowers {
+		log.Printf("CPUPower: %d", powerPart.Value)
+		for _, corePart := range powerPart.CPUCores {
+			log.Printf("   CPUCores: %d", corePart.Value)
+			for _, ramPart := range corePart.RAMs {
+				log.Printf("      RAM: %d", ramPart.Value)
+			}
 		}
-		partitions += fmt.Sprintf("<%d,%d>", value.Cores, value.Percentage)
 	}
-	log.Printf("CPU Cores Partitions:        %s", partitions)
-
-	partitions = ""
-	for i, value := range c.RAMPartitions() {
-		if i > 0 {
-			partitions += ", "
-		}
-		partitions += fmt.Sprintf("<%d,%d>", value.RAM, value.Percentage)
-	}
-	log.Printf("RAM Partitions:              %s", partitions)
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$ IMAGES STORAGE $$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	log.Printf("Backend:                     %s", c.ImagesStorageBackend())
@@ -341,10 +326,12 @@ func (c *Configuration) Print() {
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ OVERLAY $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	log.Printf("Overlay:                     %s", c.OverlayName())
 	log.Printf("Port:                        %d", c.OverlayPort())
-	log.Printf("Messages Timeout:            %s", c.ChordTimeout().String())
-	log.Printf("Number of Virtual Nodes:     %d", c.ChordVirtualNodes())
-	log.Printf("Number of Successors:        %d", c.ChordNumSuccessors())
-	log.Printf("Hash Size (bits):            %d", c.ChordHashSizeBits())
+
+	log.Printf("Chord:")
+	log.Printf("   Messages Timeout:         %s", c.ChordTimeout().String())
+	log.Printf("   Number of Virtual Nodes:  %d", c.ChordVirtualNodes())
+	log.Printf("   Number of Successors:     %d", c.ChordNumSuccessors())
+	log.Printf("   Hash Size (bits):         %d", c.ChordHashSizeBits())
 
 	log.Printf("##################################################################")
 }
@@ -377,20 +364,8 @@ func (c *Configuration) CheckContainersInterval() time.Duration {
 	return c.Caravela.CheckContainersInterval.Duration
 }
 
-func (c *Configuration) CPUPowerPartitions() []CPUPowerPartition {
-	return c.Caravela.CPUPowerPartition
-}
-
-func (c *Configuration) CPUCoresPartitions() []CPUCoresPartition {
-	return c.Caravela.CPUCoresPartitions
-}
-
-func (c *Configuration) ResourcesPartitions() ResourcePartitionsV2 {
+func (c *Configuration) ResourcesPartitions() ResourcesPartitions {
 	return c.Caravela.Resources
-}
-
-func (c *Configuration) RAMPartitions() []RAMPartition {
-	return c.Caravela.RAMPartitions
 }
 
 func (c *Configuration) ResourcesOvercommit() int {

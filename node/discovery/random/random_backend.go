@@ -22,7 +22,6 @@ type Discovery struct {
 	client  external.Caravela            // Remote caravela's client.
 
 	maxResources resources.Resources
-	resourcesMap *resources.Mapping // GUID<->Resources mapping
 	nodeGUID     *guid.GUID
 
 	availableResources resources.Resources
@@ -30,7 +29,7 @@ type Discovery struct {
 }
 
 func NewRandomDiscovery(config *configuration.Configuration, overlay external.Overlay,
-	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
+	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{
 		config:  config,
@@ -38,7 +37,6 @@ func NewRandomDiscovery(config *configuration.Configuration, overlay external.Ov
 		client:  client,
 
 		maxResources: maxResources,
-		resourcesMap: resourcesMap,
 		nodeGUID:     nil,
 
 		availableResources: maxResources,
@@ -57,8 +55,8 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 	// TODO: Makes sense try search in the current node first ?
 	resultOffers := make([]types.AvailableOffer, 0)
 
-	if !targetResources.IsValid() { // If the resource combination is not valid we will search for the lowest one
-		targetResources = *d.resourcesMap.LowestResources()
+	if !targetResources.IsValid() { // If the resource combination is not valid we will refuse the request.
+		return resultOffers
 	}
 
 	for retry := 0; retry < d.config.RandBackendMaxRetries(); retry++ {

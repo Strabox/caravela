@@ -105,8 +105,10 @@ func TestFirstGUIDOffer(t *testing.T) {
 	expected := []int64{0, 0, 0, 8191, 12286, 16383, 12286}
 
 	for i, resources := range targetResources {
-		firstGUID := resMap.FirstGUIDOffer(resources)
-
+		firstGUID, err := resMap.FirstGUIDOffer(resources)
+		if err != nil {
+			assert.Fail(t, err.Error(), "")
+		}
 		assert.Equal(t, expected[i], firstGUID.Int64(), "")
 	}
 }
@@ -267,31 +269,31 @@ var (
 	testPartitions = &ResourcePartitions{
 		cpuPowerPartitions: []CPUPowerPartition{
 			{
-				ResourcePartitionV2: ResourcePartitionV2{Value: 0, Percentage: 50},
+				ResourcePartition: ResourcePartition{Value: 0, Percentage: 50},
 				cpuCoresPartitions: []CPUCoresPartition{
 					{
-						ResourcePartitionV2: ResourcePartitionV2{Value: 1, Percentage: 50},
+						ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
 						ramPartitions: []RAMPartition{
-							{ResourcePartitionV2: ResourcePartitionV2{Value: 256, Percentage: 50}},
-							{ResourcePartitionV2: ResourcePartitionV2{Value: 512, Percentage: 25}},
-							{ResourcePartitionV2: ResourcePartitionV2{Value: 1024, Percentage: 25}},
+							{ResourcePartition: ResourcePartition{Value: 256, Percentage: 50}},
+							{ResourcePartition: ResourcePartition{Value: 512, Percentage: 25}},
+							{ResourcePartition: ResourcePartition{Value: 1024, Percentage: 25}},
 						},
 					},
 					{
-						ResourcePartitionV2: ResourcePartitionV2{Value: 2, Percentage: 50},
+						ResourcePartition: ResourcePartition{Value: 2, Percentage: 50},
 						ramPartitions: []RAMPartition{
-							{ResourcePartitionV2: ResourcePartitionV2{Value: 2048, Percentage: 100}},
+							{ResourcePartition: ResourcePartition{Value: 2048, Percentage: 100}},
 						},
 					},
 				},
 			},
 			{
-				ResourcePartitionV2: ResourcePartitionV2{Value: 1, Percentage: 50},
+				ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
 				cpuCoresPartitions: []CPUCoresPartition{
 					{
-						ResourcePartitionV2: ResourcePartitionV2{Value: 2, Percentage: 100},
+						ResourcePartition: ResourcePartition{Value: 2, Percentage: 100},
 						ramPartitions: []RAMPartition{
-							{ResourcePartitionV2: ResourcePartitionV2{Value: 2048, Percentage: 100}},
+							{ResourcePartition: ResourcePartition{Value: 2048, Percentage: 100}},
 						},
 					},
 				},

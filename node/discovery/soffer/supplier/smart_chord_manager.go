@@ -81,8 +81,15 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error) {
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
-	destinationGUID, _ := man.resourcesMapping.RandGUIDOffer(availableResources)
-	overlayNodes, _ = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
+
+	destinationGUID, err := man.resourcesMapping.RandGUIDOffer(availableResources)
+	if err != nil {
+		return nil, errors.New("no nodes to handle offer resources")
+	}
+	overlayNodes, err = man.overlay.Lookup(context.Background(), destinationGUID.Bytes())
+	if err != nil {
+		return nil, errors.New("can't publish offer")
+	}
 	overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 	// .. try search nodes in the beginning of the original target resource range region
