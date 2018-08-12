@@ -125,7 +125,7 @@ func (trader *Trader) start() {
 
 // Returns all the offers that the trader is managing.
 func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay bool) []types.AvailableOffer {
-	if trader.haveOffers() { // Trader has offers so return them immediately
+	if trader.haveOffers() || !relay { // Trader has offers so return them immediately
 		trader.offersMutex.Lock()
 		defer trader.offersMutex.Unlock()
 
