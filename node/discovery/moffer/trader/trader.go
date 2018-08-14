@@ -112,7 +112,8 @@ func (trader *Trader) start() {
 			// Advertise offers (if any) into the neighbors traders.
 			// Necessary only to overcame the problems of unnoticed death of a neighbor.
 			if trader.haveOffers() {
-				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
 			}
 		case quit := <-trader.quitChan: // Stopping the trader (returning the goroutine)
 			if quit {
@@ -145,11 +146,10 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 		return allOffers
 	} else { // Ask for offers in the nearby neighbors that we think they have offers (via offer advertise relaying)
 		resOffers := make([]types.AvailableOffer, 0)
-		fromNodeGuid := guid.NewGUIDString(fromNode.GUID)
 
 		// Ask the successor (higher GUID)
 		successor := trader.nearbyTradersOffering.Successor()
-		if successor != nil && (relay || (!relay && (trader.guid.Higher(*fromNodeGuid)))) {
+		if successor != nil {
 			successorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
 			if trader.handledResources.Equals(*successorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
@@ -172,7 +172,7 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 
 		// Ask the predecessor (lower GUID)
 		predecessor := trader.nearbyTradersOffering.Predecessor()
-		if predecessor != nil && (relay || (!relay && (trader.guid.Lower(*fromNodeGuid)))) {
+		if predecessor != nil {
 			predecessorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if trader.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := trader.client.GetOffers(
@@ -216,9 +216,11 @@ func (trader *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
 
 		if advertise { // If node had no offers, advertise it has now for all the neighbors
 			if trader.config.Simulation() {
-				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
 			} else {
-				go trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+				go trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
 			}
 		}
 	}
@@ -247,7 +249,7 @@ func (trader *Trader) AdvertiseNeighborOffer(fromTrader, toNeighborTrader, trade
 			return neighborGUID.Higher(*trader.guid)
 		}
 	} else { // Message comes from a higher GUID's node
-		trader.nearbyTradersOffering.SetPredecessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGuid))
+		trader.nearbyTradersOffering.SetSuccessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGuid))
 		// Relay the advertise to a lower GUID's node (inside partition)
 		isValidNeighbor = func(neighborGUID *guid.GUID) bool {
 			return neighborGUID.Lower(*trader.guid)
@@ -257,9 +259,9 @@ func (trader *Trader) AdvertiseNeighborOffer(fromTrader, toNeighborTrader, trade
 	// Do not relay the advertise if the node has offers.
 	if !trader.haveOffers() {
 		if trader.config.Simulation() {
-			trader.advertiseOffersToNeighbors(isValidNeighbor)
+			trader.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
 		} else {
-			go trader.advertiseOffersToNeighbors(isValidNeighbor)
+			go trader.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
 		}
 	}
 }
@@ -272,7 +274,7 @@ func (trader *Trader) haveOffers() bool {
 }
 
 // Advertise that we have offers into all trader's neighbors that survive the given predicate application.
-func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool) {
+func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool, traderOffering *types.Node) {
 	log.Debugf(util.LogTag("TRADER")+"ADVERTISE offers, From: %s", trader.guid.Short())
 
 	overlayNeighbors, err := trader.overlay.Neighbors(context.Background(), trader.guid.Bytes())
@@ -290,7 +292,7 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 					context.Background(),
 					&types.Node{GUID: trader.guid.String()},
 					&types.Node{IP: overlayNeighbor.IP(), GUID: nodeGUID.String()},
-					&types.Node{IP: trader.config.Host.IP, GUID: trader.guid.String()},
+					traderOffering,
 				) // Sends advertise local offers message
 			}
 		}
@@ -349,7 +351,8 @@ func (trader *Trader) SpreadOffersSim() {
 	// Advertise offers (if any) into the neighbors traders.
 	// Necessary only to overcame the problems of unnoticed death of a neighbor.
 	if trader.haveOffers() {
-		trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true })
+		trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+			&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
 	}
 }
 
