@@ -125,7 +125,7 @@ func (trader *Trader) start() {
 }
 
 // Returns all the offers that the trader is managing.
-func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay bool) []types.AvailableOffer {
+func (trader *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []types.AvailableOffer {
 	if trader.haveOffers() || !relay { // Trader has offers so return them immediately or we are not relaying
 		trader.offersMutex.Lock()
 		defer trader.offersMutex.Unlock()
@@ -159,6 +159,8 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 					false)
 				if err == nil && offers != nil {
 					resOffers = append(resOffers, offers...)
+				} else if len(offers) == 0 {
+					trader.nearbyTradersOffering.SetSuccessor(nil)
 				}
 			}
 
@@ -176,6 +178,8 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 					false)
 				if err == nil && offers != nil {
 					resOffers = append(resOffers, offers...)
+				} else if len(offers) == 0 {
+					trader.nearbyTradersOffering.SetPredecessor(nil)
 				}
 			}
 
@@ -231,18 +235,18 @@ func (trader *Trader) RemoveOffer(fromSupp *types.Node, offer *types.Offer) {
 
 // Relay the offering advertise for the overlay neighbors if the trader doesn't have any available offers
 func (trader *Trader) AdvertiseNeighborOffer(fromTrader, toNeighborTrader, traderOffering *types.Node) {
-	fromTraderGuid := guid.NewGUIDString(fromTrader.GUID)
-	traderOfferingGuid := guid.NewGUIDString(traderOffering.GUID)
+	fromTraderGUID := guid.NewGUIDString(fromTrader.GUID)
+	traderOfferingGUID := guid.NewGUIDString(traderOffering.GUID)
 
 	var isValidNeighbor func(neighborGUID *guid.GUID) bool = nil
-	if trader.guid.Higher(*fromTraderGuid) { // Message comes from a lower GUID's node
-		trader.nearbyTradersOffering.SetPredecessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGuid))
+	if trader.guid.Higher(*fromTraderGUID) { // Message comes from a lower GUID's node
+		trader.nearbyTradersOffering.SetPredecessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGUID))
 		// Relay the advertise to a higher GUID's node (inside partition)
 		isValidNeighbor = func(neighborGUID *guid.GUID) bool {
 			return neighborGUID.Higher(*trader.guid)
 		}
 	} else { // Message comes from a higher GUID's node
-		trader.nearbyTradersOffering.SetSuccessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGuid))
+		trader.nearbyTradersOffering.SetSuccessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGUID))
 		// Relay the advertise to a lower GUID's node (inside partition)
 		isValidNeighbor = func(neighborGUID *guid.GUID) bool {
 			return neighborGUID.Lower(*trader.guid)

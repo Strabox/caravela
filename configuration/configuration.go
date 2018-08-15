@@ -311,11 +311,11 @@ func (c *Configuration) Print() {
 
 	log.Printf("Resources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUPowers {
-		log.Printf("CPUPower: %d", powerPart.Value)
+		log.Printf("   CPUPower: %d", powerPart.Value)
 		for _, corePart := range powerPart.CPUCores {
-			log.Printf("   CPUCores: %d", corePart.Value)
+			log.Printf("      CPUCores: %d", corePart.Value)
 			for _, ramPart := range corePart.RAMs {
-				log.Printf("      RAM: %d", ramPart.Value)
+				log.Printf("         RAM: %d", ramPart.Value)
 			}
 		}
 	}

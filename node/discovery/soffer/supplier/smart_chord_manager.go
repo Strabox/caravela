@@ -61,12 +61,13 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 		for _, node := range overlayNodes {
 			offers, err := man.remoteClient.GetOffers(
 				ctx,
-				&types.Node{GUID: ""},
+				&types.Node{},
 				&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 				true,
 			)
-			if (err == nil) && (len(offers) != 0) {
+			if err == nil && len(offers) != 0 {
 				availableOffers = append(availableOffers, offers...)
+				break
 			}
 		}
 
@@ -125,9 +126,7 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 			ID:        newOfferID,
 			Amount:    1,
 			Resources: types.Resources{CPUs: availableResources.CPUs(), RAM: availableResources.RAM()},
-		},
-	)
-
+		})
 	if err == nil {
 		return newSupplierOffer(common.OfferID(newOfferID), 1, availableResources, chosenNode.IP(), *chosenNodeGUID), nil
 	}

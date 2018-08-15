@@ -52,7 +52,6 @@ func (d *Discovery) AddTrader(traderGUID guid.GUID) {
 }
 
 func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	// TODO: Makes sense try search in the current node first ?
 	resultOffers := make([]types.AvailableOffer, 0)
 
 	if !targetResources.IsValid() { // If the resource combination is not valid we will refuse the request.
@@ -62,8 +61,8 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 	for retry := 0; retry < d.config.RandBackendMaxRetries(); retry++ {
 		destinationGUID := guid.NewGUIDRandom()
 
-		reqCtx := context.WithValue(ctx, types.NodeGUIDKey, d.nodeGUID.String())
-		nodes, err := d.overlay.Lookup(reqCtx, destinationGUID.Bytes())
+		ctx := context.WithValue(ctx, types.NodeGUIDKey, d.nodeGUID.String())
+		nodes, err := d.overlay.Lookup(ctx, destinationGUID.Bytes())
 		if err != nil {
 			continue
 		}
@@ -71,11 +70,11 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 		for _, node := range nodes {
 			offers, err := d.client.GetOffers(
 				ctx,
-				&types.Node{GUID: ""},
+				&types.Node{},
 				&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 				true,
 			)
-			if (err == nil) && (len(offers) != 0) {
+			if err == nil && len(offers) != 0 {
 				for _, offer := range offers {
 					tempRes := resources.NewResources(offer.Resources.CPUs, offer.Resources.RAM)
 					if tempRes.Contains(targetResources) {

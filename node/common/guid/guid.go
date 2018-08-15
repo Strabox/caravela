@@ -9,8 +9,8 @@ import (
 
 const guidShortStringSize = 12
 
-// randomSource random source to generate random GUIDs
-var randomSource = util.NewSourceSafe(rand.NewSource(time.Now().Unix()))
+// randomGenerator random source to generate random GUIDs
+var randomGenerator = rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix())))
 
 // Used to allow only one initialization of the GUID module
 var isGUIDInitialized = false
@@ -61,7 +61,7 @@ func NewGUIDRandom() *GUID {
 	guid := &GUID{}
 
 	guid.id = big.NewInt(0)
-	guid.id.Rand(rand.New(randomSource), MaximumGUID().id)
+	guid.id.Rand(randomGenerator, MaximumGUID().id)
 
 	return guid
 }
@@ -113,7 +113,7 @@ func (guid *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
 
 	dif.Sub(topGUID.id, guid.id)
 
-	randOffset.Rand(rand.New(randomSource), dif)
+	randOffset.Rand(randomGenerator, dif)
 
 	res.Add(guid.id, randOffset)
 
