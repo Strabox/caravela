@@ -300,38 +300,41 @@ func (c *Configuration) Print() {
 	log.Printf("Resources overcommit:        %d", c.ResourcesOvercommit())
 
 	log.Printf("Discovery Backends:")
-	log.Printf("   Backend:                     %s", c.DiscoveryBackend())
-	log.Printf("   Supply Resources Interval:   %s", c.SupplyingInterval().String())
-	log.Printf("   Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
-	log.Printf("   Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
-	log.Printf("   Refreshes Interval:          %s", c.RefreshingInterval().String())
-	log.Printf("   Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
-	log.Printf("   Max num of refreshes failed: %d", c.MaxRefreshesFailed())
-	log.Printf("   Max num of refreshes missed: %d", c.MaxRefreshesMissed())
+	log.Printf("  Active Backend:                           %s", c.DiscoveryBackend())
+	log.Printf("    Chord-Random:")
+	log.Printf("      Request Retries:             %d", c.RandBackendMaxRetries())
+	log.Printf("    Chord-Offers:")
+	log.Printf("      Supply Resources Interval:   %s", c.SupplyingInterval().String())
+	log.Printf("      Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
+	log.Printf("      Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
+	log.Printf("      Refreshes Interval:          %s", c.RefreshingInterval().String())
+	log.Printf("      Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
+	log.Printf("      Max num of refreshes failed: %d", c.MaxRefreshesFailed())
+	log.Printf("      Max num of refreshes missed: %d", c.MaxRefreshesMissed())
 
 	log.Printf("Resources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUPowers {
-		log.Printf("   CPUPower: %d", powerPart.Value)
+		log.Printf("  CPUPower: %d", powerPart.Value)
 		for _, corePart := range powerPart.CPUCores {
-			log.Printf("      CPUCores: %d", corePart.Value)
+			log.Printf("    CPUCores: %d", corePart.Value)
 			for _, ramPart := range corePart.RAMs {
-				log.Printf("         RAM: %d", ramPart.Value)
+				log.Printf("      RAM: %d", ramPart.Value)
 			}
 		}
 	}
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$ IMAGES STORAGE $$$$$$$$$$$$$$$$$$$$$$$$$$$")
-	log.Printf("Backend:                     %s", c.ImagesStorageBackend())
+	log.Printf("Active Backend:              %s", c.ImagesStorageBackend())
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ OVERLAY $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-	log.Printf("Overlay:                     %s", c.OverlayName())
+	log.Printf("Active Overlay:              %s", c.OverlayName())
 	log.Printf("Port:                        %d", c.OverlayPort())
 
 	log.Printf("Chord:")
-	log.Printf("   Messages Timeout:         %s", c.ChordTimeout().String())
-	log.Printf("   Number of Virtual Nodes:  %d", c.ChordVirtualNodes())
-	log.Printf("   Number of Successors:     %d", c.ChordNumSuccessors())
-	log.Printf("   Hash Size (bits):         %d", c.ChordHashSizeBits())
+	log.Printf("  Messages Timeout:         %s", c.ChordTimeout().String())
+	log.Printf("  Number of Virtual Nodes:  %d", c.ChordVirtualNodes())
+	log.Printf("  Number of Successors:     %d", c.ChordNumSuccessors())
+	log.Printf("  Hash Size (bits):         %d", c.ChordHashSizeBits())
 
 	log.Printf("##################################################################")
 }
