@@ -8,7 +8,8 @@ package client
 import (
 	"context"
 	"github.com/pkg/errors"
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/rest/user"
+	"github.com/strabox/caravela/api/rest/util"
 	"github.com/strabox/caravela/api/types"
 	"net/http"
 	"time"
@@ -45,10 +46,10 @@ func NewCaravelaTimeoutIP(caravelaHostIP string, requestTimeout time.Duration) *
 // SubmitContainers allows to submit a set of containers that you want to deploy in the CARAVELA's system.
 // The containers configurations are given by the containersConfigs slice.
 func (client *Client) SubmitContainers(c context.Context, containersConfigs []types.ContainerConfig) *Error {
-	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
-		rest.UserContainerBaseEndpoint)
+	url := util.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		user.ContainerBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(c, client.httpClient, url, http.MethodPost, containersConfigs, nil)
+	err, httpCode := util.DoHttpRequestJSON(c, client.httpClient, url, http.MethodPost, containersConfigs, nil)
 	if err != nil {
 		return newClientError(err)
 	}
@@ -63,10 +64,10 @@ func (client *Client) SubmitContainers(c context.Context, containersConfigs []ty
 // StopContainers stops and removes all the containers given by the containersIDs slice.
 func (client *Client) StopContainers(ctx context.Context, containersIDs []string) *Error {
 
-	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
-		rest.UserContainerBaseEndpoint)
+	url := util.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		user.ContainerBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodDelete, containersIDs, nil)
+	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodDelete, containersIDs, nil)
 	if err != nil {
 		return newClientError(err)
 	}
@@ -83,10 +84,10 @@ func (client *Client) StopContainers(ctx context.Context, containersIDs []string
 func (client *Client) ListContainers(ctx context.Context) ([]types.ContainerStatus, *Error) {
 	var containersList []types.ContainerStatus
 
-	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
-		rest.UserContainerBaseEndpoint)
+	url := util.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		user.ContainerBaseEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, nil, &containersList)
+	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, nil, &containersList)
 	if err != nil {
 		return nil, newClientError(err)
 	}
@@ -100,10 +101,10 @@ func (client *Client) ListContainers(ctx context.Context) ([]types.ContainerStat
 
 // Shutdown makes the daemon cleanly shutdown and leave the system.
 func (client *Client) Shutdown(ctx context.Context) *Error {
-	url := rest.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
-		rest.UserExitEndpoint)
+	url := util.BuildHttpURL(false, client.config.CaravelaInstanceIP(), client.config.CaravelaInstancePort(),
+		user.ExitEndpoint)
 
-	err, httpCode := rest.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, nil, nil)
+	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, nil, nil)
 	if err != nil {
 		return newClientError(err)
 	}

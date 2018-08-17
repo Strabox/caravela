@@ -6,12 +6,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/docker/events"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 	"sync"
-	"time"
 )
 
 // Containers manager responsible for interacting with the Docker daemon and managing all the interaction with the
@@ -24,10 +24,9 @@ type Manager struct {
 	dockerClient external.DockerClient        // Docker's client.
 	supplier     supplierLocal                // Local Supplier component.
 
-	quitChan              chan bool                             // Channel to alert that the node is stopping.
-	checkContainersTicker <-chan time.Time                      // Ticker to check for containers status.
-	containersMutex       *sync.Mutex                           // Mutex to control access to containers map.
-	containersMap         map[string]map[string]*localContainer // Collection of deployed containers (buyerIP->(containerID->Container)).
+	quitChan        chan bool                             // Channel to alert that the node is stopping.
+	containersMutex *sync.Mutex                           // Mutex to control access to containers map.
+	containersMap   map[string]map[string]*localContainer // Collection of deployed containers (buyerIP->(containerID->Container)).
 }
 
 // NewManager creates a new containers manager component.
@@ -38,45 +37,29 @@ func NewManager(config *configuration.Configuration, dockerClient external.Docke
 		dockerClient: dockerClient,
 		supplier:     supplier,
 
-		quitChan:              make(chan bool),
-		checkContainersTicker: time.NewTicker(config.CheckContainersInterval()).C,
-		containersMutex:       &sync.Mutex{},
-		containersMap:         make(map[string]map[string]*localContainer),
+		quitChan:        make(chan bool),
+		containersMutex: &sync.Mutex{},
+		containersMap:   make(map[string]map[string]*localContainer),
 	}
 }
 
-func (man *Manager) checkDeployedContainers() {
-	for {
-		select {
-		case <-man.checkContainersTicker: // Checking the submitted containers status and remove them if they finished
-			go func() {
-				man.containersMutex.Lock()
-				defer man.containersMutex.Unlock()
-
-				for key, containerMap := range man.containersMap {
-
-					for containerID, container := range containerMap {
-						contStatus, err := man.dockerClient.CheckContainerStatus(containerID)
-						if err == nil && !contStatus.IsRunning() {
-							log.Debugf(util.LogTag("CONTAINER")+"Container, %s STOPPED and REMOVED", containerID)
-							man.dockerClient.RemoveContainer(containerID)
-							man.supplier.ReturnResources(container.Resources())
-							delete(containerMap, containerID)
-						}
-					}
-
-					if containerMap == nil || len(containerMap) == 0 {
-						delete(man.containersMap, key)
-					}
+// receiveDockerEvents
+func (man *Manager) receiveDockerEvents(eventsChan <-chan *events.Event) {
+	go func() {
+		for {
+			select {
+			case event := <-eventsChan:
+				if event.Type == events.ContainerDied {
+					man.StopContainer(event.Value)
 				}
-			}()
-		case res := <-man.quitChan: // Stopping the containers management
-			if res {
-				log.Infof(util.LogTag("CONTAINER") + "STOPPED")
-				return
+			case quit := <-man.quitChan: // Stopping the containers management
+				if quit {
+					log.Infof(util.LogTag("CONTAINER") + "STOPPED")
+					return
+				}
 			}
 		}
-	}
+	}()
 }
 
 // Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
@@ -144,7 +127,7 @@ func (man *Manager) StopContainer(containerIDToStop string) error {
 	man.containersMutex.Lock()
 	defer man.containersMutex.Unlock()
 
-	for _, containersMap := range man.containersMap {
+	for buyerIP, containersMap := range man.containersMap {
 		for containerID, container := range containersMap {
 			if containerID == containerIDToStop {
 				man.dockerClient.RemoveContainer(containerIDToStop)
@@ -152,6 +135,9 @@ func (man *Manager) StopContainer(containerIDToStop string) error {
 				delete(containersMap, containerID)
 				return nil
 			}
+		}
+		if containersMap == nil || len(containersMap) == 0 {
+			delete(man.containersMap, buyerIP)
 		}
 	}
 
@@ -165,7 +151,8 @@ func (man *Manager) StopContainer(containerIDToStop string) error {
 func (man *Manager) Start() {
 	man.Started(man.config.Simulation(), func() {
 		if !man.config.Simulation() {
-			go man.checkDeployedContainers()
+			eventsChan := man.dockerClient.Start()
+			man.receiveDockerEvents(eventsChan)
 		}
 	})
 }

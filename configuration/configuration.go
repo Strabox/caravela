@@ -43,13 +43,12 @@ type host struct {
 
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
-	Simulation              bool                `json:"Simulation"`              // If the CARAVELA node is under simulation or not.
-	DiscoveryBackend        discoveryBackend    `json:"DiscoveryBackend"`        // Define what strategy is used to manage the offers
-	APIPort                 int                 `json:"APIPort"`                 // Port of API REST endpoints
-	APITimeout              duration            `json:"APITimeout"`              // Timeout for API REST requests
-	CheckContainersInterval duration            `json:"CheckContainersInterval"` // Interval of time to check the containers running in the node
-	Resources               ResourcesPartitions `json:"Resources"`
-	ResourcesOvercommit     int                 `json:"ResourcesOvercommit"` // Percentage of overcommit to apply to available resources
+	Simulation          bool                `json:"Simulation"`       // If the CARAVELA node is under simulation or not.
+	DiscoveryBackend    discoveryBackend    `json:"DiscoveryBackend"` // Define what strategy is used to manage the offers
+	APIPort             int                 `json:"APIPort"`          // Port of API REST endpoints
+	APITimeout          duration            `json:"APITimeout"`       // Timeout for API REST requests
+	Resources           ResourcesPartitions `json:"Resources"`
+	ResourcesOvercommit int                 `json:"ResourcesOvercommit"` // Percentage of overcommit to apply to available resources
 }
 
 type discoveryBackend struct {
@@ -109,13 +108,12 @@ func Default(hostIP string) *Configuration {
 			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
-			Simulation:              false,
-			APIPort:                 defaultCaravelaAPIPort,
-			ResourcesOvercommit:     50,
-			APITimeout:              duration{Duration: 5 * time.Second},
-			CheckContainersInterval: duration{Duration: 30 * time.Second},
+			Simulation:          false,
+			APIPort:             defaultCaravelaAPIPort,
+			ResourcesOvercommit: 50,
+			APITimeout:          duration{Duration: 5 * time.Second},
 			DiscoveryBackend: discoveryBackend{
-				Backend: "chord-soffer",
+				Backend: "chord-single-offer",
 				SmartChordBackend: smartChordDiscBackend{
 					SupplyingInterval:      duration{Duration: 45 * time.Second},
 					SpreadOffersInterval:   duration{Duration: 40 * time.Second},
@@ -217,25 +215,25 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("invalid backend port: %d", c.APIPort())
 	}
 
-	powerPercAcc := 0
+	powerPercentageAcc := 0
 	for _, powerPart := range c.Caravela.Resources.CPUPowers {
-		powerPercAcc += powerPart.Percentage
-		currCoresPercAcc := 0
+		powerPercentageAcc += powerPart.Percentage
+		currCoresPercentageAcc := 0
 		for _, corePart := range powerPart.CPUCores {
-			currCoresPercAcc += corePart.Percentage
-			currRamPercAcc := 0
+			currCoresPercentageAcc += corePart.Percentage
+			currRamPercentageAcc := 0
 			for _, ramPart := range corePart.RAMs {
-				currRamPercAcc += ramPart.Percentage
+				currRamPercentageAcc += ramPart.Percentage
 			}
-			if currRamPercAcc != 100 {
+			if currRamPercentageAcc != 100 {
 				return fmt.Errorf("ram partitions of <Power: %d, Cores: %d> percentages must sum 100", powerPart.Value, corePart.Value)
 			}
 		}
-		if currCoresPercAcc != 100 {
+		if currCoresPercentageAcc != 100 {
 			return fmt.Errorf("core partitions of <Power: %d> percentages must sum 100", powerPart.Value)
 		}
 	}
-	if powerPercAcc != 100 {
+	if powerPercentageAcc != 100 {
 		return fmt.Errorf("cpu power partitions percentages must sum 100")
 	}
 
@@ -296,7 +294,6 @@ func (c *Configuration) Print() {
 	log.Printf("Simulation:                  %t", c.Simulation())
 	log.Printf("Port:                        %d", c.APIPort())
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
-	log.Printf("Check Containers Interval:   %s", c.CheckContainersInterval().String())
 	log.Printf("Resources overcommit:        %d", c.ResourcesOvercommit())
 
 	log.Printf("Discovery Backends:")
@@ -361,10 +358,6 @@ func (c *Configuration) APIPort() int {
 
 func (c *Configuration) APITimeout() time.Duration {
 	return c.Caravela.APITimeout.Duration
-}
-
-func (c *Configuration) CheckContainersInterval() time.Duration {
-	return c.Caravela.CheckContainersInterval.Duration
 }
 
 func (c *Configuration) ResourcesPartitions() ResourcesPartitions {

@@ -19,8 +19,9 @@ type ContainerStatus struct {
 }
 
 type PortMapping struct {
-	HostPort      int `json:"HostPort"`
-	ContainerPort int `json:"ContainerPort"`
+	HostPort      int    `json:"HostPort"`
+	ContainerPort int    `json:"ContainerPort"`
+	Protocol      string `json:"Protocol"`
 }
 
 // ======================= Container Group Policy ========================
@@ -37,12 +38,15 @@ var containerGroupPolicies = []string{"spread", "co-location"}
 func (gp GroupPolicy) name() string {
 	return containerGroupPolicies[gp]
 }
+
 func (gp GroupPolicy) ordinal() int {
 	return int(gp)
 }
+
 func (gp GroupPolicy) String() string {
 	return containerGroupPolicies[gp]
 }
+
 func (gp GroupPolicy) values() *[]string {
 	return &containerGroupPolicies
 }

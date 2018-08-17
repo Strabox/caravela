@@ -1,4 +1,4 @@
-package rest
+package util
 
 import "github.com/strabox/caravela/api/types"
 

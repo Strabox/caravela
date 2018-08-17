@@ -23,7 +23,7 @@ func listContainer(c *cli.Context) {
 		"IMAGE",
 		"STATUS",
 		"PORTS",
-		"NAME"}, columnSize)
+		"NAMES"}, columnSize)
 
 	for _, containerStatus := range containersStatus {
 
@@ -32,8 +32,8 @@ func listContainer(c *cli.Context) {
 			if i != 0 {
 				presentPortMappings += ", "
 			}
-			presentPortMappings += fmt.Sprintf("%s:%d->%d/tcp", containerStatus.SupplierIP, portMap.HostPort,
-				portMap.ContainerPort)
+			presentPortMappings += fmt.Sprintf("%s:%d->%d/%s", containerStatus.SupplierIP, portMap.HostPort,
+				portMap.ContainerPort, portMap.Protocol)
 		}
 
 		presentTableLine([]string{

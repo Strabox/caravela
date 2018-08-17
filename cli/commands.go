@@ -53,7 +53,7 @@ var (
 					Value: defaultContainerName,
 				},
 				cli.StringSliceFlag{
-					Name:  "portMap, p",
+					Name:  "publish, p",
 					Usage: "Define a port mapping for a container, HostPort:ContainerPort",
 					Value: &cli.StringSlice{}, // No predefined port mapping
 				},

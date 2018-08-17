@@ -1,10 +1,11 @@
-package api
+package rest
 
 import (
 	"context"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
+	"github.com/strabox/caravela/api"
 	"github.com/strabox/caravela/api/rest/configuration"
 	"github.com/strabox/caravela/api/rest/containers"
 	"github.com/strabox/caravela/api/rest/discovery"
@@ -34,7 +35,7 @@ func NewServer(port int) *HttpServer {
 }
 
 // Start initializes the endpoints and starts the http web server.
-func (server *HttpServer) Start(node LocalNode) error {
+func (server *HttpServer) Start(node api.LocalNode) error {
 	log.Debug(util.LogTag("API") + "Starting REST API HttpServer ...")
 
 	// Initialize all the API rest endpoints

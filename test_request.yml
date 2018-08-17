@@ -5,7 +5,7 @@ service1:
   cpus: 1
   ram: 128
   ports:
-  - "9003:80"
+  - "9003:80/udp"
 service2:
   group_policy: "spread"
   image: yeasy/simple-web:latest
@@ -13,4 +13,4 @@ service2:
   cpus: 1
   ram: 256
   ports:
-  - "9002:80"
+  - "80"

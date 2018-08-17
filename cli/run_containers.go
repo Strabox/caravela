@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -112,31 +113,52 @@ func runContainers(c *cli.Context) {
 
 // validatePortMappings validates a list of port mappings given by the user.
 func validatePortMappings(inputPortMappings []string) ([]types.PortMapping, error) {
-	// Validate port mappings provided
-	var resPortMappings = make([]types.PortMapping, 0)
-	for _, portMap := range inputPortMappings {
-		var err error
+	resPortMappings := make([]types.PortMapping, 0)
+	for _, portMapStr := range inputPortMappings {
+		var err error = nil
 		resultPortMap := types.PortMapping{}
-		portMapping := strings.Split(portMap, ":")
 
-		if len(portMapping) != 2 {
-			return nil, fmt.Errorf("Invalid port mapping: %s. Provide: HostPort:ContainerPort\n", portMapping)
-		}
-
-		hostPort := portMapping[0]
-		containerPort := portMapping[1]
-		if resultPortMap.HostPort, err = strconv.Atoi(hostPort); err != nil {
-			return nil, fmt.Errorf("Port should be a positive integer. Error: %s.\n", hostPort)
-		}
-		if !util.IsValidPort(resultPortMap.HostPort) {
-			return nil, fmt.Errorf("Invalid host port number in: %s\n", portMap)
+		regex := regexp.MustCompile("(^[0-9]+$)|(^[0-9]+/(tcp|udp)$)|(^[0-9]+:[0-9]+$)|(^[0-9]+:[0-9]+/(tcp|udp)$)")
+		if !regex.MatchString(portMapStr) {
+			return nil, fmt.Errorf("invalid syntax for port mapping expression")
 		}
 
-		if resultPortMap.ContainerPort, err = strconv.Atoi(containerPort); err != nil {
-			return nil, fmt.Errorf("Port should be a positive integer. Error: %s.\n", containerPort)
+		portMapping := strings.Split(portMapStr, ":")
+
+		if len(portMapping) == 1 { // Publish the container port into a random one
+			containerPort := strings.Split(portMapping[0], "/")[0]
+			if resultPortMap.ContainerPort, err = strconv.Atoi(containerPort); err != nil {
+				return nil, fmt.Errorf("Port should be a positive integer. Error: %s.\n", containerPort)
+			}
+			if !util.IsValidPort(resultPortMap.ContainerPort) {
+				return nil, fmt.Errorf("Invalid container port number in: %s\n", portMapStr)
+			}
+
+			resultPortMap.HostPort = 0
+		} else if len(portMapping) == 2 { // Publish the container port into a user defined port
+			hostPort := portMapping[0]
+			containerPort := strings.Split(portMapping[1], "/")[0]
+			if resultPortMap.HostPort, err = strconv.Atoi(hostPort); err != nil {
+				return nil, fmt.Errorf("Port should be a positive integer. Error: %s.\n", hostPort)
+			}
+			if !util.IsValidPort(resultPortMap.HostPort) {
+				return nil, fmt.Errorf("Invalid host port number in: %s\n", portMapStr)
+			}
+
+			if resultPortMap.ContainerPort, err = strconv.Atoi(containerPort); err != nil {
+				return nil, fmt.Errorf("Port should be a positive integer. Error: %s.\n", containerPort)
+			}
+			if !util.IsValidPort(resultPortMap.ContainerPort) {
+				return nil, fmt.Errorf("Invalid container port number in: %s\n", portMapStr)
+			}
 		}
-		if !util.IsValidPort(resultPortMap.ContainerPort) {
-			return nil, fmt.Errorf("Invalid container port number in: %s\n", portMap)
+
+		if match, _ := regexp.MatchString("tcp", portMapStr); match {
+			resultPortMap.Protocol = "tcp"
+		} else if match, _ := regexp.MatchString("udp", portMapStr); match {
+			resultPortMap.Protocol = "udp"
+		} else {
+			resultPortMap.Protocol = "tcp"
 		}
 
 		resPortMappings = append(resPortMappings, resultPortMap)

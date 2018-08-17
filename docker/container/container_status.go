@@ -5,14 +5,14 @@ const Finished = 1
 const Unknown = 2
 
 // Simple execution status of a docker container.
-type ContainerStatus struct {
+type Status struct {
 	statusCode int
 }
 
-func NewContainerStatus(statusCode int) ContainerStatus {
-	return ContainerStatus{statusCode: statusCode}
+func NewContainerStatus(statusCode int) Status {
+	return Status{statusCode: statusCode}
 }
 
-func (cs ContainerStatus) IsRunning() bool {
+func (cs Status) IsRunning() bool {
 	return cs.statusCode == Running
 }

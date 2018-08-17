@@ -3,25 +3,29 @@ package discovery
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/rest/util"
 	"net/http"
 )
+
+const baseEndpoint = "/discovery"
+const OfferBaseEndpoint = baseEndpoint + "/offer"
+const NeighborOfferBaseEndpoint = baseEndpoint + "/neighbor/offer"
 
 var nodeDiscoveryAPI Discovery = nil
 
 func Init(router *mux.Router, nodeDiscovery Discovery) {
 	nodeDiscoveryAPI = nodeDiscovery
-	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(createOffer)).Methods(http.MethodPost)
-	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(refreshOffer)).Methods(http.MethodPatch)
-	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(removeOffer)).Methods(http.MethodDelete)
-	router.Handle(rest.DiscoveryOfferBaseEndpoint, rest.AppHandler(getOffers)).Methods(http.MethodGet)
-	router.Handle(rest.DiscoveryNeighborOfferBaseEndpoint, rest.AppHandler(neighborOffers)).Methods(http.MethodPatch)
+	router.Handle(OfferBaseEndpoint, util.AppHandler(createOffer)).Methods(http.MethodPost)
+	router.Handle(OfferBaseEndpoint, util.AppHandler(refreshOffer)).Methods(http.MethodPatch)
+	router.Handle(OfferBaseEndpoint, util.AppHandler(removeOffer)).Methods(http.MethodDelete)
+	router.Handle(OfferBaseEndpoint, util.AppHandler(getOffers)).Methods(http.MethodGet)
+	router.Handle(NeighborOfferBaseEndpoint, util.AppHandler(neighborOffers)).Methods(http.MethodPatch)
 }
 
 func createOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	var createOfferMsg rest.CreateOfferMsg
+	var createOfferMsg util.CreateOfferMsg
 
-	err := rest.ReceiveJSONFromHttp(w, req, &createOfferMsg)
+	err := util.ReceiveJSONFromHttp(w, req, &createOfferMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -34,9 +38,9 @@ func createOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 }
 
 func refreshOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	var offerRefreshMsg rest.RefreshOfferMsg
+	var offerRefreshMsg util.RefreshOfferMsg
 
-	err := rest.ReceiveJSONFromHttp(w, req, &offerRefreshMsg)
+	err := util.ReceiveJSONFromHttp(w, req, &offerRefreshMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +49,13 @@ func refreshOffer(w http.ResponseWriter, req *http.Request) (interface{}, error)
 		offerRefreshMsg.FromTrader.GUID[0:12])
 
 	res := nodeDiscoveryAPI.RefreshOffer(req.Context(), &offerRefreshMsg.FromTrader, &offerRefreshMsg.Offer)
-	return rest.RefreshOfferResponseMsg{Refreshed: res}, nil
+	return util.RefreshOfferResponseMsg{Refreshed: res}, nil
 }
 
 func removeOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	var offerRemoveMsg rest.OfferRemoveMsg
+	var offerRemoveMsg util.OfferRemoveMsg
 
-	err := rest.ReceiveJSONFromHttp(w, req, &offerRemoveMsg)
+	err := util.ReceiveJSONFromHttp(w, req, &offerRemoveMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +68,9 @@ func removeOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 }
 
 func getOffers(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	var getOffersMsg rest.GetOffersMsg
+	var getOffersMsg util.GetOffersMsg
 
-	err := rest.ReceiveJSONFromHttp(w, req, &getOffersMsg)
+	err := util.ReceiveJSONFromHttp(w, req, &getOffersMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +80,9 @@ func getOffers(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 }
 
 func neighborOffers(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	var neighborOffersMsg rest.NeighborOffersMsg
+	var neighborOffersMsg util.NeighborOffersMsg
 
-	err := rest.ReceiveJSONFromHttp(w, req, &neighborOffersMsg)
+	err := util.ReceiveJSONFromHttp(w, req, &neighborOffersMsg)
 	if err != nil {
 		return nil, err
 	}

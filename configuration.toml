@@ -1,10 +1,9 @@
 [Caravela]
 APIPort = 8001
 APITimeout = "3s"
-CheckContainersInterval = "30s"
 ResourcesOvercommit = 50
 [Caravela.DiscoveryBackend]
-Backend = "chord-multiple-offers"
+Backend = "chord-single-offer"
     [Caravela.DiscoveryBackend.SmartChordBackend]
     SupplyingInterval = "30s"
     SpreadOffersInterval = "30s"
@@ -30,13 +29,25 @@ Backend = "chord-multiple-offers"
             Percentage = 50
         [[Caravela.Resources.CPUPowers.CPUCores]]
         Value = 2
-        Percentage = 50
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
-            Value = 256
-            Percentage = 50
+        Percentage = 30
             [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
             Value = 512
             Percentage = 50
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 1024
+            Percentage = 50
+        [[Caravela.Resources.CPUPowers.CPUCores]]
+        Value = 4
+        Percentage = 20
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 1024
+            Percentage = 25
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 2048
+            Percentage = 50
+            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            Value = 4096
+            Percentage = 25
 
 [ImagesStorage]
 Backend = "DockerHub"

@@ -3,7 +3,8 @@ package scheduling
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/strabox/caravela/api/rest"
+	"github.com/strabox/caravela/api/rest/containers"
+	"github.com/strabox/caravela/api/rest/util"
 	"net/http"
 )
 
@@ -11,14 +12,14 @@ var nodeSchedulingAPI Scheduling = nil
 
 func Init(router *mux.Router, nodeScheduling Scheduling) {
 	nodeSchedulingAPI = nodeScheduling
-	router.Handle(rest.ContainersBaseEndpoint, rest.AppHandler(launchContainer)).Methods(http.MethodPost)
+	router.Handle(containers.BaseEndpoint, util.AppHandler(launchContainer)).Methods(http.MethodPost)
 }
 
 func launchContainer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
 	var err error
-	var launchContainerMsg rest.LaunchContainerMsg
+	var launchContainerMsg util.LaunchContainerMsg
 
-	err = rest.ReceiveJSONFromHttp(w, req, &launchContainerMsg)
+	err = util.ReceiveJSONFromHttp(w, req, &launchContainerMsg)
 	if err != nil {
 		return nil, err
 	}
