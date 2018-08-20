@@ -247,6 +247,61 @@ func TestLowerRandomGUIDOffer_3(t *testing.T) {
 	assert.Error(t, err, "")
 }
 
+func TestLowerPartitionsOffer_1(t *testing.T) {
+	guid.Init(16) // Use 16-bit GUID to be easily tested
+	resMap := NewResourcesMap(testPartitions)
+
+	res, err := resMap.LowerPartitionsOffer(*NewResources(1, 512))
+	assert.NoError(t, err)
+
+	expected := []Resources{*NewResources(1, 512), *NewResources(1, 256)}
+	assert.Equal(t, res, expected, "Resources partitions does not match")
+}
+
+func TestLowerPartitionsOffer_2(t *testing.T) {
+	guid.Init(16) // Use 16-bit GUID to be easily tested
+	resMap := NewResourcesMap(testPartitions)
+
+	res, err := resMap.LowerPartitionsOffer(*NewResources(1, 750))
+	assert.NoError(t, err)
+
+	expected := []Resources{*NewResources(1, 512), *NewResources(1, 256)}
+	assert.Equal(t, res, expected, "Resources partitions does not match")
+}
+
+func TestLowerPartitionsOffer_3(t *testing.T) {
+	guid.Init(16) // Use 16-bit GUID to be easily tested
+	resMap := NewResourcesMap(testPartitions)
+
+	res, err := resMap.LowerPartitionsOffer(*NewResources(1, 1550))
+	assert.NoError(t, err)
+
+	expected := []Resources{*NewResources(1, 1024), *NewResources(1, 512), *NewResources(1, 256)}
+	assert.Equal(t, res, expected, "Resources partitions does not match")
+}
+
+func TestLowerPartitionsOffer_4(t *testing.T) {
+	guid.Init(16) // Use 16-bit GUID to be easily tested
+	resMap := NewResourcesMap(testPartitions)
+
+	res, err := resMap.LowerPartitionsOffer(*NewResources(2, 1550))
+	assert.NoError(t, err)
+
+	expected := []Resources{*NewResources(1, 1024), *NewResources(1, 512), *NewResources(1, 256)}
+	assert.Equal(t, res, expected, "Resources partitions does not match")
+}
+
+func TestLowerPartitionsOffer_5(t *testing.T) {
+	guid.Init(16) // Use 16-bit GUID to be easily tested
+	resMap := NewResourcesMap(testPartitions)
+
+	res, err := resMap.LowerPartitionsOffer(*NewResources(2, 2049))
+	assert.NoError(t, err)
+
+	expected := []Resources{*NewResources(2, 2048), *NewResources(1, 1024), *NewResources(1, 512), *NewResources(1, 256)}
+	assert.Equal(t, res, expected, "Resources partitions does not match")
+}
+
 var (
 	testExpectedTestPartitions = [][][]guid.Range{
 		{

@@ -152,14 +152,10 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 	defer sup.offersMutex.Unlock()
 
 	supOffer, exist := sup.activeOffers[common.OfferID(offerID)]
-	// Offer does not exist in the supplier OR asking more resources than the offer has available
-	if !exist || !supOffer.Resources().Contains(resourcesNecessary) {
+	if !exist || !supOffer.Resources().Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
 		return false
 	} else {
-		remainingResources := supOffer.Resources().Copy()
-		remainingResources.Sub(resourcesNecessary)
-
-		sup.availableResources.Add(*remainingResources)
+		sup.availableResources.Sub(resourcesNecessary)
 
 		delete(sup.activeOffers, common.OfferID(offerID))
 
@@ -213,6 +209,7 @@ func (sup *Supplier) createOffer() {
 	if sup.availableResources.IsValid() {
 		lowerPartitions, _ := sup.resourcesMap.LowerPartitionsOffer(*sup.availableResources)
 		offersToRemove := make([]*supplierOffer, 0)
+
 	OfferLoop:
 		for _, offer := range sup.activeOffers {
 			offerPartition := sup.resourcesMap.ResourcesByGUID(*offer.ResponsibleTraderGUID())
