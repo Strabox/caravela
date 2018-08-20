@@ -232,6 +232,10 @@ func (sup *Supplier) createOffer() {
 			sup.availableResources.Add(*offer.Resources())
 		}
 
+		if !sup.availableResources.Equals(*sup.maxResources) { // Assertion to check!
+			panic(errors.New("supplier not supplying everything"))
+		}
+
 		log.Debugf(util.LogTag("SUPPLIER")+"CREATING offer... Offer: %d, Res: <%d;%d>",
 			int64(sup.offersIDGen), sup.availableResources.CPUs(), sup.availableResources.RAM())
 
