@@ -155,10 +155,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 	if !exist || !supOffer.Resources().Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
 		return false
 	} else {
-		remainingResources := supOffer.Resources().Copy()
-		remainingResources.Sub(resourcesNecessary)
-
-		sup.availableResources.Add(*remainingResources)
+		sup.availableResources.Sub(resourcesNecessary)
 
 		delete(sup.activeOffers, common.OfferID(offerID))
 
@@ -229,7 +226,6 @@ func (sup *Supplier) createOffer() {
 			}
 
 			delete(sup.activeOffers, offerID)
-			sup.availableResources.Add(*offer.Resources())
 		}
 
 		log.Debugf(util.LogTag("SUPPLIER")+"CREATING offer... Offer: %d, Res: <%d;%d>",
@@ -238,7 +234,6 @@ func (sup *Supplier) createOffer() {
 		offer, err := sup.offersStrategy.CreateOffer(int64(sup.offersIDGen), *sup.availableResources)
 		if err == nil {
 			sup.activeOffers[offer.ID()] = offer
-			sup.availableResources.SetZero()
 		}
 		sup.offersIDGen++
 	}
@@ -256,17 +251,10 @@ func (sup *Supplier) AvailableResources() types.Resources {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
-	res := types.Resources{
+	return types.Resources{
 		CPUs: sup.availableResources.CPUs(),
 		RAM:  sup.availableResources.RAM(),
 	}
-
-	for _, offer := range sup.activeOffers {
-		res.CPUs += offer.Resources().CPUs()
-		res.RAM += offer.Resources().RAM()
-	}
-
-	return res
 }
 
 // Simulation
