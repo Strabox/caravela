@@ -152,7 +152,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 	defer sup.offersMutex.Unlock()
 
 	supOffer, exist := sup.activeOffers[common.OfferID(offerID)]
-	if !exist || !supOffer.Resources().Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
+	if !exist || !supOffer.Resources().Contains(resourcesNecessary) || !sup.availableResources.Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
 		return false
 	} else {
 		sup.availableResources.Sub(resourcesNecessary)
@@ -206,6 +206,7 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 }
 
 func (sup *Supplier) createOffer() {
+	sup.checkResourcesInvariant() // Runtime resources assertion!!!
 	if sup.availableResources.IsValid() {
 		// What?: Remove all active offers from the traders in order to gather all available resources.
 		// Goal: This is used to try offer the maximum amount of resources the node has available between
@@ -236,6 +237,15 @@ func (sup *Supplier) createOffer() {
 			sup.activeOffers[offer.ID()] = offer
 		}
 		sup.offersIDGen++
+	}
+}
+
+func (sup *Supplier) checkResourcesInvariant() {
+	if sup.availableResources.IsNegative() {
+		panic(errors.New("there are negative resources available :|"))
+	}
+	if !sup.maxResources.Contains(*sup.availableResources) {
+		panic(errors.New("there are more resources than the maximum available :|"))
 	}
 }
 

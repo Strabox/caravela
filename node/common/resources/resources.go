@@ -57,6 +57,11 @@ func (r *Resources) IsValid() bool {
 	return r.cpus > 0 && r.ram > 0
 }
 
+// IsNegative return true if one of the resources has a negative amount.
+func (r *Resources) IsNegative() bool {
+	return r.cpus < 0 || r.ram < 0
+}
+
 // Contains returns true if the given resources are contained inside the receiver.
 func (r *Resources) Contains(contained Resources) bool {
 	return r.cpus >= contained.CPUs() && r.ram >= contained.RAM()

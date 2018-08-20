@@ -52,8 +52,5 @@ func (neigh *NearbyTradersOffering) Neighbors() []*common.RemoteNode {
 	neigh.mutex.RLock()
 	defer neigh.mutex.RUnlock()
 
-	res := make([]*common.RemoteNode, 2)
-	res[0] = neigh.predecessor
-	res[1] = neigh.successor
-	return res
+	return []*common.RemoteNode{neigh.predecessor, neigh.successor}
 }

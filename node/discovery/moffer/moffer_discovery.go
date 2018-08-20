@@ -106,7 +106,7 @@ func (disc *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, tra
 	t, exist := disc.virtualTraders.Load(toNeighborTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		targetTrader.AdvertiseNeighborOffer(fromTrader, toNeighborTrader, traderOffering)
+		targetTrader.AdvertiseNeighborOffer(fromTrader, traderOffering)
 	}
 }
 

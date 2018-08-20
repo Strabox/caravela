@@ -237,7 +237,7 @@ func (trader *Trader) RemoveOffer(fromSupp *types.Node, offer *types.Offer) {
 }
 
 // Relay the offering advertise for the overlay neighbors if the trader doesn't have any available offers
-func (trader *Trader) AdvertiseNeighborOffer(fromTrader, toNeighborTrader, traderOffering *types.Node) {
+func (trader *Trader) AdvertiseNeighborOffer(fromTrader, traderOffering *types.Node) {
 	fromTraderGuid := guid.NewGUIDString(fromTrader.GUID)
 	traderOfferingGuid := guid.NewGUIDString(traderOffering.GUID)
 
