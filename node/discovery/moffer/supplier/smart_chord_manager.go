@@ -127,7 +127,6 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 			Resources: types.Resources{CPUs: availableResources.CPUs(), RAM: availableResources.RAM()},
 		},
 	)
-
 	if err == nil {
 		return newSupplierOffer(common.OfferID(newOfferID), 1, availableResources, chosenNode.IP(), *chosenNodeGUID), nil
 	}

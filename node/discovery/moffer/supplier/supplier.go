@@ -211,12 +211,7 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 
 func (sup *Supplier) createOffer() {
 	if sup.availableResources.IsValid() {
-		fullAvailableResources := *sup.availableResources
-		for _, offer := range sup.activeOffers {
-			fullAvailableResources.Add(*offer.Resources())
-		}
-
-		lowerPartitions, _ := sup.resourcesMap.LowerPartitionsOffer(fullAvailableResources)
+		lowerPartitions, _ := sup.resourcesMap.LowerPartitionsOffer(*sup.availableResources)
 		offersToRemove := make([]*supplierOffer, 0)
 	OfferLoop:
 		for _, offer := range sup.activeOffers {
@@ -261,17 +256,10 @@ func (sup *Supplier) AvailableResources() types.Resources {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
-	res := types.Resources{
+	return types.Resources{
 		CPUs: sup.availableResources.CPUs(),
 		RAM:  sup.availableResources.RAM(),
 	}
-
-	for _, offer := range sup.activeOffers {
-		res.CPUs += offer.Resources().CPUs()
-		res.RAM += offer.Resources().RAM()
-	}
-
-	return res
 }
 
 // Simulation

@@ -297,7 +297,7 @@ func (c *Configuration) Print() {
 	log.Printf("Resources overcommit:        %d", c.ResourcesOvercommit())
 
 	log.Printf("Discovery Backends:")
-	log.Printf("  Active Backend:                           %s", c.DiscoveryBackend())
+	log.Printf("  Active Backend:                  %s", c.DiscoveryBackend())
 	log.Printf("    Chord-Random:")
 	log.Printf("      Request Retries:             %d", c.RandBackendMaxRetries())
 	log.Printf("    Chord-Offers:")
@@ -324,8 +324,8 @@ func (c *Configuration) Print() {
 	log.Printf("Active Backend:              %s", c.ImagesStorageBackend())
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$$$$ OVERLAY $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-	log.Printf("Active Overlay:              %s", c.OverlayName())
-	log.Printf("Port:                        %d", c.OverlayPort())
+	log.Printf("Active Overlay:             %s", c.OverlayName())
+	log.Printf("Port:                       %d", c.OverlayPort())
 
 	log.Printf("Chord:")
 	log.Printf("  Messages Timeout:         %s", c.ChordTimeout().String())
