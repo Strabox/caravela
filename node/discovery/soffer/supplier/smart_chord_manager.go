@@ -35,7 +35,7 @@ func (s *SystemResourcePartitions) Try(targetResPartition resources.Resources) b
 			return partitionState.Try()
 		}
 	} else {
-		newPartitionState := NewResourcePartitionState(15)
+		newPartitionState := NewResourcePartitionState(10)
 		s.partitionsState.Store(targetResPartition, newPartitionState)
 		return newPartitionState.Try()
 	}
@@ -78,23 +78,29 @@ func (rps *ResourcePartitionState) Try() bool {
 
 	hitProbability := int((float64(rps.hits) / float64(rps.totalTries)) * 100)
 	randTry := randomGenerator.Intn(100)
-	if randTry < hitProbability {
+	if randTry <= hitProbability {
 		return true
 	}
-	secondChance := randomGenerator.Intn(100)
-	if secondChance <= 10 {
+	lastChance := randomGenerator.Intn(100)
+	if lastChance <= 5 {
 		return true
 	}
 	return false
 }
 
 func (rps *ResourcePartitionState) Hit() {
+	rps.mutex.Lock()
+	defer rps.mutex.Unlock()
+
 	if rps.hits < rps.totalTries {
 		rps.hits++
 	}
 }
 
 func (rps *ResourcePartitionState) Miss() {
+	rps.mutex.Lock()
+	defer rps.mutex.Unlock()
+
 	if rps.hits > 0 {
 		rps.hits--
 	}
