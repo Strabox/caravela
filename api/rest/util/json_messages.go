@@ -1,6 +1,8 @@
 package util
 
-import "github.com/strabox/caravela/api/types"
+import (
+	"github.com/strabox/caravela/api/types"
+)
 
 // Create offer struct/JSON used in REST APIs when a supplier offer resources to be used by others.
 type CreateOfferMsg struct {
@@ -32,6 +34,7 @@ type GetOffersMsg struct {
 	FromNode types.Node `json:"FromNode"`
 	ToTrader types.Node `json:"ToTrader"`
 	Relay    bool       `json:"Relay"`
+	TTL      int        `json:"TTL"`
 }
 
 // Launch container struct/JSON used in the REST APIs.

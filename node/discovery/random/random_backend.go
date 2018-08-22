@@ -24,7 +24,7 @@ type Discovery struct {
 	maxResources resources.Resources
 	nodeGUID     *guid.GUID
 
-	availableResources resources.Resources
+	availableResources *resources.Resources
 	resourcesMutex     sync.Mutex
 }
 
@@ -39,7 +39,7 @@ func NewRandomDiscovery(config *configuration.Configuration, overlay external.Ov
 		maxResources: maxResources,
 		nodeGUID:     nil,
 
-		availableResources: maxResources,
+		availableResources: maxResources.Copy(),
 		resourcesMutex:     sync.Mutex{},
 	}, nil
 }
@@ -83,7 +83,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 				}
 				if len(resultOffers) != 0 {
 					log.Debugf(util.LogTag("RandDisc") + "Offers found")
-					return resultOffers // TODO: Request to other nodes (successors for the offers) ??
+					return resultOffers
 				}
 				continue
 			}
@@ -106,11 +106,11 @@ func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.
 	return false
 }
 
-func (d *Discovery) ReturnResources(resources resources.Resources) {
+func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
-	d.availableResources.Add(resources)
+	d.availableResources.Add(releasedResources)
 }
 
 // ======================= External/Remote Services =========================
