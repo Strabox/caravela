@@ -235,7 +235,6 @@ func (sup *Supplier) createOffer() {
 			offer, err := sup.offersStrategy.CreateOffer(int64(sup.offersIDGen), toOffer)
 			if err == nil {
 				sup.activeOffers[offer.ID()] = offer
-				sup.availableResources.SetZero()
 			}
 			sup.offersIDGen++
 		}

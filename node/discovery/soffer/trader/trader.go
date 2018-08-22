@@ -76,8 +76,7 @@ func (trader *Trader) start() {
 							context.Background(),
 							&types.Node{GUID: trader.guid.String()},
 							&types.Node{IP: offer.supplierIP},
-							&types.Offer{ID: int64(offer.ID())},
-						)
+							&types.Offer{ID: int64(offer.ID())})
 
 						trader.offersMutex.Lock()
 						defer trader.offersMutex.Unlock()
@@ -148,8 +147,7 @@ func (trader *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) 
 		resOffers := make([]types.AvailableOffer, 0)
 
 		// Ask the successor (higher GUID)
-		successor := trader.nearbyTradersOffering.Successor()
-		if successor != nil {
+		if successor := trader.nearbyTradersOffering.Successor(); successor != nil {
 			successorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
 			if trader.handledResources.Equals(*successorResourcesHandled) {
 				offers, err := trader.client.GetOffers( // Sends the get offers message
@@ -157,9 +155,9 @@ func (trader *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) 
 					&types.Node{GUID: trader.guid.String()},
 					&types.Node{IP: successor.IP(), GUID: successor.GUID().String()},
 					false)
-				if err == nil && offers != nil {
+				if err == nil && len(offers) != 0 {
 					resOffers = append(resOffers, offers...)
-				} else if len(offers) == 0 {
+				} else if err == nil && len(offers) == 0 {
 					trader.nearbyTradersOffering.SetSuccessor(nil)
 				}
 			}
@@ -167,8 +165,7 @@ func (trader *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) 
 		}
 
 		// Ask the predecessor (lower GUID)
-		predecessor := trader.nearbyTradersOffering.Predecessor()
-		if predecessor != nil {
+		if predecessor := trader.nearbyTradersOffering.Predecessor(); predecessor != nil {
 			predecessorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if trader.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := trader.client.GetOffers( // Sends the get offers message
@@ -176,9 +173,9 @@ func (trader *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) 
 					&types.Node{GUID: trader.guid.String()},
 					&types.Node{IP: predecessor.IP(), GUID: predecessor.GUID().String()},
 					false)
-				if err == nil && offers != nil {
+				if err == nil && len(offers) != 0 {
 					resOffers = append(resOffers, offers...)
-				} else if len(offers) == 0 {
+				} else if err == nil && len(offers) == 0 {
 					trader.nearbyTradersOffering.SetPredecessor(nil)
 				}
 			}
