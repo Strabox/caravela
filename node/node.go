@@ -177,6 +177,9 @@ func (node *Node) RemoveOffer(_ context.Context, fromSupp *types.Node, toTrader 
 }
 
 func (node *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+		node.discoveryComp.UpdatePartitionsState(partitionsState)
+	}
 	return node.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
 }
 

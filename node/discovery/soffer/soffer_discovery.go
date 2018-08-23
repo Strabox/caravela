@@ -70,6 +70,15 @@ func (disc *Discovery) ReturnResources(resources resources.Resources) {
 	disc.supplier.ReturnResources(resources)
 }
 
+func (disc *Discovery) UpdatePartitionsState(partitionsState []types.PartitionState) {
+	//TODO
+}
+
+func (disc *Discovery) PartitionsState() []types.PartitionState {
+	// TODO
+	return nil
+}
+
 // ======================= External Services (Consumed by other Nodes) ==============================
 
 func (disc *Discovery) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {

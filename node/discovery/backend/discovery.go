@@ -15,6 +15,8 @@ type Discovery interface {
 	FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer
 	ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool
 	ReturnResources(resources resources.Resources)
+	UpdatePartitionsState(partitionsState []types.PartitionState)
+	PartitionsState() []types.PartitionState
 	// ======================= External/Remote Services =========================
 	CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer)
 	RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool

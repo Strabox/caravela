@@ -195,14 +195,14 @@ func (client *Client) StopLocalContainer(ctx context.Context, toSupplier *types.
 	}
 }
 
-func (client *Client) ObtainConfiguration(c context.Context, systemsNode *types.Node) (*configuration.Configuration, error) {
+func (client *Client) ObtainConfiguration(ctx context.Context, systemsNode *types.Node) (*configuration.Configuration, error) {
 	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNode.IP)
 
 	var systemsNodeConfigsResp configuration.Configuration
 
 	url := util.BuildHttpURL(false, systemsNode.IP, client.config.APIPort(), configREST.BaseEndpoint)
 
-	err, httpCode := util.DoHttpRequestJSON(c, client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
+	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
 	if err != nil {
 		return nil, NewRemoteClientError(err)
 	}

@@ -206,6 +206,14 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	}
 }
 
+func (sup *Supplier) UpdatePartitionsState(partitionsState []types.PartitionState) {
+	sup.offersStrategy.UpdatePartitionsState(partitionsState)
+}
+
+func (sup *Supplier) PartitionsState() []types.PartitionState {
+	return sup.offersStrategy.PartitionsState()
+}
+
 func (sup *Supplier) createOffer() {
 	sup.checkResourcesInvariant() // Runtime resources assertion!!!
 	if sup.availableResources.IsValid() {
