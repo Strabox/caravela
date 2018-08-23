@@ -13,11 +13,13 @@ var randomGenerator = rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix
 
 type SystemResourcePartitions struct {
 	partitionsState sync.Map
+	totalStats      int
 }
 
-func NewSystemResourcePartitions() *SystemResourcePartitions {
+func NewSystemResourcePartitions(totalStats int) *SystemResourcePartitions {
 	return &SystemResourcePartitions{
 		partitionsState: sync.Map{},
+		totalStats:      totalStats,
 	}
 }
 
@@ -27,7 +29,7 @@ func (s *SystemResourcePartitions) Try(targetResPartition resources.Resources) b
 			return partitionState.Try()
 		}
 	} else {
-		newPartitionState := NewResourcePartitionState(5)
+		newPartitionState := NewResourcePartitionState(s.totalStats)
 		s.partitionsState.Store(targetResPartition, newPartitionState)
 		return newPartitionState.Try()
 	}
@@ -75,6 +77,10 @@ func (s *SystemResourcePartitions) MergePartitionsState(newPartitionsState []typ
 			if partitionState, ok := partition.(*ResourcePartitionState); ok {
 				partitionState.Merge(newPartitionState.Hits)
 			}
+		} else {
+			unknownPartitionState := NewResourcePartitionState(s.totalStats)
+			unknownPartitionState.hits = newPartitionState.Hits
+			s.partitionsState.Store(*partRes, unknownPartitionState)
 		}
 	}
 }

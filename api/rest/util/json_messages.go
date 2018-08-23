@@ -34,7 +34,6 @@ type GetOffersMsg struct {
 	FromNode types.Node `json:"FromNode"`
 	ToTrader types.Node `json:"ToTrader"`
 	Relay    bool       `json:"Relay"`
-	TTL      int        `json:"TTL"`
 }
 
 // Launch container struct/JSON used in the REST APIs.
