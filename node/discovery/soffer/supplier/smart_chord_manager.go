@@ -88,6 +88,8 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 			if len(availableOffers) > 0 {
 				return availableOffers
 			}
+		} else {
+			log.Infof(util.LogTag("SUPPLIER")+"SKIPPING Part: <%d,%d>", targetResPartition.CPUs(), targetResPartition.RAM())
 		}
 
 		findPhase++
