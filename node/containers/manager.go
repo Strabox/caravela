@@ -104,7 +104,7 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 		newContainer := newContainer(contConfig.Name, contConfig.ImageKey, contConfig.Args, contConfig.PortMappings,
 			*contResources, containerID, fromBuyer.IP)
 
-		if man.containersMap[fromBuyer.IP] == nil {
+		if _, ok := man.containersMap[fromBuyer.IP]; !ok {
 			userContainersMap := make(map[string]*localContainer)
 			userContainersMap[containerID] = newContainer
 			man.containersMap[fromBuyer.IP] = userContainersMap
