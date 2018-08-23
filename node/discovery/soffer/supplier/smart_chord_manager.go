@@ -24,7 +24,7 @@ type SmartChordOffersManager struct {
 
 func newSmartChordManageOffers(config *configuration.Configuration) (OffersManager, error) {
 	return &SmartChordOffersManager{
-		partitionsState: NewSystemResourcePartitions(3),
+		partitionsState: NewSystemResourcePartitions(2),
 		configs:         config,
 	}, nil
 }
