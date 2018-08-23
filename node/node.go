@@ -172,7 +172,10 @@ func (node *Node) RefreshOffer(_ context.Context, fromTrader *types.Node, offer 
 	return node.discoveryComp.RefreshOffer(fromTrader, offer)
 }
 
-func (node *Node) RemoveOffer(_ context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+func (node *Node) RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+		node.discoveryComp.UpdatePartitionsState(partitionsState)
+	}
 	node.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
 }
 

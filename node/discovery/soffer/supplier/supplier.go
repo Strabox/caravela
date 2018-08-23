@@ -161,7 +161,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 
 		removeOffer := func() {
 			sup.client.RemoveOffer(
-				context.Background(),
+				context.WithValue(context.Background(), types.PartitionsStateKey, sup.offersStrategy.PartitionsState()),
 				&types.Node{IP: sup.config.HostIP(), GUID: ""},
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
@@ -223,7 +223,7 @@ func (sup *Supplier) createOffer() {
 		for offerID, offer := range sup.activeOffers {
 			removeOffer := func(offer *supplierOffer) {
 				sup.client.RemoveOffer(
-					context.Background(),
+					context.WithValue(context.Background(), types.PartitionsStateKey, sup.offersStrategy.PartitionsState()),
 					&types.Node{IP: sup.config.HostIP(), GUID: ""},
 					&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
 					&types.Offer{ID: int64(offer.ID())},
@@ -234,7 +234,6 @@ func (sup *Supplier) createOffer() {
 			} else {
 				go removeOffer(offer) // Send remove offer message in background
 			}
-
 			delete(sup.activeOffers, offerID)
 		}
 

@@ -70,9 +70,8 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 			overlayNodes = man.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 			for _, node := range overlayNodes {
-				ctx = context.WithValue(ctx, types.PartitionsStateKey, man.partitionsState.PartitionsState())
 				offers, err := man.remoteClient.GetOffers(
-					ctx,
+					context.WithValue(ctx, types.PartitionsStateKey, man.partitionsState.PartitionsState()),
 					&types.Node{},
 					&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 					true)
@@ -133,7 +132,8 @@ func (man *SmartChordOffersManager) CreateOffer(newOfferID int64, availableResou
 	chosenNode := overlayNodes[0]
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
-	err = man.remoteClient.CreateOffer(context.Background(),
+	err = man.remoteClient.CreateOffer(
+		context.WithValue(context.Background(), types.PartitionsStateKey, man.partitionsState.PartitionsState()),
 		&types.Node{IP: man.configs.HostIP(), GUID: ""},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{

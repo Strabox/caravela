@@ -4,6 +4,7 @@ import (
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
+	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -137,5 +138,5 @@ func (rps *ResourcePartitionState) Merge(newHits int) {
 	rps.mutex.Lock()
 	defer rps.mutex.Unlock()
 
-	rps.hits = int((float64(newHits) + float64(rps.hits)) / 2)
+	rps.hits = int(math.Floor((float64(newHits) + float64(rps.hits)) / 2))
 }
