@@ -27,7 +27,7 @@ func (s *SystemResourcePartitions) Try(targetResPartition resources.Resources) b
 			return partitionState.Try()
 		}
 	} else {
-		newPartitionState := NewResourcePartitionState(10)
+		newPartitionState := NewResourcePartitionState(5)
 		s.partitionsState.Store(targetResPartition, newPartitionState)
 		return newPartitionState.Try()
 	}
