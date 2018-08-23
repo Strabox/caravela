@@ -59,7 +59,7 @@ func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []typ
 			*resources.NewResources(contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,
 			contStatus.SupplierIP)
 
-		man.containers.Store(container.ID(), container)
+		man.containers.Store(container.ShortID(), container)
 	}
 
 	return containersStatus, nil
@@ -69,7 +69,7 @@ func (man *Manager) StopContainers(ctx context.Context, containerIDs []string) e
 	errMsg := "Failed to stop:"
 	fail := false
 	for _, contID := range containerIDs {
-		contTmp, contExist := man.containers.Load(contID)
+		contTmp, contExist := man.containers.Load(contID[:common.ContainerShortIDSize])
 		container, ok := contTmp.(*deployedContainer)
 		if contExist && ok {
 			if err := man.userRemoteCli.StopLocalContainer(ctx, &types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
