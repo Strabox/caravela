@@ -37,7 +37,8 @@ func runContainer(w http.ResponseWriter, req *http.Request) (interface{}, error)
 			containerConfig.GroupPolicy)
 	}
 
-	return nil, userNodeAPI.SubmitContainers(req.Context(), runContainerConfigs)
+	_, err = userNodeAPI.SubmitContainers(req.Context(), runContainerConfigs)
+	return nil, err
 }
 
 func stopContainers(w http.ResponseWriter, req *http.Request) (interface{}, error) {

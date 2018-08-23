@@ -36,21 +36,21 @@ func NewManager(config *configuration.Configuration, localScheduler localSchedul
 	}
 }
 
-func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) error {
+func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	// Validate request
 	for i, contConfig := range containerConfigs {
 		if contConfig.Resources.RAM == 0 && contConfig.Resources.CPUs == 0 {
 			containerConfigs[i].Resources.CPUs = man.minRequestResources.CPUs()
 			containerConfigs[i].Resources.RAM = man.minRequestResources.RAM()
 		} else if contConfig.Resources.RAM == 0 || contConfig.Resources.CPUs == 0 {
-			return fmt.Errorf("invalid resources resquest")
+			return nil, fmt.Errorf("invalid resources resquest")
 		}
 	}
 
 	// Contact local scheduler to submit the request into the system
 	containersStatus, err := man.localScheduler.SubmitContainers(ctx, containerConfigs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update internals
@@ -62,7 +62,7 @@ func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []typ
 		man.containers.Store(container.ShortID(), container)
 	}
 
-	return nil
+	return containersStatus, nil
 }
 
 func (man *Manager) StopContainers(ctx context.Context, containerIDs []string) error {

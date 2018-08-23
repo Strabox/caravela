@@ -139,7 +139,7 @@ func (node *Node) Configuration(c context.Context) *configuration.Configuration 
 
 // =========================== User Component Interface (USER API) ==============================
 
-func (node *Node) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) error {
+func (node *Node) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	return node.userManagerComp.SubmitContainers(ctx, containerConfigs)
 }
 
