@@ -50,7 +50,7 @@ func NewSOfferDiscovery(config *configuration.Configuration, overlay external.Ov
 func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 	disc.supplier.SetNodeGUID(traderGUID)
 
-	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap)
+	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap, disc.supplier)
 	disc.virtualTraders.Store(traderGUID.String(), newTrader)
 
 	newTrader.Start() // Start the node's trader module.
