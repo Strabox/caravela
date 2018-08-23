@@ -59,7 +59,7 @@ func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []typ
 			*resources.NewResources(contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,
 			contStatus.SupplierIP)
 
-		man.containers.Store(container.ShortID(), container)
+		man.containers.Store(container.ID(), container)
 	}
 
 	return containersStatus, nil
@@ -93,7 +93,7 @@ func (man *Manager) StopContainers(ctx context.Context, containerIDs []string) e
 func (man *Manager) ListContainers() []types.ContainerStatus {
 	res := make([]types.ContainerStatus, 0)
 
-	man.containers.Range(func(key, value interface{}) bool {
+	man.containers.Range(func(_, value interface{}) bool {
 		if container, ok := value.(*deployedContainer); ok {
 			res = append(res,
 				types.ContainerStatus{

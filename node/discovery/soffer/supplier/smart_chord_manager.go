@@ -147,7 +147,7 @@ func (man *SmartChordOffersManager) FindOffers(ctx context.Context, targetResour
 		}
 
 		targetResPartition := *man.resourcesMapping.ResourcesByGUID(*destinationGUID)
-		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS %s", targetResPartition)
+		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: <%d,%d>", targetResPartition.CPUs(), targetResPartition.RAM())
 
 		if man.resourcesPartitions.Try(targetResPartition) {
 			overlayNodes, _ := man.overlay.Lookup(ctx, destinationGUID.Bytes())
