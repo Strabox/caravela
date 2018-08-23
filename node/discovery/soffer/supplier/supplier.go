@@ -192,6 +192,7 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
+	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.RAM())
 	sup.availableResources.Add(releasedResources)
 
 	if sup.config.Simulation() {
