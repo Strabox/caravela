@@ -26,7 +26,7 @@ type MultipleOfferStrategy struct {
 
 func newMultipleOfferStrategy(config *configuration.Configuration) (OfferingStrategy, error) {
 	return &MultipleOfferStrategy{
-		partitionsState: NewSystemResourcePartitions(5),
+		partitionsState: NewSystemResourcePartitions(20),
 		configs:         config,
 	}, nil
 }

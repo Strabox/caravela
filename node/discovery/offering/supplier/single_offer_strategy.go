@@ -26,7 +26,7 @@ type SingleOfferChordStrategy struct {
 
 func newSingleOfferChordManager(config *configuration.Configuration) (OfferingStrategy, error) {
 	return &SingleOfferChordStrategy{
-		partitionsState: NewSystemResourcePartitions(5),
+		partitionsState: NewSystemResourcePartitions(20),
 		configs:         config,
 	}, nil
 }
