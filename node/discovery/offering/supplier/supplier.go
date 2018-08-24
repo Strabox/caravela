@@ -21,17 +21,17 @@ type Supplier struct {
 	nodeCommon.NodeComponent // Base component
 
 	config         *configuration.Configuration // System's configurations.
-	offersStrategy OffersManager                // Encapsulates the strategies to manage the offers in the system.
+	offersStrategy OfferingStrategy             // Encapsulates the strategies to manage the offers in the system.
 	client         external.Caravela            // Client to collaborate with other CARAVELA's nodes
 
 	nodeGUID *guid.GUID
 
+	activeOffers       map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
+	offersIDGen        common.OfferID                    // Monotonic counter to generate offer's local unique IDs
+	offersMutex        *sync.Mutex                       // Mutex to handle active offers management
 	resourcesMap       *resources.Mapping                // The resources<->GUID mapping
 	maxResources       *resources.Resources              // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources              // CURRENT Available resources to offer
-	offersIDGen        common.OfferID                    // Monotonic counter to generate offer's local unique IDs
-	activeOffers       map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
-	offersMutex        *sync.Mutex                       // Mutex to handle active offers management
 
 	quitChan             chan bool        // Channel to alert that the node is stopping
 	supplyingTicker      <-chan time.Time // Timer to supply available resources
@@ -42,11 +42,9 @@ type Supplier struct {
 func NewSupplier(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
 	resourcesMap *resources.Mapping, maxResources resources.Resources) *Supplier {
 
-	offersStrategy := CreateOffersStrategy(config)
-	offersStrategy.Init(resourcesMap, overlay, client)
-	return &Supplier{
+	s := &Supplier{
 		config:         config,
-		offersStrategy: offersStrategy,
+		offersStrategy: CreateOffersStrategy(config),
 		client:         client,
 
 		nodeGUID: nil,
@@ -62,17 +60,19 @@ func NewSupplier(config *configuration.Configuration, overlay external.Overlay, 
 		supplyingTicker:      time.NewTicker(config.SupplyingInterval()).C,
 		refreshesCheckTicker: time.NewTicker(config.RefreshesCheckInterval()).C,
 	}
+	s.offersStrategy.Init(s, resourcesMap, overlay, client)
+	return s
 }
 
-// startSupplying controls the time dependant actions like supplying the resources.
-func (sup *Supplier) startSupplying() {
+// start controls the time dependant actions like supplying the resources.
+func (sup *Supplier) start() {
 	for {
 		select {
 		case <-sup.supplyingTicker: // Offer the available resources into a random trader (responsible for them).
 			go func() {
 				sup.offersMutex.Lock()
 				defer sup.offersMutex.Unlock()
-				sup.createOffer()
+				sup.updateOffers()
 			}()
 		case <-sup.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
 			sup.offersMutex.Lock()
@@ -161,7 +161,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 
 		removeOffer := func() {
 			sup.client.RemoveOffer(
-				context.Background(),
+				context.WithValue(context.Background(), types.PartitionsStateKey, sup.offersStrategy.PartitionsState()),
 				&types.Node{IP: sup.config.HostIP(), GUID: ""},
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
@@ -170,13 +170,13 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 
 		if sup.config.Simulation() {
 			removeOffer()
-			sup.createOffer() // Update its own offers
+			sup.updateOffers() // Update its own offers
 		} else {
 			go removeOffer()
 			go func() {
 				sup.offersMutex.Lock()
 				defer sup.offersMutex.Unlock()
-				sup.createOffer()
+				sup.updateOffers()
 			}() // Update its own offers
 		}
 		return true
@@ -192,53 +192,57 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 	sup.offersMutex.Lock()
 	defer sup.offersMutex.Unlock()
 
+	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.RAM())
 	sup.availableResources.Add(releasedResources)
 
 	if sup.config.Simulation() {
-		sup.createOffer() // Update its own offers sequential
+		sup.updateOffers() // Update its own offers sequential
 	} else {
 		go func() {
 			sup.offersMutex.Lock()
 			defer sup.offersMutex.Unlock()
-			sup.createOffer()
+			sup.updateOffers()
 		}() // Update its own offers in the background
 	}
 }
 
-func (sup *Supplier) createOffer() {
+func (sup *Supplier) UpdatePartitionsState(partitionsState []types.PartitionState) {
+	sup.offersStrategy.UpdatePartitionsState(partitionsState)
+}
+
+func (sup *Supplier) PartitionsState() []types.PartitionState {
+	return sup.offersStrategy.PartitionsState()
+}
+
+func (sup *Supplier) updateOffers() {
 	sup.checkResourcesInvariant() // Runtime resources assertion!!!
 	if sup.availableResources.IsValid() {
-		lowerPartitions, _ := sup.resourcesMap.LowerPartitionsOffer(*sup.availableResources)
-		offersToRemove := make([]*supplierOffer, 0)
-
-	OfferLoop:
-		for _, offer := range sup.activeOffers {
-			offerPartition := sup.resourcesMap.ResourcesByGUID(*offer.ResponsibleTraderGUID())
-			for lp, lowerPartition := range lowerPartitions {
-				if offerPartition.Equals(lowerPartition) {
-					lowerPartitions = append(lowerPartitions[:lp], lowerPartitions[lp+1:]...)
-					continue OfferLoop
-				}
-			}
-			offersToRemove = append(offersToRemove, offer)
-		}
-
-		for _, offerToRemove := range offersToRemove {
-			sup.client.RemoveOffer(
-				context.Background(),
-				&types.Node{IP: sup.config.HostIP(), GUID: ""},
-				&types.Node{IP: offerToRemove.ResponsibleTraderIP(), GUID: offerToRemove.ResponsibleTraderGUID().String()},
-				&types.Offer{ID: int64(offerToRemove.ID())})
-		}
-
-		for _, toOffer := range lowerPartitions {
-			offer, err := sup.offersStrategy.CreateOffer(int64(sup.offersIDGen), toOffer)
-			if err == nil {
-				sup.activeOffers[offer.ID()] = offer
-			}
-			sup.offersIDGen++
-		}
+		sup.offersStrategy.UpdateOffers(*sup.availableResources)
 	}
+}
+
+func (sup *Supplier) newOfferID() common.OfferID {
+	res := sup.offersIDGen
+	sup.offersIDGen++
+	return res
+}
+
+func (sup *Supplier) addOffer(offer *supplierOffer) {
+	sup.activeOffers[offer.ID()] = offer
+}
+
+func (sup *Supplier) removeOffer(offerID common.OfferID) {
+	delete(sup.activeOffers, offerID)
+}
+
+func (sup *Supplier) offers() []supplierOffer {
+	res := make([]supplierOffer, len(sup.activeOffers))
+	i := 0
+	for _, supOffer := range sup.activeOffers {
+		res[i] = *supOffer
+		i++
+	}
+	return res
 }
 
 func (sup *Supplier) checkResourcesInvariant() {
@@ -283,11 +287,11 @@ func (sup *Supplier) MaximumResources() types.Resources {
 func (sup *Supplier) Start() {
 	sup.Started(sup.config.Simulation(), func() {
 		if !sup.config.Simulation() {
-			go sup.startSupplying()
+			go sup.start()
 		} else {
 			sup.offersMutex.Lock()
 			defer sup.offersMutex.Unlock()
-			sup.createOffer()
+			sup.updateOffers()
 		}
 	})
 }

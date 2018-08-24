@@ -1,4 +1,4 @@
-package soffer
+package offering
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
-	"github.com/strabox/caravela/node/discovery/soffer/supplier"
-	"github.com/strabox/caravela/node/discovery/soffer/trader"
+	"github.com/strabox/caravela/node/discovery/offering/supplier"
+	"github.com/strabox/caravela/node/discovery/offering/trader"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 	"sync"
@@ -30,7 +30,7 @@ type Discovery struct {
 	virtualTraders sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
 }
 
-func NewSOfferDiscovery(config *configuration.Configuration, overlay external.Overlay,
+func NewOfferingDiscovery(config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{
@@ -71,12 +71,11 @@ func (disc *Discovery) ReturnResources(resources resources.Resources) {
 }
 
 func (disc *Discovery) UpdatePartitionsState(partitionsState []types.PartitionState) {
-	//TODO
+	disc.supplier.UpdatePartitionsState(partitionsState)
 }
 
 func (disc *Discovery) PartitionsState() []types.PartitionState {
-	// TODO
-	return nil
+	return disc.supplier.PartitionsState()
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================

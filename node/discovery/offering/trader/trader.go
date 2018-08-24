@@ -9,6 +9,7 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
+	"github.com/strabox/caravela/node/discovery/offering/supplier"
 	"github.com/strabox/caravela/node/external"
 	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
@@ -20,6 +21,7 @@ import (
 // The resources combination that the trader can handle is described by its GUID.
 type Trader struct {
 	nodeCommon.NodeComponent // Base component
+	suppTest                 *supplier.Supplier
 
 	config  *configuration.Configuration // System's configurations
 	overlay external.Overlay             // Node overlay to efficient route messages to specific nodes.
@@ -40,11 +42,13 @@ type Trader struct {
 
 // NewTrader creates a new "virtual" trader.
 func NewTrader(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
-	guid guid.GUID, resourcesMapping *resources.Mapping) *Trader {
+	guid guid.GUID, resourcesMapping *resources.Mapping, suppTest *supplier.Supplier) *Trader {
 
 	handledResources := resourcesMapping.ResourcesByGUID(guid)
 
 	return &Trader{
+		suppTest: suppTest,
+
 		config:           config,
 		overlay:          overlay,
 		client:           client,
@@ -62,28 +66,27 @@ func NewTrader(config *configuration.Configuration, overlay external.Overlay, cl
 	}
 }
 
-// Runs a endless loop goroutine that dispatches timer events into other goroutines.
-func (trader *Trader) start() {
+// start runs a endless loop goroutine that dispatches timer events into other goroutines.
+func (t *Trader) start() {
 	for {
 		select {
-		case <-trader.refreshOffersTicker: // Time to refresh all the current offers (verify if the suppliers are alive)
-			trader.offersMutex.Lock()
+		case <-t.refreshOffersTicker: // Time to refresh all the current offers (verify if the suppliers are alive)
+			t.offersMutex.Lock()
 
-			for _, offer := range trader.offers {
+			for _, offer := range t.offers {
 				if offer.Refresh() {
 					go func(offer *traderOffer) {
-						refreshed, err := trader.client.RefreshOffer(
-							context.Background(),
-							&types.Node{GUID: trader.guid.String()},
+						refreshed, err := t.client.RefreshOffer(
+							context.WithValue(context.Background(), types.PartitionsStateKey, t.suppTest.PartitionsState()),
+							&types.Node{GUID: t.guid.String()},
 							&types.Node{IP: offer.supplierIP},
-							&types.Offer{ID: int64(offer.ID())},
-						)
+							&types.Offer{ID: int64(offer.ID())})
 
-						trader.offersMutex.Lock()
-						defer trader.offersMutex.Unlock()
+						t.offersMutex.Lock()
+						defer t.offersMutex.Unlock()
 
 						offerKEY := offerKey{supplierIP: offer.supplierIP, id: common.OfferID(offer.ID())}
-						offer, exist := trader.offers[offerKEY]
+						offer, exist := t.offers[offerKEY]
 
 						if err == nil && refreshed && exist { // Offer exist and was refreshed
 							log.Debugf(util.LogTag("TRADER")+"Refresh SUCCEEDED ,supplier: %s, offer: %d",
@@ -92,32 +95,32 @@ func (trader *Trader) start() {
 						} else if err == nil && !refreshed && exist { // Offer did not exist, so it was not refreshed
 							log.Debugf(util.LogTag("TRADER")+"Refresh FAILED (offer did not exist),"+
 								" supplier: %s, offer: %d", offer.SupplierIP(), offer.ID())
-							delete(trader.offers, offerKEY)
+							delete(t.offers, offerKEY)
 						} else if err != nil && exist { // Offer exist but the refresh message failed
 							log.Debugf(util.LogTag("TRADER")+"Refresh FAILED, supplier: %s, offer: %d",
 								offer.SupplierIP(), offer.ID())
 							offer.RefreshFailed()
-							if offer.RefreshesFailed() >= trader.config.MaxRefreshesFailed() {
+							if offer.RefreshesFailed() >= t.config.MaxRefreshesFailed() {
 								log.Debugf(util.LogTag("TRADER")+"REMOVING offer, supplier: %s, offer: %d",
 									offer.SupplierIP(), offer.ID())
-								delete(trader.offers, offerKEY)
+								delete(t.offers, offerKEY)
 							}
 						}
 					}(offer)
 				}
 			}
 
-			trader.offersMutex.Unlock()
-		case <-trader.spreadOffersTimer:
+			t.offersMutex.Unlock()
+		case <-t.spreadOffersTimer:
 			// Advertise offers (if any) into the neighbors traders.
 			// Necessary only to overcame the problems of unnoticed death of a neighbor.
-			if trader.haveOffers() {
-				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
+			if t.haveOffers() {
+				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
 			}
-		case quit := <-trader.quitChan: // Stopping the trader (returning the goroutine)
+		case quit := <-t.quitChan: // Stopping the trader (returning the goroutine)
 			if quit {
-				log.Infof(util.LogTag("TRADER")+"Trader %s STOPPED", trader.guid.Short())
+				log.Infof(util.LogTag("TRADER")+"Trader %s STOPPED", t.guid.Short())
 				return
 			}
 		}
@@ -125,15 +128,15 @@ func (trader *Trader) start() {
 }
 
 // Returns all the offers that the trader is managing.
-func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay bool) []types.AvailableOffer {
-	if trader.haveOffers() || !relay { // Trader has offers so return them immediately
-		trader.offersMutex.Lock()
-		defer trader.offersMutex.Unlock()
+func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []types.AvailableOffer {
+	if t.haveOffers() || !relay { // Trader has offers so return them immediately or we are not relaying
+		t.offersMutex.Lock()
+		defer t.offersMutex.Unlock()
 
-		availableOffers := len(trader.offers)
+		availableOffers := len(t.offers)
 		allOffers := make([]types.AvailableOffer, availableOffers)
 		index := 0
-		for _, traderOffer := range trader.offers {
+		for _, traderOffer := range t.offers {
 			allOffers[index].SupplierIP = traderOffer.SupplierIP()
 			allOffers[index].ID = int64(traderOffer.ID())
 			allOffers[index].Amount = traderOffer.Amount()
@@ -148,41 +151,36 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 		resOffers := make([]types.AvailableOffer, 0)
 
 		// Ask the successor (higher GUID)
-		successor := trader.nearbyTradersOffering.Successor()
-		if successor != nil {
-			successorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*successor.GUID())
-			if trader.handledResources.Equals(*successorResourcesHandled) {
-				offers, err := trader.client.GetOffers(
-					ctx,
-					&types.Node{
-						GUID: trader.guid.String(),
-					},
-					&types.Node{
-						IP:   successor.IP(),
-						GUID: successor.GUID().String(),
-					},
-					false,
-				) // Sends the get offers message
-				if err == nil && offers != nil {
+		if successor := t.nearbyTradersOffering.Successor(); successor != nil {
+			successorResourcesHandled := t.resourcesMap.ResourcesByGUID(*successor.GUID())
+			if t.handledResources.Equals(*successorResourcesHandled) {
+				offers, err := t.client.GetOffers( // Sends the get offers message
+					context.WithValue(ctx, types.PartitionsStateKey, t.suppTest.PartitionsState()),
+					&types.Node{GUID: t.guid.String()},
+					&types.Node{IP: successor.IP(), GUID: successor.GUID().String()},
+					false)
+				if err == nil && len(offers) != 0 {
 					resOffers = append(resOffers, offers...)
+				} else if err == nil && len(offers) == 0 {
+					t.nearbyTradersOffering.SetSuccessor(nil)
 				}
 			}
 
 		}
 
 		// Ask the predecessor (lower GUID)
-		predecessor := trader.nearbyTradersOffering.Predecessor()
-		if predecessor != nil {
-			predecessorResourcesHandled := trader.resourcesMap.ResourcesByGUID(*predecessor.GUID())
-			if trader.handledResources.Equals(*predecessorResourcesHandled) {
-				offers, err := trader.client.GetOffers(
-					ctx,
-					&types.Node{GUID: trader.guid.String()},
+		if predecessor := t.nearbyTradersOffering.Predecessor(); predecessor != nil {
+			predecessorResourcesHandled := t.resourcesMap.ResourcesByGUID(*predecessor.GUID())
+			if t.handledResources.Equals(*predecessorResourcesHandled) {
+				offers, err := t.client.GetOffers( // Sends the get offers message
+					context.WithValue(ctx, types.PartitionsStateKey, t.suppTest.PartitionsState()),
+					&types.Node{GUID: t.guid.String()},
 					&types.Node{IP: predecessor.IP(), GUID: predecessor.GUID().String()},
-					false,
-				) // Sends the get offers message
-				if err == nil && offers != nil {
+					false)
+				if err == nil && len(offers) != 0 {
 					resOffers = append(resOffers, offers...)
+				} else if err == nil && len(offers) == 0 {
+					t.nearbyTradersOffering.SetPredecessor(nil)
 				}
 			}
 
@@ -193,91 +191,91 @@ func (trader *Trader) GetOffers(ctx context.Context, fromNode *types.Node, relay
 }
 
 // Receives a resource offer from other node (supplier) of the system
-func (trader *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
+func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
 	resourcesOffered := resources.NewResources(newOffer.Resources.CPUs, newOffer.Resources.RAM)
 
 	// Verify if the offer contains the resources of trader.
 	// Basically verify if the offer is bigger than the handled resources of the trader.
-	if resourcesOffered.Contains(*trader.handledResources) {
-		trader.offersMutex.Lock()
+	if resourcesOffered.Contains(*t.handledResources) {
+		t.offersMutex.Lock()
 
 		offerKey := offerKey{supplierIP: fromSupp.IP, id: common.OfferID(newOffer.ID)}
 		offer := newTraderOffer(*guid.NewGUIDString(fromSupp.GUID), fromSupp.IP, common.OfferID(newOffer.ID),
 			newOffer.Amount, *resourcesOffered)
 
-		advertise := len(trader.offers) == 0
+		advertise := len(t.offers) == 0
 
-		trader.offers[offerKey] = offer
+		t.offers[offerKey] = offer
 		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
-			trader.guid.Short(), newOffer.Amount, newOffer.Resources.CPUs, newOffer.Resources.RAM,
+			t.guid.Short(), newOffer.Amount, newOffer.Resources.CPUs, newOffer.Resources.RAM,
 			fromSupp.IP, newOffer.ID)
 
-		trader.offersMutex.Unlock()
+		t.offersMutex.Unlock()
 
 		if advertise { // If node had no offers, advertise it has now for all the neighbors
-			if trader.config.Simulation() {
-				trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
+			if t.config.Simulation() {
+				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
 			} else {
-				go trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
+				go t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
 			}
 		}
 	}
 }
 
 // Remove an offer from the offering table.
-func (trader *Trader) RemoveOffer(fromSupp *types.Node, offer *types.Offer) {
-	trader.offersMutex.Lock()
-	defer trader.offersMutex.Unlock()
+func (t *Trader) RemoveOffer(fromSupp *types.Node, offer *types.Offer) {
+	t.offersMutex.Lock()
+	defer t.offersMutex.Unlock()
 
-	delete(trader.offers, offerKey{supplierIP: fromSupp.IP, id: common.OfferID(offer.ID)})
+	delete(t.offers, offerKey{supplierIP: fromSupp.IP, id: common.OfferID(offer.ID)})
 
 	log.Debugf(util.LogTag("TRADER")+"Offer REMOVED Offer: %d, Supp: %s", offer.ID, fromSupp.IP)
 }
 
 // Relay the offering advertise for the overlay neighbors if the trader doesn't have any available offers
-func (trader *Trader) AdvertiseNeighborOffer(fromTrader, traderOffering *types.Node) {
-	fromTraderGuid := guid.NewGUIDString(fromTrader.GUID)
-	traderOfferingGuid := guid.NewGUIDString(traderOffering.GUID)
+func (t *Trader) AdvertiseNeighborOffer(fromTrader, traderOffering *types.Node) {
+	fromTraderGUID := guid.NewGUIDString(fromTrader.GUID)
+	traderOfferingGUID := guid.NewGUIDString(traderOffering.GUID)
 
 	var isValidNeighbor func(neighborGUID *guid.GUID) bool = nil
-	if trader.guid.Cmp(*fromTraderGuid) > 0 { // Message comes from a lower GUID's node
-		trader.nearbyTradersOffering.SetPredecessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGuid))
+	if t.guid.Higher(*fromTraderGUID) { // Message comes from a lower GUID's node
+		t.nearbyTradersOffering.SetPredecessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGUID))
 		// Relay the advertise to a higher GUID's node (inside partition)
 		isValidNeighbor = func(neighborGUID *guid.GUID) bool {
-			return neighborGUID.Higher(*trader.guid)
+			return neighborGUID.Higher(*t.guid)
 		}
 	} else { // Message comes from a higher GUID's node
-		trader.nearbyTradersOffering.SetSuccessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGuid))
+		t.nearbyTradersOffering.SetSuccessor(nodeCommon.NewRemoteNode(traderOffering.IP, *traderOfferingGUID))
 		// Relay the advertise to a lower GUID's node (inside partition)
 		isValidNeighbor = func(neighborGUID *guid.GUID) bool {
-			return neighborGUID.Lower(*trader.guid)
+			return neighborGUID.Lower(*t.guid)
 		}
 	}
 
 	// Do not relay the advertise if the node has offers.
-	if !trader.haveOffers() {
-		if trader.config.Simulation() {
-			trader.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
+	if !t.haveOffers() {
+		if t.config.Simulation() {
+			t.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
 		} else {
-			go trader.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
+			go t.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
 		}
 	}
 }
 
-func (trader *Trader) haveOffers() bool {
-	trader.offersMutex.Lock()
-	defer trader.offersMutex.Unlock()
+func (t *Trader) haveOffers() bool {
+	t.offersMutex.Lock()
+	defer t.offersMutex.Unlock()
 
-	return len(trader.offers) != 0
+	return len(t.offers) != 0
 }
 
 // Advertise that we have offers into all trader's neighbors that survive the given predicate application.
-func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool, traderOffering *types.Node) {
-	log.Debugf(util.LogTag("TRADER")+"ADVERTISE offers, From: %s", trader.guid.Short())
+func (t *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *guid.GUID) bool, traderOffering *types.Node) {
+	log.Debugf(util.LogTag("TRADER")+"ADVERTISE offers, From: %s", t.guid.Short())
 
-	overlayNeighbors, err := trader.overlay.Neighbors(context.Background(), trader.guid.Bytes())
+	overlayNeighbors, err := t.overlay.Neighbors(context.Background(), t.guid.Bytes())
 	if err != nil {
 		return
 	}
@@ -285,19 +283,18 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 	for _, overlayNeighbor := range overlayNeighbors { // Advertise to all neighbors (inside resource partition)
 		advertise := func(overlayNeighbor *overlayTypes.OverlayNode) {
 			nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
-			nodeResourcesHandled := trader.resourcesMap.ResourcesByGUID(*nodeGUID)
+			nodeResourcesHandled := t.resourcesMap.ResourcesByGUID(*nodeGUID)
 
-			if isValidNeighbor(nodeGUID) && trader.handledResources.Equals(*nodeResourcesHandled) {
-				trader.client.AdvertiseOffersNeighbor(
-					context.Background(),
-					&types.Node{GUID: trader.guid.String()},
+			if isValidNeighbor(nodeGUID) && t.handledResources.Equals(*nodeResourcesHandled) {
+				t.client.AdvertiseOffersNeighbor( // Sends advertise local offers message
+					context.WithValue(context.Background(), types.PartitionsStateKey, t.suppTest.PartitionsState()),
+					&types.Node{GUID: t.guid.String()},
 					&types.Node{IP: overlayNeighbor.IP(), GUID: nodeGUID.String()},
-					traderOffering,
-				) // Sends advertise local offers message
+					traderOffering)
 			}
 		}
 
-		if trader.config.Simulation() {
+		if t.config.Simulation() {
 			advertise(overlayNeighbor)
 		} else {
 			go advertise(overlayNeighbor)
@@ -308,21 +305,21 @@ func (trader *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGU
 // ======================= External Services (Consumed during simulation ONLY) =========================
 
 //Simulation
-func (trader *Trader) RefreshOffersSim() {
-	trader.offersMutex.Lock()
-	defer trader.offersMutex.Unlock()
+func (t *Trader) RefreshOffersSim() {
+	t.offersMutex.Lock()
+	defer t.offersMutex.Unlock()
 
-	for _, offer := range trader.offers {
+	for _, offer := range t.offers {
 		if offer.Refresh() {
-			refreshed, err := trader.client.RefreshOffer(
-				context.Background(),
-				&types.Node{GUID: trader.guid.String()},
+			refreshed, err := t.client.RefreshOffer(
+				context.WithValue(context.Background(), types.PartitionsStateKey, t.suppTest.PartitionsState()),
+				&types.Node{GUID: t.guid.String()},
 				&types.Node{IP: offer.supplierIP},
 				&types.Offer{ID: int64(offer.ID())},
 			)
 
 			offerKEY := offerKey{supplierIP: offer.supplierIP, id: common.OfferID(offer.ID())}
-			offer, exist := trader.offers[offerKEY]
+			offer, exist := t.offers[offerKEY]
 
 			if err == nil && refreshed && exist { // Offer exist and was refreshed
 				log.Debugf(util.LogTag("TRADER")+"Refresh SUCCEEDED ,supplier: %s, offer: %d",
@@ -331,15 +328,15 @@ func (trader *Trader) RefreshOffersSim() {
 			} else if err == nil && !refreshed && exist { // Offer did not exist, so it was not refreshed
 				log.Debugf(util.LogTag("TRADER")+"Refresh FAILED (offer did not exist),"+
 					" supplier: %s, offer: %d", offer.SupplierIP(), offer.ID())
-				delete(trader.offers, offerKEY)
+				delete(t.offers, offerKEY)
 			} else if err != nil && exist { // Offer exist but the refresh message failed
 				log.Debugf(util.LogTag("TRADER")+"Refresh FAILED, supplier: %s, offer: %d",
 					offer.SupplierIP(), offer.ID())
 				offer.RefreshFailed()
-				if offer.RefreshesFailed() >= trader.config.MaxRefreshesFailed() {
+				if offer.RefreshesFailed() >= t.config.MaxRefreshesFailed() {
 					log.Debugf(util.LogTag("TRADER")+"REMOVING offer, supplier: %s, offer: %d",
 						offer.SupplierIP(), offer.ID())
-					delete(trader.offers, offerKEY)
+					delete(t.offers, offerKEY)
 				}
 			}
 		}
@@ -347,12 +344,12 @@ func (trader *Trader) RefreshOffersSim() {
 }
 
 //Simulation
-func (trader *Trader) SpreadOffersSim() {
+func (t *Trader) SpreadOffersSim() {
 	// Advertise offers (if any) into the neighbors traders.
 	// Necessary only to overcame the problems of unnoticed death of a neighbor.
-	if trader.haveOffers() {
-		trader.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-			&types.Node{GUID: trader.guid.String(), IP: trader.config.HostIP()})
+	if t.haveOffers() {
+		t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+			&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
 	}
 }
 
@@ -360,20 +357,20 @@ func (trader *Trader) SpreadOffersSim() {
 // =							SubComponent Interface                           =
 // ===============================================================================
 
-func (trader *Trader) Start() {
-	trader.Started(trader.config.Simulation(), func() {
-		if !trader.config.Simulation() {
-			go trader.start()
+func (t *Trader) Start() {
+	t.Started(t.config.Simulation(), func() {
+		if !t.config.Simulation() {
+			go t.start()
 		}
 	})
 }
 
-func (trader *Trader) Stop() {
-	trader.Stopped(func() {
-		trader.quitChan <- true
+func (t *Trader) Stop() {
+	t.Stopped(func() {
+		t.quitChan <- true
 	})
 }
 
-func (trader *Trader) IsWorking() bool {
-	return trader.Working()
+func (t *Trader) IsWorking() bool {
+	return t.Working()
 }

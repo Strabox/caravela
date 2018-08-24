@@ -9,14 +9,15 @@ import (
 )
 
 // ManageOffersFactory represents a method that creates a new offers manager.
-type ManageOffersFactory func(config *configuration.Configuration) (OffersManager, error)
+type ManageOffersFactory func(config *configuration.Configuration) (OfferingStrategy, error)
 
 // manageOffers holds all the registered offer managers available.
 var manageOffers = make(map[string]ManageOffersFactory)
 
 // init initializes our predefined offers managers.
 func init() {
-	RegisterOffersStrategy("chord-single-offer", newSmartChordManageOffers)
+	RegisterOffersStrategy("chord-single-offer", newSingleOfferChordManager)
+	RegisterOffersStrategy("chord-multiple-offer", newMultipleOfferStrategy)
 }
 
 // RegisterOffersStrategy can be used to register a new strategy in order to be available.
@@ -32,7 +33,7 @@ func RegisterOffersStrategy(strategyName string, factory ManageOffersFactory) {
 }
 
 // CreateOffersStrategy is used to obtain an offers manager based on the configurations.
-func CreateOffersStrategy(config *configuration.Configuration) OffersManager {
+func CreateOffersStrategy(config *configuration.Configuration) OfferingStrategy {
 	configuredStrategy := config.DiscoveryBackend()
 
 	strategyFactory, exist := manageOffers[configuredStrategy]

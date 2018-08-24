@@ -7,9 +7,8 @@ import (
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
-	"github.com/strabox/caravela/node/discovery/moffer"
+	"github.com/strabox/caravela/node/discovery/offering"
 	"github.com/strabox/caravela/node/discovery/random"
-	"github.com/strabox/caravela/node/discovery/soffer"
 	"github.com/strabox/caravela/node/external"
 	"strings"
 )
@@ -23,8 +22,8 @@ var discoveryBackends = make(map[string]BackendFactory)
 
 // init initializes our predefined offers managers.
 func init() {
-	RegisterDiscoveryBackend("chord-single-offer", soffer.NewSOfferDiscovery)
-	RegisterDiscoveryBackend("chord-multiple-offers", moffer.NewMofferDiscovery)
+	RegisterDiscoveryBackend("chord-single-offer", offering.NewOfferingDiscovery)
+	RegisterDiscoveryBackend("chord-multiple-offer", offering.NewOfferingDiscovery)
 	RegisterDiscoveryBackend("chord-random", random.NewRandomDiscovery)
 }
 
