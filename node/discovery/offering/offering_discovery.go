@@ -25,9 +25,9 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	resourcesMap   *resources.Mapping // GUID<->Resources mapping
-	supplier       *supplier.Supplier // Supplier for managing the offers locally and remotely
-	virtualTraders sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
+	resourcesMap *resources.Mapping // GUID<->Resources mapping
+	supplier     *supplier.Supplier // Supplier for managing the offers locally and remotely
+	traders      sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
 }
 
 func NewOfferingDiscovery(config *configuration.Configuration, overlay external.Overlay,
@@ -38,9 +38,9 @@ func NewOfferingDiscovery(config *configuration.Configuration, overlay external.
 		overlay: overlay,
 		client:  client,
 
-		resourcesMap:   resourcesMap,
-		supplier:       supplier.NewSupplier(config, overlay, client, resourcesMap, maxResources),
-		virtualTraders: sync.Map{},
+		resourcesMap: resourcesMap,
+		supplier:     supplier.NewSupplier(config, overlay, client, resourcesMap, maxResources),
+		traders:      sync.Map{},
 	}, nil
 }
 
@@ -51,7 +51,7 @@ func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 	disc.supplier.SetNodeGUID(traderGUID)
 
 	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap, disc.supplier)
-	disc.virtualTraders.Store(traderGUID.String(), newTrader)
+	disc.traders.Store(traderGUID.String(), newTrader)
 
 	newTrader.Start() // Start the node's trader module.
 	newTraderResources := disc.resourcesMap.ResourcesByGUID(traderGUID)
@@ -81,7 +81,7 @@ func (disc *Discovery) PartitionsState() []types.PartitionState {
 // ======================= External Services (Consumed by other Nodes) ==============================
 
 func (disc *Discovery) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
-	t, exist := disc.virtualTraders.Load(toNode.GUID)
+	t, exist := disc.traders.Load(toNode.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.CreateOffer(fromNode, offer)
@@ -93,7 +93,7 @@ func (disc *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) 
 }
 
 func (disc *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
-	t, exist := disc.virtualTraders.Load(toTrader.GUID)
+	t, exist := disc.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.RemoveOffer(fromSupp, offer)
@@ -101,7 +101,7 @@ func (disc *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, o
 }
 
 func (disc *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
-	t, exist := disc.virtualTraders.Load(toTrader.GUID)
+	t, exist := disc.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		return targetTrader.GetOffers(ctx, fromNode, relay)
@@ -111,7 +111,7 @@ func (disc *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.
 }
 
 func (disc *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node) {
-	t, exist := disc.virtualTraders.Load(toNeighborTrader.GUID)
+	t, exist := disc.traders.Load(toNeighborTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.AdvertiseNeighborOffer(fromTrader, traderOffering)
@@ -132,7 +132,7 @@ func (disc *Discovery) MaximumResourcesSim() types.Resources {
 
 // Simulation
 func (disc *Discovery) RefreshOffersSim() {
-	disc.virtualTraders.Range(func(key, value interface{}) bool {
+	disc.traders.Range(func(key, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
 			currentTrader.RefreshOffersSim()
@@ -143,7 +143,7 @@ func (disc *Discovery) RefreshOffersSim() {
 
 // Simulation
 func (disc *Discovery) SpreadOffersSim() {
-	disc.virtualTraders.Range(func(key, value interface{}) bool {
+	disc.traders.Range(func(key, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
 			currentTrader.SpreadOffersSim()
@@ -165,7 +165,7 @@ func (disc *Discovery) Start() {
 func (disc *Discovery) Stop() {
 	disc.Stopped(func() {
 		disc.supplier.Stop()
-		disc.virtualTraders.Range(func(_, value interface{}) bool {
+		disc.traders.Range(func(_, value interface{}) bool {
 			currentTrader, ok := value.(*trader.Trader)
 			if ok {
 				currentTrader.Stop()

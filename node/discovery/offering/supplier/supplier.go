@@ -28,7 +28,7 @@ type Supplier struct {
 
 	activeOffers       map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
 	offersIDGen        common.OfferID                    // Monotonic counter to generate offer's local unique IDs
-	offersMutex        *sync.Mutex                       // Mutex to handle active offers management
+	offersMutex        sync.Mutex                        // Mutex to handle active offers management
 	resourcesMap       *resources.Mapping                // The resources<->GUID mapping
 	maxResources       *resources.Resources              // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources              // CURRENT Available resources to offer
@@ -54,7 +54,7 @@ func NewSupplier(config *configuration.Configuration, overlay external.Overlay, 
 		availableResources: maxResources.Copy(),
 		offersIDGen:        0,
 		activeOffers:       make(map[common.OfferID]*supplierOffer),
-		offersMutex:        &sync.Mutex{},
+		offersMutex:        sync.Mutex{},
 
 		quitChan:             make(chan bool),
 		supplyingTicker:      time.NewTicker(config.SupplyingInterval()).C,

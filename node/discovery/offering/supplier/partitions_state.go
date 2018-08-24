@@ -110,7 +110,7 @@ func (rps *ResourcePartitionState) Try() bool {
 		return true
 	}
 	lastChance := randomGenerator.Intn(100)
-	if lastChance <= 5 {
+	if lastChance <= 10 {
 		return true
 	}
 	return false
