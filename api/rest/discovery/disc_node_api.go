@@ -7,9 +7,10 @@ import (
 
 // Discovery API necessary to forward the REST calls
 type Discovery interface {
-	CreateOffer(ctx context.Context, fromNode *types.Node, toNode *types.Node, offer *types.Offer)
+	CreateOffer(ctx context.Context, fromNode, toNode *types.Node, offer *types.Offer)
 	RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool
-	RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer)
+	UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer)
+	RemoveOffer(ctx context.Context, fromSupp, toTrader *types.Node, offer *types.Offer)
 	GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer
 	AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node)
 }

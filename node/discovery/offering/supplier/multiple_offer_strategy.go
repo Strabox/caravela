@@ -122,21 +122,25 @@ OfferLoop:
 			&types.Node{IP: s.configs.HostIP(), GUID: ""},
 			&types.Node{IP: offerToRemove.ResponsibleTraderIP(), GUID: offerToRemove.ResponsibleTraderGUID().String()},
 			&types.Offer{ID: int64(offerToRemove.ID())})
+		s.supplier.removeOffer(common.OfferID(offerToRemove.ID()))
 	}
 
 	for _, toOffer := range lowerPartitions {
-		offer, err := s.createAnOffer(int64(s.supplier.newOfferID()), toOffer)
+		offer, err := s.createAnOffer(int64(s.supplier.newOfferID()), toOffer, availableResources)
 		if err == nil {
 			s.supplier.addOffer(offer)
 		}
 	}
+
+	//activeOffers := s.supplier.offers()
+
 }
 
-func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, availableResources resources.Resources) (*supplierOffer, error) {
+func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, targetRes, realAvailableRes resources.Resources) (*supplierOffer, error) {
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
 
-	destinationGUID, err := s.resourcesMapping.RandGUIDOffer(availableResources)
+	destinationGUID, err := s.resourcesMapping.RandGUIDOffer(targetRes)
 	if err != nil {
 		return nil, errors.New("no nodes capable of handle this offer resources")
 	}
@@ -145,7 +149,7 @@ func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, availableResourc
 
 	// .. try search nodes in the beginning of the original target resource range region
 	if len(overlayNodes) == 0 {
-		destinationGUID, err := s.resourcesMapping.FirstGUIDOffer(availableResources)
+		destinationGUID, err := s.resourcesMapping.FirstGUIDOffer(targetRes)
 		if err != nil {
 			return nil, err
 		}
@@ -155,10 +159,10 @@ func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, availableResourc
 
 	// ... try search for random nodes that handle less powerful resource combinations
 	for len(overlayNodes) == 0 {
-		destinationGUID, err = s.resourcesMapping.LowerRandGUIDOffer(*destinationGUID, availableResources)
+		destinationGUID, err = s.resourcesMapping.LowerRandGUIDOffer(*destinationGUID, targetRes)
 		if err != nil {
 			log.Errorf(util.LogTag("SUPPLIER")+"NO NODES to handle resources offer: %s. Error: %s",
-				availableResources.String(), err)
+				targetRes.String(), err)
 			return nil, errors.New("no nodes available to accept offer") // Wait fot the next tick to try supply resources
 		}
 		overlayNodes, _ = s.overlay.Lookup(context.Background(), destinationGUID.Bytes())
@@ -176,9 +180,9 @@ func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, availableResourc
 		&types.Offer{
 			ID:        newOfferID,
 			Amount:    1,
-			Resources: types.Resources{CPUs: availableResources.CPUs(), RAM: availableResources.RAM()}})
+			Resources: types.Resources{CPUs: realAvailableRes.CPUs(), RAM: realAvailableRes.RAM()}})
 	if err == nil {
-		return newSupplierOffer(common.OfferID(newOfferID), 1, availableResources, chosenNode.IP(), *chosenNodeGUID), nil
+		return newSupplierOffer(common.OfferID(newOfferID), 1, realAvailableRes, chosenNode.IP(), *chosenNodeGUID), nil
 	}
 
 	return nil, errors.New("impossible advertise offer")

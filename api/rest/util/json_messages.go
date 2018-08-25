@@ -17,6 +17,13 @@ type RefreshOfferMsg struct {
 	Offer      types.Offer `json:"Offer"`
 }
 
+// UpdateOfferMsg offer struct/JSON used in remote REST APIs when a supplier wants to update its offer.
+type UpdateOfferMsg struct {
+	FromSupplier types.Node  `json:"FromSupplier"`
+	ToTrader     types.Node  `json:"ToTrader"`
+	Offer        types.Offer `json:"Offer"`
+}
+
 // Response to a refresh offer message used in remote REST APIs when a supplier acknowledges the refresh message
 type RefreshOfferResponseMsg struct {
 	Refreshed bool `json:"Refreshed"` // True if the offer was refreshed succeeded and false otherwise

@@ -41,6 +41,11 @@ func newTraderOffer(supplierGUID guid.GUID, supplierIP string, id common.OfferID
 	}
 }
 
+func (offer *traderOffer) UpdateResources(newRes resources.Resources, newAmount int) {
+	offer.SetResources(newRes)
+	offer.SetAmount(newAmount)
+}
+
 // Return true if it is time to refresh the offer, and false otherwise.
 func (offer *traderOffer) Refresh() bool {
 	if offer.waitingForRefresh {

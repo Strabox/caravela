@@ -18,9 +18,10 @@ type Discovery interface {
 	UpdatePartitionsState(partitionsState []types.PartitionState)
 	PartitionsState() []types.PartitionState
 	// ======================= External/Remote Services =========================
-	CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer)
+	CreateOffer(fromNode, toNode *types.Node, offer *types.Offer)
 	RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool
-	RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer)
+	UpdateOffer(fromSupp, toTrader *types.Node, offer *types.Offer)
+	RemoveOffer(fromSupp, toTrader *types.Node, offer *types.Offer)
 	GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer
 	AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node)
 	// ============== External/Remote Services (Only Simulation) ================

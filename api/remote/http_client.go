@@ -50,10 +50,9 @@ func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.N
 }
 
 func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error) {
-	log.Infof("--> REFRESH OFFER From: %s, ID: %d, To: %s",
-		fromTrader.GUID[0:12], offer.ID, toSupp.IP)
+	log.Infof("--> REFRESH OFFER From: %s, ID: %d, To: %s", fromTrader.GUID[0:12], offer.ID, toSupp.IP)
 
-	offerRefreshMsg := util.RefreshOfferMsg{
+	refreshOfferMsg := util.RefreshOfferMsg{
 		FromTrader: *fromTrader,
 		Offer:      *offer,
 	}
@@ -61,13 +60,34 @@ func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *type
 
 	url := util.BuildHttpURL(false, toSupp.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
 
-	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPatch, offerRefreshMsg,
+	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPatch, refreshOfferMsg,
 		&refreshOfferResp)
 	if err != nil {
 		return false, NewRemoteClientError(err)
 	}
 
 	return refreshOfferResp.Refreshed, nil
+}
+
+func (client *Client) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) error {
+	log.Infof("--> UPDATE OFFER From: %s, ID: %d, To: %s", fromSupplier.IP, offer.ID, toTrader.GUID[0:12])
+
+	updateOfferMsg := util.UpdateOfferMsg{
+		FromSupplier: *fromSupplier,
+		ToTrader:     *toTrader,
+		Offer:        *offer,
+	}
+	var refreshOfferResp util.RefreshOfferResponseMsg
+
+	url := util.BuildHttpURL(false, toTrader.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
+
+	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPut, updateOfferMsg,
+		&refreshOfferResp)
+	if err != nil {
+		return NewRemoteClientError(err)
+	}
+
+	return nil
 }
 
 func (client *Client) RemoveOffer(ctx context.Context, fromSupp, toTrader *types.Node, offer *types.Offer) error {

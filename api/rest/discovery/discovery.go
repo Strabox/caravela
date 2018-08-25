@@ -17,6 +17,7 @@ func Init(router *mux.Router, nodeDiscovery Discovery) {
 	nodeDiscoveryAPI = nodeDiscovery
 	router.Handle(OfferBaseEndpoint, util.AppHandler(createOffer)).Methods(http.MethodPost)
 	router.Handle(OfferBaseEndpoint, util.AppHandler(refreshOffer)).Methods(http.MethodPatch)
+	router.Handle(OfferBaseEndpoint, util.AppHandler(updateOffer)).Methods(http.MethodPut)
 	router.Handle(OfferBaseEndpoint, util.AppHandler(removeOffer)).Methods(http.MethodDelete)
 	router.Handle(OfferBaseEndpoint, util.AppHandler(getOffers)).Methods(http.MethodGet)
 	router.Handle(NeighborOfferBaseEndpoint, util.AppHandler(neighborOffers)).Methods(http.MethodPatch)
@@ -38,18 +39,33 @@ func createOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 }
 
 func refreshOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
-	var offerRefreshMsg util.RefreshOfferMsg
+	var refreshOfferMsg util.RefreshOfferMsg
 
-	err := util.ReceiveJSONFromHttp(w, req, &offerRefreshMsg)
+	err := util.ReceiveJSONFromHttp(w, req, &refreshOfferMsg)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("<-- REFRESH OFFER ID: %d, From: %s", offerRefreshMsg.Offer.ID,
-		offerRefreshMsg.FromTrader.GUID[0:12])
+	log.Infof("<-- REFRESH OFFER ID: %d, From: %s", refreshOfferMsg.Offer.ID,
+		refreshOfferMsg.FromTrader.GUID[0:12])
 
-	res := nodeDiscoveryAPI.RefreshOffer(req.Context(), &offerRefreshMsg.FromTrader, &offerRefreshMsg.Offer)
+	res := nodeDiscoveryAPI.RefreshOffer(req.Context(), &refreshOfferMsg.FromTrader, &refreshOfferMsg.Offer)
 	return util.RefreshOfferResponseMsg{Refreshed: res}, nil
+}
+
+func updateOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {
+	var updateOfferMsg util.UpdateOfferMsg
+
+	err := util.ReceiveJSONFromHttp(w, req, &updateOfferMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("<-- UPDATE OFFER ID: %d, From: %s, To: %s", updateOfferMsg.Offer.ID,
+		updateOfferMsg.FromSupplier.IP, updateOfferMsg.ToTrader.GUID[0:12])
+
+	nodeDiscoveryAPI.UpdateOffer(req.Context(), &updateOfferMsg.FromSupplier, &updateOfferMsg.ToTrader, &updateOfferMsg.Offer)
+	return nil, nil
 }
 
 func removeOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) {

@@ -127,6 +127,49 @@ func (t *Trader) start() {
 	}
 }
 
+// Receives a resource offer from other node (supplier) of the system
+func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
+	resourcesOffered := resources.NewResources(newOffer.Resources.CPUs, newOffer.Resources.RAM)
+
+	// Verify if the offer contains the resources of trader.
+	// Basically verify if the offer is bigger than the handled resources of the trader.
+	if resourcesOffered.Contains(*t.handledResources) {
+		t.offersMutex.Lock()
+
+		offerKey := offerKey{supplierIP: fromSupp.IP, id: common.OfferID(newOffer.ID)}
+		offer := newTraderOffer(*guid.NewGUIDString(fromSupp.GUID), fromSupp.IP, common.OfferID(newOffer.ID),
+			newOffer.Amount, *resourcesOffered)
+
+		advertise := len(t.offers) == 0
+
+		t.offers[offerKey] = offer
+		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
+			t.guid.Short(), newOffer.Amount, newOffer.Resources.CPUs, newOffer.Resources.RAM,
+			fromSupp.IP, newOffer.ID)
+
+		t.offersMutex.Unlock()
+
+		if advertise { // If node had no offers, advertise it has now for all the neighbors
+			if t.config.Simulation() {
+				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
+			} else {
+				go t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
+					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
+			}
+		}
+	}
+}
+
+func (t *Trader) UpdateOffer(fromSupp *types.Node, offer *types.Offer) {
+	t.offersMutex.Lock()
+	defer t.offersMutex.Unlock()
+
+	if traderOffer, exist := t.offers[offerKey{id: common.OfferID(offer.ID), supplierIP: fromSupp.IP}]; exist {
+		traderOffer.UpdateResources(*resources.NewResources(offer.Resources.CPUs, offer.Resources.RAM), offer.Amount)
+	}
+}
+
 // Returns all the offers that the trader is managing.
 func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []types.AvailableOffer {
 	if t.haveOffers() || !relay { // Trader has offers so return them immediately or we are not relaying
@@ -187,40 +230,6 @@ func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []typ
 		}
 		// TRY: OPTIONAl make the calls in parallel (2 goroutines) and wait here for both, then join the results.
 		return resOffers
-	}
-}
-
-// Receives a resource offer from other node (supplier) of the system
-func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
-	resourcesOffered := resources.NewResources(newOffer.Resources.CPUs, newOffer.Resources.RAM)
-
-	// Verify if the offer contains the resources of trader.
-	// Basically verify if the offer is bigger than the handled resources of the trader.
-	if resourcesOffered.Contains(*t.handledResources) {
-		t.offersMutex.Lock()
-
-		offerKey := offerKey{supplierIP: fromSupp.IP, id: common.OfferID(newOffer.ID)}
-		offer := newTraderOffer(*guid.NewGUIDString(fromSupp.GUID), fromSupp.IP, common.OfferID(newOffer.ID),
-			newOffer.Amount, *resourcesOffered)
-
-		advertise := len(t.offers) == 0
-
-		t.offers[offerKey] = offer
-		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
-			t.guid.Short(), newOffer.Amount, newOffer.Resources.CPUs, newOffer.Resources.RAM,
-			fromSupp.IP, newOffer.ID)
-
-		t.offersMutex.Unlock()
-
-		if advertise { // If node had no offers, advertise it has now for all the neighbors
-			if t.config.Simulation() {
-				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
-			} else {
-				go t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
-			}
-		}
 	}
 }
 

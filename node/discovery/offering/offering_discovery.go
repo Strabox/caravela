@@ -80,16 +80,24 @@ func (disc *Discovery) PartitionsState() []types.PartitionState {
 
 // ======================= External Services (Consumed by other Nodes) ==============================
 
-func (disc *Discovery) CreateOffer(fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
-	t, exist := disc.traders.Load(toNode.GUID)
+func (disc *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+	t, exist := disc.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
-		targetTrader.CreateOffer(fromNode, offer)
+		targetTrader.CreateOffer(fromSupp, offer)
 	}
 }
 
 func (disc *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
 	return disc.supplier.RefreshOffer(fromTrader, offer)
+}
+
+func (disc *Discovery) UpdateOffer(fromSupp, toTrader *types.Node, offer *types.Offer) {
+	t, exist := disc.traders.Load(toTrader.GUID)
+	targetTrader, ok := t.(*trader.Trader)
+	if exist && ok {
+		targetTrader.UpdateOffer(fromSupp, offer)
+	}
 }
 
 func (disc *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {

@@ -28,6 +28,14 @@ func (offer *Offer) Amount() int {
 	return offer.amount
 }
 
+func (offer *Offer) SetAmount(newAmount int) {
+	offer.amount = newAmount
+}
+
 func (offer *Offer) Resources() *resources.Resources {
 	return offer.resources.Copy()
+}
+
+func (offer *Offer) SetResources(res resources.Resources) {
+	offer.resources = &res
 }

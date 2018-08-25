@@ -133,6 +133,10 @@ func (d *Discovery) RefreshOffer(_ *types.Node, _ *types.Offer) bool {
 	return false
 }
 
+func (d *Discovery) UpdateOffer(_, _ *types.Node, _ *types.Offer) {
+	// Do Nothing - Not necessary for this backend.
+}
+
 func (d *Discovery) RemoveOffer(_ *types.Node, _ *types.Node, _ *types.Offer) {
 	// Do Nothing - Not necessary for this backend.
 }

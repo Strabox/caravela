@@ -171,6 +171,13 @@ func (node *Node) CreateOffer(ctx context.Context, fromNode *types.Node, toNode 
 	node.discoveryComp.CreateOffer(fromNode, toNode, offer)
 }
 
+func (node *Node) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+		node.discoveryComp.UpdatePartitionsState(partitionsState)
+	}
+	node.discoveryComp.UpdateOffer(fromSupplier, toTrader, offer)
+}
+
 func (node *Node) RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		node.discoveryComp.UpdatePartitionsState(partitionsState)
@@ -203,12 +210,18 @@ func (node *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNei
 
 func (node *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+		node.discoveryComp.UpdatePartitionsState(partitionsState)
+	}
 	return node.schedulerComp.Launch(ctx, fromBuyer, offer, containersConfigs)
 }
 
 // ============================== Containers Component Interface ================================
 
-func (node *Node) StopLocalContainer(_ context.Context, containerID string) error {
+func (node *Node) StopLocalContainer(ctx context.Context, containerID string) error {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+		node.discoveryComp.UpdatePartitionsState(partitionsState)
+	}
 	return node.containersManagerComp.StopContainer(containerID)
 }
 

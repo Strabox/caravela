@@ -16,6 +16,9 @@ type Caravela interface {
 	// Sends a refresh message from a trader to a supplier. It is used to mutually know that both are alive.
 	RefreshOffer(ctx context.Context, fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error)
 
+	// Sends a update offer message from a supplier to a trader. It is used to update offer's information.
+	UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) error
+
 	// Sends a remove offer message from a supplier to a trader. It means the supplier does not handle the offer anymore.
 	RemoveOffer(ctx context.Context, fromSupp, toTrader *types.Node, offer *types.Offer) error
 
