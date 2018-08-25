@@ -9,7 +9,6 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
-	"github.com/strabox/caravela/node/discovery/offering/supplier"
 	"github.com/strabox/caravela/node/external"
 	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
@@ -21,7 +20,6 @@ import (
 // The resources combination that the trader can handle is described by its GUID.
 type Trader struct {
 	nodeCommon.NodeComponent // Base component
-	suppTest                 *supplier.Supplier
 
 	config  *configuration.Configuration // System's configurations
 	overlay external.Overlay             // Node overlay to efficient route messages to specific nodes.
@@ -42,13 +40,11 @@ type Trader struct {
 
 // NewTrader creates a new "virtual" trader.
 func NewTrader(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
-	guid guid.GUID, resourcesMapping *resources.Mapping, suppTest *supplier.Supplier) *Trader {
+	guid guid.GUID, resourcesMapping *resources.Mapping) *Trader {
 
 	handledResources := resourcesMapping.ResourcesByGUID(guid)
 
 	return &Trader{
-		suppTest: suppTest,
-
 		config:           config,
 		overlay:          overlay,
 		client:           client,
@@ -77,7 +73,7 @@ func (t *Trader) start() {
 				if offer.Refresh() {
 					go func(offer *traderOffer) {
 						refreshed, err := t.client.RefreshOffer(
-							context.WithValue(context.Background(), types.PartitionsStateKey, t.suppTest.PartitionsState()),
+							context.Background(),
 							&types.Node{GUID: t.guid.String()},
 							&types.Node{IP: offer.supplierIP},
 							&types.Offer{ID: int64(offer.ID())})
@@ -198,7 +194,7 @@ func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []typ
 			successorResourcesHandled := t.resourcesMap.ResourcesByGUID(*successor.GUID())
 			if t.handledResources.Equals(*successorResourcesHandled) {
 				offers, err := t.client.GetOffers( // Sends the get offers message
-					context.WithValue(ctx, types.PartitionsStateKey, t.suppTest.PartitionsState()),
+					ctx,
 					&types.Node{GUID: t.guid.String()},
 					&types.Node{IP: successor.IP(), GUID: successor.GUID().String()},
 					false)
@@ -216,7 +212,7 @@ func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []typ
 			predecessorResourcesHandled := t.resourcesMap.ResourcesByGUID(*predecessor.GUID())
 			if t.handledResources.Equals(*predecessorResourcesHandled) {
 				offers, err := t.client.GetOffers( // Sends the get offers message
-					context.WithValue(ctx, types.PartitionsStateKey, t.suppTest.PartitionsState()),
+					ctx,
 					&types.Node{GUID: t.guid.String()},
 					&types.Node{IP: predecessor.IP(), GUID: predecessor.GUID().String()},
 					false)
@@ -296,7 +292,7 @@ func (t *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *g
 
 			if isValidNeighbor(nodeGUID) && t.handledResources.Equals(*nodeResourcesHandled) {
 				t.client.AdvertiseOffersNeighbor( // Sends advertise local offers message
-					context.WithValue(context.Background(), types.PartitionsStateKey, t.suppTest.PartitionsState()),
+					context.Background(),
 					&types.Node{GUID: t.guid.String()},
 					&types.Node{IP: overlayNeighbor.IP(), GUID: nodeGUID.String()},
 					traderOffering)
@@ -321,7 +317,7 @@ func (t *Trader) RefreshOffersSim() {
 	for _, offer := range t.offers {
 		if offer.Refresh() {
 			refreshed, err := t.client.RefreshOffer(
-				context.WithValue(context.Background(), types.PartitionsStateKey, t.suppTest.PartitionsState()),
+				context.Background(),
 				&types.Node{GUID: t.guid.String()},
 				&types.Node{IP: offer.supplierIP},
 				&types.Offer{ID: int64(offer.ID())},

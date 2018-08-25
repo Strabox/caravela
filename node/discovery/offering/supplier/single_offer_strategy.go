@@ -9,6 +9,7 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
+	"github.com/strabox/caravela/node/discovery/offering/partitions"
 	"github.com/strabox/caravela/node/external"
 	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
@@ -17,7 +18,6 @@ import (
 type SingleOfferChordStrategy struct {
 	supplier *Supplier
 
-	partitionsState  *SystemResourcePartitions
 	configs          *configuration.Configuration
 	resourcesMapping *resources.Mapping
 	overlay          external.Overlay
@@ -26,8 +26,7 @@ type SingleOfferChordStrategy struct {
 
 func newSingleOfferChordManager(config *configuration.Configuration) (OfferingStrategy, error) {
 	return &SingleOfferChordStrategy{
-		partitionsState: NewSystemResourcePartitions(12),
-		configs:         config,
+		configs: config,
 	}, nil
 }
 
@@ -37,14 +36,6 @@ func (s *SingleOfferChordStrategy) Init(supp *Supplier, resourcesMap *resources.
 	s.resourcesMapping = resourcesMap
 	s.overlay = overlay
 	s.remoteClient = remoteClient
-}
-
-func (s *SingleOfferChordStrategy) UpdatePartitionsState(partitionsState []types.PartitionState) {
-	s.partitionsState.MergePartitionsState(partitionsState)
-}
-
-func (s *SingleOfferChordStrategy) PartitionsState() []types.PartitionState {
-	return s.partitionsState.PartitionsState()
 }
 
 func (s *SingleOfferChordStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
@@ -69,30 +60,28 @@ func (s *SingleOfferChordStrategy) FindOffers(ctx context.Context, targetResourc
 		targetResPartition := *s.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: <%d,%d>", targetResPartition.CPUs(), targetResPartition.RAM())
 
-		if s.partitionsState.Try(targetResPartition) {
+		if partitions.GlobalState.Try(targetResPartition) {
 			overlayNodes, _ := s.overlay.Lookup(ctx, destinationGUID.Bytes())
 			overlayNodes = s.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 			for _, node := range overlayNodes {
 				offers, err := s.remoteClient.GetOffers(
-					context.WithValue(ctx, types.PartitionsStateKey, s.partitionsState.PartitionsState()),
+					context.WithValue(ctx, types.PartitionsStateKey, partitions.GlobalState.PartitionsState()),
 					&types.Node{},
 					&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 					true)
 				if err == nil && len(offers) != 0 {
 					availableOffers = append(availableOffers, offers...)
-					s.partitionsState.Hit(targetResPartition)
+					partitions.GlobalState.Hit(targetResPartition)
 					break
 				} else if err == nil && len(offers) == 0 {
-					s.partitionsState.Miss(targetResPartition)
+					partitions.GlobalState.Miss(targetResPartition)
 				}
 			}
 
 			if len(availableOffers) > 0 {
 				return availableOffers
 			}
-		} else {
-			log.Infof(util.LogTag("SUPPLIER")+"SKIPPING Part: <%d,%d>", targetResPartition.CPUs(), targetResPartition.RAM())
 		}
 
 		findPhase++
@@ -107,7 +96,7 @@ func (s *SingleOfferChordStrategy) UpdateOffers(availableResources resources.Res
 	for offerID, offer := range activeOffers {
 		removeOffer := func(offer supplierOffer) {
 			s.remoteClient.RemoveOffer(
-				context.WithValue(context.Background(), types.PartitionsStateKey, s.partitionsState.PartitionsState()),
+				context.Background(),
 				&types.Node{IP: s.configs.HostIP(), GUID: ""},
 				&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(offer.ID())},
@@ -169,7 +158,7 @@ func (s *SingleOfferChordStrategy) createAnOffer(newOfferID int64, availableReso
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
 	err = s.remoteClient.CreateOffer(
-		context.WithValue(context.Background(), types.PartitionsStateKey, s.partitionsState.PartitionsState()),
+		context.Background(),
 		&types.Node{IP: s.configs.HostIP(), GUID: ""},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{

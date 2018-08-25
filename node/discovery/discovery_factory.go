@@ -24,6 +24,7 @@ var discoveryBackends = make(map[string]BackendFactory)
 func init() {
 	RegisterDiscoveryBackend("chord-single-offer", offering.NewOfferingDiscovery)
 	RegisterDiscoveryBackend("chord-multiple-offer", offering.NewOfferingDiscovery)
+	RegisterDiscoveryBackend("chord-multiple-offer-updates", offering.NewOfferingDiscovery)
 	RegisterDiscoveryBackend("chord-random", random.NewRandomDiscovery)
 }
 

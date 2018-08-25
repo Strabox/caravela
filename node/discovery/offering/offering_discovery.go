@@ -50,7 +50,7 @@ func NewOfferingDiscovery(config *configuration.Configuration, overlay external.
 func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
 	disc.supplier.SetNodeGUID(traderGUID)
 
-	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap, disc.supplier)
+	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap)
 	disc.traders.Store(traderGUID.String(), newTrader)
 
 	newTrader.Start() // Start the node's trader module.
@@ -68,14 +68,6 @@ func (disc *Discovery) ObtainResources(offerID int64, resourcesNecessary resourc
 
 func (disc *Discovery) ReturnResources(resources resources.Resources) {
 	disc.supplier.ReturnResources(resources)
-}
-
-func (disc *Discovery) UpdatePartitionsState(partitionsState []types.PartitionState) {
-	disc.supplier.UpdatePartitionsState(partitionsState)
-}
-
-func (disc *Discovery) PartitionsState() []types.PartitionState {
-	return disc.supplier.PartitionsState()
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================

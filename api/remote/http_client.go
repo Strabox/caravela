@@ -10,6 +10,7 @@ import (
 	"github.com/strabox/caravela/api/rest/util"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/discovery/offering/partitions"
 	"net/http"
 	"time"
 )
@@ -30,6 +31,7 @@ func NewClient(config *configuration.Configuration) *Client {
 }
 
 func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.Node, offer *types.Offer) error {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> CREATE OFFER From: %s, ID: %d, Amt: %d, Res: <%d;%d>, To: <%s;%s>",
 		fromNode.IP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM, toNode.IP, toNode.GUID[0:12])
 
@@ -50,6 +52,7 @@ func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.N
 }
 
 func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *types.Node, offer *types.Offer) (bool, error) {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> REFRESH OFFER From: %s, ID: %d, To: %s", fromTrader.GUID[0:12], offer.ID, toSupp.IP)
 
 	refreshOfferMsg := util.RefreshOfferMsg{
@@ -70,6 +73,7 @@ func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *type
 }
 
 func (client *Client) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) error {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> UPDATE OFFER From: %s, ID: %d, To: %s", fromSupplier.IP, offer.ID, toTrader.GUID[0:12])
 
 	updateOfferMsg := util.UpdateOfferMsg{
@@ -91,6 +95,7 @@ func (client *Client) UpdateOffer(ctx context.Context, fromSupplier, toTrader *t
 }
 
 func (client *Client) RemoveOffer(ctx context.Context, fromSupp, toTrader *types.Node, offer *types.Offer) error {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> REMOVE OFFER From: <%s;%s>, ID: %d, To: <%s;%s>",
 		fromSupp.IP, fromSupp.GUID, offer.ID, toTrader.IP, toTrader.GUID[0:12])
 
@@ -110,6 +115,7 @@ func (client *Client) RemoveOffer(ctx context.Context, fromSupp, toTrader *types
 }
 
 func (client *Client) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) ([]types.AvailableOffer, error) {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> GET OFFERS To: <%s;%s>, Relay: %t, From: %s", toTrader.IP, toTrader.GUID[0:12], relay, fromNode.GUID)
 
 	getOffersMsg := util.GetOffersMsg{
@@ -138,7 +144,7 @@ func (client *Client) GetOffers(ctx context.Context, fromNode, toTrader *types.N
 }
 
 func (client *Client) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) error {
-
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> NEIGHBOR OFFERS To: <%s;%s> TraderOffering: <%s;%s>", toNeighborTrader.IP, toNeighborTrader.GUID[0:12],
 		traderOffering.IP, traderOffering.GUID[0:12])
 
@@ -165,6 +171,7 @@ func (client *Client) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, t
 func (client *Client) LaunchContainer(ctx context.Context, fromBuyer, toSupplier *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	for i, contConfig := range containersConfigs {
 		log.Infof("--> LAUNCH [%d] From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
 			i, fromBuyer.IP, offer.ID, contConfig.ImageKey, contConfig.PortMappings, contConfig.Args,
@@ -195,6 +202,7 @@ func (client *Client) LaunchContainer(ctx context.Context, fromBuyer, toSupplier
 }
 
 func (client *Client) StopLocalContainer(ctx context.Context, toSupplier *types.Node, containerID string) error {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> STOP ID: %s, SuppIP: %s", containerID, toSupplier.IP)
 
 	stopLocalContainerMsg := util.StopLocalContainerMsg{
@@ -216,8 +224,8 @@ func (client *Client) StopLocalContainer(ctx context.Context, toSupplier *types.
 }
 
 func (client *Client) ObtainConfiguration(ctx context.Context, systemsNode *types.Node) (*configuration.Configuration, error) {
+	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNode.IP)
-
 	var systemsNodeConfigsResp configuration.Configuration
 
 	url := util.BuildHttpURL(false, systemsNode.IP, client.config.APIPort(), configREST.BaseEndpoint)

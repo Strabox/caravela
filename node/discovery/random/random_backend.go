@@ -113,15 +113,6 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 	d.availableResources.Add(releasedResources)
 }
 
-func (d *Discovery) UpdatePartitionsState(partitionsState []types.PartitionState) {
-	// Do Nothing - Not necessary for this backend.
-}
-
-func (d *Discovery) PartitionsState() []types.PartitionState {
-	// Do Nothing - Not necessary for this backend.
-	return nil
-}
-
 // ======================= External/Remote Services =========================
 
 func (d *Discovery) CreateOffer(_ *types.Node, _ *types.Node, _ *types.Offer) {

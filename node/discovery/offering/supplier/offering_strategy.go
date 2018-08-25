@@ -15,10 +15,6 @@ type OfferingStrategy interface {
 	// overlay the communication node overlay and the remoteClient that allows to communicate with other CARAVELA's nodes.
 	Init(supp *Supplier, resourcesMap *resources.Mapping, overlay external.Overlay, remoteClient external.Caravela)
 
-	UpdatePartitionsState(partitionsState []types.PartitionState)
-
-	PartitionsState() []types.PartitionState
-
 	// FindOffers searches in the system (with help of the overlay) for node's that have offers that offer at least the
 	// same resources as targetResources.
 	FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer

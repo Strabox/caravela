@@ -17,6 +17,7 @@ import (
 	"github.com/strabox/caravela/node/containers"
 	"github.com/strabox/caravela/node/discovery"
 	"github.com/strabox/caravela/node/discovery/backend"
+	"github.com/strabox/caravela/node/discovery/offering/partitions"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/node/user"
@@ -166,42 +167,42 @@ func (node *Node) AddTrader(guidBytes []byte) {
 
 func (node *Node) CreateOffer(ctx context.Context, fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	node.discoveryComp.CreateOffer(fromNode, toNode, offer)
 }
 
 func (node *Node) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	node.discoveryComp.UpdateOffer(fromSupplier, toTrader, offer)
 }
 
 func (node *Node) RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return node.discoveryComp.RefreshOffer(fromTrader, offer)
 }
 
 func (node *Node) RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	node.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
 }
 
 func (node *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return node.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
 }
 
 func (node *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	node.discoveryComp.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
 }
@@ -211,7 +212,7 @@ func (node *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNei
 func (node *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return node.schedulerComp.Launch(ctx, fromBuyer, offer, containersConfigs)
 }
@@ -220,7 +221,7 @@ func (node *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, o
 
 func (node *Node) StopLocalContainer(ctx context.Context, containerID string) error {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
-		node.discoveryComp.UpdatePartitionsState(partitionsState)
+		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return node.containersManagerComp.StopContainer(containerID)
 }

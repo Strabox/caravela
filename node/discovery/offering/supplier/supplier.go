@@ -161,7 +161,7 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 
 		removeOffer := func() {
 			sup.client.RemoveOffer(
-				context.WithValue(context.Background(), types.PartitionsStateKey, sup.offersStrategy.PartitionsState()),
+				context.Background(),
 				&types.Node{IP: sup.config.HostIP(), GUID: ""},
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
@@ -204,14 +204,6 @@ func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
 			sup.updateOffers()
 		}() // Update its own offers in the background
 	}
-}
-
-func (sup *Supplier) UpdatePartitionsState(partitionsState []types.PartitionState) {
-	sup.offersStrategy.UpdatePartitionsState(partitionsState)
-}
-
-func (sup *Supplier) PartitionsState() []types.PartitionState {
-	return sup.offersStrategy.PartitionsState()
 }
 
 func (sup *Supplier) updateOffers() {

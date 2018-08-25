@@ -18,6 +18,7 @@ var manageOffers = make(map[string]ManageOffersFactory)
 func init() {
 	RegisterOffersStrategy("chord-single-offer", newSingleOfferChordManager)
 	RegisterOffersStrategy("chord-multiple-offer", newMultipleOfferStrategy)
+	RegisterOffersStrategy("chord-multiple-offer-updates", newMultipleOfferStrategy)
 }
 
 // RegisterOffersStrategy can be used to register a new strategy in order to be available.

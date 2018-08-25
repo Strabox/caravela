@@ -9,15 +9,15 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
+	"github.com/strabox/caravela/node/discovery/offering/partitions"
 	"github.com/strabox/caravela/node/external"
 	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
 )
 
 type MultipleOfferStrategy struct {
-	supplier *Supplier
-
-	partitionsState  *SystemResourcePartitions
+	updateOffers     bool
+	supplier         *Supplier
 	configs          *configuration.Configuration
 	resourcesMapping *resources.Mapping
 	overlay          external.Overlay
@@ -26,8 +26,8 @@ type MultipleOfferStrategy struct {
 
 func newMultipleOfferStrategy(config *configuration.Configuration) (OfferingStrategy, error) {
 	return &MultipleOfferStrategy{
-		partitionsState: NewSystemResourcePartitions(12),
-		configs:         config,
+		updateOffers: config.DiscoveryBackend() == "chord-multiple-offer-updates",
+		configs:      config,
 	}, nil
 }
 
@@ -37,14 +37,6 @@ func (s *MultipleOfferStrategy) Init(supp *Supplier, resourcesMap *resources.Map
 	s.resourcesMapping = resourcesMap
 	s.overlay = overlay
 	s.remoteClient = remoteClient
-}
-
-func (s *MultipleOfferStrategy) UpdatePartitionsState(partitionsState []types.PartitionState) {
-	s.partitionsState.MergePartitionsState(partitionsState)
-}
-
-func (s *MultipleOfferStrategy) PartitionsState() []types.PartitionState {
-	return s.partitionsState.PartitionsState()
 }
 
 func (s *MultipleOfferStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
@@ -69,30 +61,28 @@ func (s *MultipleOfferStrategy) FindOffers(ctx context.Context, targetResources 
 		targetResPartition := *s.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: <%d,%d>", targetResPartition.CPUs(), targetResPartition.RAM())
 
-		if s.partitionsState.Try(targetResPartition) {
+		if partitions.GlobalState.Try(targetResPartition) {
 			overlayNodes, _ := s.overlay.Lookup(ctx, destinationGUID.Bytes())
 			overlayNodes = s.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 			for _, node := range overlayNodes {
 				offers, err := s.remoteClient.GetOffers(
-					context.WithValue(ctx, types.PartitionsStateKey, s.partitionsState.PartitionsState()),
+					ctx,
 					&types.Node{},
 					&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 					true)
 				if err == nil && len(offers) != 0 {
 					availableOffers = append(availableOffers, offers...)
-					s.partitionsState.Hit(targetResPartition)
+					partitions.GlobalState.Hit(targetResPartition)
 					break
 				} else if err == nil && len(offers) == 0 {
-					s.partitionsState.Miss(targetResPartition)
+					partitions.GlobalState.Miss(targetResPartition)
 				}
 			}
 
 			if len(availableOffers) > 0 {
 				return availableOffers
 			}
-		} else {
-			log.Infof(util.LogTag("SUPPLIER")+"SKIPPING Part: <%d,%d>", targetResPartition.CPUs(), targetResPartition.RAM())
 		}
 
 		findPhase++
@@ -117,11 +107,18 @@ OfferLoop:
 	}
 
 	for _, offerToRemove := range offersToRemove {
-		s.remoteClient.RemoveOffer(
-			context.WithValue(context.Background(), types.PartitionsStateKey, s.partitionsState.PartitionsState()),
-			&types.Node{IP: s.configs.HostIP(), GUID: ""},
-			&types.Node{IP: offerToRemove.ResponsibleTraderIP(), GUID: offerToRemove.ResponsibleTraderGUID().String()},
-			&types.Offer{ID: int64(offerToRemove.ID())})
+		removeOffer := func(suppOffer supplierOffer) {
+			s.remoteClient.RemoveOffer(
+				context.Background(),
+				&types.Node{IP: s.configs.HostIP(), GUID: ""},
+				&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
+				&types.Offer{ID: int64(suppOffer.ID())})
+		}
+		if s.configs.Simulation() {
+			removeOffer(offerToRemove)
+		} else {
+			go removeOffer(offerToRemove)
+		}
 		s.supplier.removeOffer(common.OfferID(offerToRemove.ID()))
 	}
 
@@ -132,8 +129,33 @@ OfferLoop:
 		}
 	}
 
-	//activeOffers := s.supplier.offers()
+	if s.updateOffers {
+		activeOffers := s.supplier.offers()
+		for _, offer := range activeOffers {
+			if !offer.Resources().Equals(availableResources) {
+				updateOffer := func(suppOffer supplierOffer) {
+					s.remoteClient.UpdateOffer(
+						context.Background(),
+						&types.Node{IP: s.configs.HostIP(), GUID: ""},
+						&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
+						&types.Offer{
+							ID:     int64(suppOffer.ID()),
+							Amount: 1,
+							Resources: types.Resources{
+								CPUs: availableResources.CPUs(),
+								RAM:  availableResources.RAM(),
+							},
+						})
+				}
 
+				if s.configs.Simulation() {
+					updateOffer(offer)
+				} else {
+					go updateOffer(offer)
+				}
+			}
+		}
+	}
 }
 
 func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, targetRes, realAvailableRes resources.Resources) (*supplierOffer, error) {
@@ -174,7 +196,7 @@ func (s *MultipleOfferStrategy) createAnOffer(newOfferID int64, targetRes, realA
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
 	err = s.remoteClient.CreateOffer(
-		context.WithValue(context.Background(), types.PartitionsStateKey, s.partitionsState.PartitionsState()),
+		context.Background(),
 		&types.Node{IP: s.configs.HostIP(), GUID: ""},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{
