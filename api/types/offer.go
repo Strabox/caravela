@@ -2,6 +2,12 @@ package types
 
 import "github.com/pkg/errors"
 
+type Resources struct {
+	CPUPower CPUPower `json:"CPUPower"`
+	CPUs     int      `json:"CPUs"`
+	RAM      int      `json:"RAM"`
+}
+
 type Offer struct {
 	ID        int64     `json:"ID"`
 	Amount    int       `json:"Amount"`
@@ -13,10 +19,23 @@ type AvailableOffer struct {
 	SupplierIP string `json:"SupplierIP"`
 }
 
-type Resources struct {
-	CPUPower CPUPower `json:"CPUPower"`
-	CPUs     int      `json:"CPUs"`
-	RAM      int      `json:"RAM"`
+type AvailableOffers []AvailableOffer
+
+func (ao AvailableOffers) Len() int {
+	return len(ao)
+}
+func (ao AvailableOffers) Swap(i, j int) {
+	ao[i], ao[j] = ao[j], ao[i]
+}
+func (ao AvailableOffers) Less(i, j int) bool {
+	if ao[i].Resources.CPUs < ao[j].Resources.CPUs {
+		return true
+	} else if ao[i].Resources.CPUs == ao[j].Resources.CPUs {
+		if ao[i].Resources.RAM <= ao[j].Resources.RAM {
+			return true
+		}
+	}
+	return false
 }
 
 // ======================= CPU Power ========================

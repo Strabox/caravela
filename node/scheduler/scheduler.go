@@ -10,6 +10,7 @@ import (
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
+	"sort"
 )
 
 // Scheduler is responsible for receiving local and remote requests for deploying containers
@@ -124,6 +125,7 @@ func (scheduler *Scheduler) launchContainers(ctx context.Context, containersConf
 	}
 
 	offers := scheduler.discovery.FindOffers(ctx, resourcesNecessary)
+	sort.Sort(types.AvailableOffers(offers))
 
 	if len(offers) == 0 {
 		log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")
