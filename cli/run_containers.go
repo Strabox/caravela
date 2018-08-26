@@ -103,8 +103,7 @@ func runContainers(c *cli.Context) {
 	}
 
 	// Create a user client of the CARAVELA system
-	caravelaClient := client.NewCaravelaTimeoutIP(c.GlobalString("ip"), 30*time.Second) // TODO: Timeout hack to handler the submit container request
-
+	caravelaClient := client.NewCaravelaTimeoutIP(c.GlobalString("ip"), 3600*time.Second) // TODO: Timeout hack to handler the submit container request
 	err := caravelaClient.SubmitContainers(context.Background(), containersConfigs)
 	if err != nil {
 		fatalPrintln(err)

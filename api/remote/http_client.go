@@ -127,7 +127,7 @@ func (client *Client) GetOffers(ctx context.Context, fromNode, toTrader *types.N
 
 	url := util.BuildHttpURL(false, toTrader.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
 
-	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
+	client.httpClient.Timeout = 10 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, getOffersMsg, &offers)
 	if err != nil {
 		return nil, NewRemoteClientError(err)
@@ -188,7 +188,7 @@ func (client *Client) LaunchContainer(ctx context.Context, fromBuyer, toSupplier
 
 	url := util.BuildHttpURL(false, toSupplier.IP, client.config.APIPort(), containers.BaseEndpoint)
 
-	client.httpClient.Timeout = 20 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
+	client.httpClient.Timeout = 600 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPost, launchContainerMsg, &contStatusResp)
 	if err != nil {
 		return nil, NewRemoteClientError(err)

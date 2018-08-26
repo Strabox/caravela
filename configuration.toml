@@ -5,13 +5,13 @@ ResourcesOvercommit = 50
 [Caravela.DiscoveryBackend]
 Backend = "chord-single-offer"
     [Caravela.DiscoveryBackend.SmartChordBackend]
-    SupplyingInterval = "30s"
-    SpreadOffersInterval = "30s"
-    RefreshesCheckInterval = "30s"
-    RefreshingInterval = "30s"
+    SupplyingInterval = "1m"
+    SpreadOffersInterval = "1m"
+    RefreshesCheckInterval = "1m"
+    RefreshingInterval = "1m"
     MaxRefreshesFailed = 3
     MaxRefreshesMissed = 2
-    RefreshMissedTimeout = "20s"
+    RefreshMissedTimeout = "1m30s"
     [Caravela.DiscoveryBackend.RandomChordBackend]
     RandBackendMaxRetries = 6
 [Caravela.Resources]
@@ -56,7 +56,7 @@ Backend = "DockerHub"
 Overlay = "chord"
 OverlayPort = 8000
     [Overlay.Chord]
-    Timeout = "3s"
+    Timeout = "2s"
     VirtualNodes = 12
     NumSuccessors = 4
     HashSizeBits = 128
