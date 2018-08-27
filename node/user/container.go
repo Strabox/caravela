@@ -20,6 +20,6 @@ func newContainer(name, imageKey string, args []string, portMaps []types.PortMap
 	}
 }
 
-func (cont *deployedContainer) supplierIP() string {
-	return cont.suppIP
+func (d *deployedContainer) supplierIP() string {
+	return d.suppIP
 }

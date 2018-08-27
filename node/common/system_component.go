@@ -20,35 +20,35 @@ type NodeComponent struct {
 	simulation bool
 }
 
-func (comp *NodeComponent) Started(simulation bool, startFunction func()) {
-	comp.mutex.Lock()
-	defer comp.mutex.Unlock()
+func (n *NodeComponent) Started(simulation bool, startFunction func()) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
-	comp.simulation = simulation
+	n.simulation = simulation
 
-	if !comp.working {
-		comp.working = true
+	if !n.working {
+		n.working = true
 		if startFunction != nil {
 			startFunction()
 		}
 	}
 }
 
-func (comp *NodeComponent) Stopped(stopFunction func()) {
-	comp.mutex.Lock()
-	defer comp.mutex.Unlock()
+func (n *NodeComponent) Stopped(stopFunction func()) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
-	if comp.working {
-		comp.working = false
+	if n.working {
+		n.working = false
 		if stopFunction != nil {
 			stopFunction()
 		}
 	}
 }
 
-func (comp *NodeComponent) Working() bool {
-	comp.mutex.Lock()
-	defer comp.mutex.Unlock()
+func (n *NodeComponent) Working() bool {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
-	return comp.working || comp.simulation
+	return n.working || n.simulation
 }

@@ -26,26 +26,26 @@ func DefaultConfig(caravelaInstanceIP string) *Configuration {
 }
 
 // CaravelaInstanceIP returns the IP address to where send the API requests.
-func (config *Configuration) CaravelaInstanceIP() string {
-	return config.caravelaInstanceIP
+func (c *Configuration) CaravelaInstanceIP() string {
+	return c.caravelaInstanceIP
 }
 
 // CaravelaInstancePort returns the port to where send the API requests.
-func (config *Configuration) CaravelaInstancePort() int {
-	return config.caravelaInstancePort
+func (c *Configuration) CaravelaInstancePort() int {
+	return c.caravelaInstancePort
 }
 
 // SetCaravelaInstancePort sets the port to where send the API requests.
-func (config *Configuration) SetCaravelaInstancePort(newPort int) {
-	config.caravelaInstancePort = newPort
+func (c *Configuration) SetCaravelaInstancePort(newPort int) {
+	c.caravelaInstancePort = newPort
 }
 
 // RequestTimeout returns the timeout for the API requests.
-func (config *Configuration) RequestTimeout() time.Duration {
-	return config.httpRequestTimeout
+func (c *Configuration) RequestTimeout() time.Duration {
+	return c.httpRequestTimeout
 }
 
 // SetRequestTimeout sets the timeout for the API requests.
-func (config *Configuration) SetRequestTimeout(newReqTimeout time.Duration) {
-	config.httpRequestTimeout = newReqTimeout
+func (c *Configuration) SetRequestTimeout(newReqTimeout time.Duration) {
+	c.httpRequestTimeout = newReqTimeout
 }

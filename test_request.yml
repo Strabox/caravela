@@ -1,7 +1,7 @@
 service1:
   group_policy: "spread"
   image: yeasy/simple-web:latest
-  cpu_power: "low"
+  #cpu_power: "low"
   cpus: 1
   ram: 128
   ports:
@@ -9,7 +9,7 @@ service1:
 service2:
   group_policy: "spread"
   image: yeasy/simple-web:latest
-  cpu_power: "medium"
+  #cpu_power: "medium"
   cpus: 1
   ram: 256
   ports:

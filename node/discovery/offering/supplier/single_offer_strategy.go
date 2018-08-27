@@ -2,28 +2,28 @@ package supplier
 
 import (
 	"context"
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common/resources"
-	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
 )
 
-type SingleOfferChordStrategy struct {
+type singleOfferChordStrategy struct {
 	baseOfferStrategy
 }
 
 func newSingleOfferChordManager(config *configuration.Configuration) (OfferingStrategy, error) {
-	return &SingleOfferChordStrategy{
+	return &singleOfferChordStrategy{
 		baseOfferStrategy: baseOfferStrategy{
 			configs: config,
 		},
 	}, nil
 }
 
-func (s *SingleOfferChordStrategy) Init(supp *Supplier, resourcesMap *resources.Mapping, overlay external.Overlay,
+func (s *singleOfferChordStrategy) Init(supp *Supplier, resourcesMap *resources.Mapping, overlay external.Overlay,
 	remoteClient external.Caravela) {
 	s.localSupplier = supp
 	s.resourcesMapping = resourcesMap
@@ -31,16 +31,20 @@ func (s *SingleOfferChordStrategy) Init(supp *Supplier, resourcesMap *resources.
 	s.remoteClient = remoteClient
 }
 
-func (s *SingleOfferChordStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
+func (s *singleOfferChordStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
 	return s.findOffersLowToHigher(ctx, targetResources)
 }
 
-func (s *SingleOfferChordStrategy) UpdateOffers(availableResources resources.Resources) {
-	// What?: Remove all active offers from the traders in order to gather all available resources.
-	// Goal: This is used to try offer the maximum amount of resources the node has available between
-	//		 the Available (offered) and the Available (but not offered).
+func (s *singleOfferChordStrategy) UpdateOffers(availableResources resources.Resources) {
 	activeOffers := s.localSupplier.offers()
-	for offerID, offer := range activeOffers {
+
+	if len(activeOffers) == 1 {
+		activeOffer := activeOffers[0]
+
+		if activeOffer.Resources().Equals(availableResources) {
+			return // The active offer has the same resources has the node have now. No need to create other.
+		}
+
 		removeOffer := func(offer supplierOffer) {
 			s.remoteClient.RemoveOffer(
 				context.Background(),
@@ -50,11 +54,13 @@ func (s *SingleOfferChordStrategy) UpdateOffers(availableResources resources.Res
 			)
 		}
 		if s.configs.Simulation() {
-			removeOffer(offer) // Send remove offer message sequential
+			removeOffer(activeOffer) // Send remove offer message sequential
 		} else {
-			go removeOffer(offer) // Send remove offer message in background
+			go removeOffer(activeOffer) // Send remove offer message in background
 		}
-		s.localSupplier.removeOffer(common.OfferID(offerID))
+		s.localSupplier.removeOffer(activeOffer.ID())
+	} else if len(activeOffers) > 1 {
+		panic(errors.New("single offer strategy has more than 1 offer active"))
 	}
 
 	newOfferID := s.localSupplier.newOfferID()

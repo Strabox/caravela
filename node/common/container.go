@@ -32,30 +32,30 @@ func NewContainer(name, imageKey string, args []string, portMaps []types.PortMap
 	}
 }
 
-func (cont *Container) Name() string {
-	return cont.name
+func (c *Container) Name() string {
+	return c.name
 }
 
-func (cont *Container) ImageKey() string {
-	return cont.imageKey
+func (c *Container) ImageKey() string {
+	return c.imageKey
 }
 
-func (cont *Container) Args() []string {
-	return cont.args
+func (c *Container) Args() []string {
+	return c.args
 }
 
-func (cont *Container) PortMappings() []types.PortMapping {
-	return cont.portMaps
+func (c *Container) PortMappings() []types.PortMapping {
+	return c.portMaps
 }
 
-func (cont *Container) Resources() resources.Resources {
-	return cont.resources
+func (c *Container) Resources() resources.Resources {
+	return c.resources
 }
 
-func (cont *Container) ID() string {
-	return cont.id
+func (c *Container) ID() string {
+	return c.id
 }
 
-func (cont *Container) ShortID() string {
-	return cont.id[:ContainerShortIDSize]
+func (c *Container) ShortID() string {
+	return c.id[:ContainerShortIDSize]
 }

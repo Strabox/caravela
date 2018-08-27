@@ -13,6 +13,6 @@ func NewContainerStatus(statusCode int) Status {
 	return Status{statusCode: statusCode}
 }
 
-func (cs Status) IsRunning() bool {
-	return cs.statusCode == Running
+func (s Status) IsRunning() bool {
+	return s.statusCode == Running
 }

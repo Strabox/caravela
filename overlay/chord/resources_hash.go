@@ -36,7 +36,7 @@ func NewResourcesHash(bytesSize int, hostname string) *ResourcesHash {
 }
 
 // Generate a random hash. Used to generate random GUIDs for the joining nodes.
-func (rh *ResourcesHash) generateRandomHash(hashToFill []byte) {
+func (r *ResourcesHash) generateRandomHash(hashToFill []byte) {
 	randomGeneratorMutex.Lock()
 	defer randomGeneratorMutex.Unlock()
 	randomGenerator.Read(hashToFill)
@@ -44,43 +44,43 @@ func (rh *ResourcesHash) generateRandomHash(hashToFill []byte) {
 
 // ============================== Hash Interface ================================
 
-func (rh *ResourcesHash) Write(p []byte) (n int, err error) {
-	if !rh.ignoreChordWrite {
+func (r *ResourcesHash) Write(p []byte) (n int, err error) {
+	if !r.ignoreChordWrite {
 		pString := string(p)
-		if pString == rh.hostname { // Generate a random GUID id for a joining node
-			rh.generateRandomHash(p)
+		if pString == r.hostname { // Generate a random GUID id for a joining node
+			r.generateRandomHash(p)
 			log.Debugf(util.LogTag("Hash")+"Trader Hash/GUID: %v", p)
 			for index, value := range p {
-				rh.hash[index] = value
+				r.hash[index] = value
 			}
-			rh.ignoreChordWrite = true
+			r.ignoreChordWrite = true
 			return 0, nil
 		} else { // Passing a GUID id that I have already randomly generated in node layer (depending on resources)
 			for index, value := range p {
-				rh.hash[index] = value
+				r.hash[index] = value
 			}
 			return 0, nil
 		}
 	}
-	rh.ignoreChordWrite = false
+	r.ignoreChordWrite = false
 	return 0, nil
 }
 
-func (rh *ResourcesHash) Sum(b []byte) []byte {
+func (r *ResourcesHash) Sum(b []byte) []byte {
 	// Only return the hash we wrote
-	return rh.hash
+	return r.hash
 }
 
-func (rh *ResourcesHash) Reset() {
-	for index := range rh.hash {
-		rh.hash[index] = 0
+func (r *ResourcesHash) Reset() {
+	for index := range r.hash {
+		r.hash[index] = 0
 	}
 }
 
-func (rh *ResourcesHash) Size() int {
-	return rh.sizeBytes
+func (r *ResourcesHash) Size() int {
+	return r.sizeBytes
 }
 
-func (rh *ResourcesHash) BlockSize() int {
+func (r *ResourcesHash) BlockSize() int {
 	return 0
 }

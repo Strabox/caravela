@@ -32,13 +32,13 @@ func newClientError(err error) *Error {
 	return res
 }
 
-func (ce *Error) Error() string {
-	switch ce.Code {
+func (e *Error) Error() string {
+	switch e.Code {
 	case CaravelaInstanceUnavailableError:
 		return "Caravela instance unavailable"
 	case UnknownError:
 		return "Unknown error"
 	default:
-		return ce.err.Error()
+		return e.err.Error()
 	}
 }

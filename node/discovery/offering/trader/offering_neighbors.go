@@ -6,54 +6,54 @@ import (
 )
 
 //
-type NearbyTradersOffering struct {
+type nearbyTradersOffering struct {
 	successor   *common.RemoteNode
 	predecessor *common.RemoteNode
 	mutex       *sync.RWMutex
 }
 
-func NewNeighborTradersOffering() *NearbyTradersOffering {
-	return &NearbyTradersOffering{
+func newNeighborTradersOffering() *nearbyTradersOffering {
+	return &nearbyTradersOffering{
 		successor:   nil,
 		predecessor: nil,
 		mutex:       &sync.RWMutex{},
 	}
 }
 
-func (neigh *NearbyTradersOffering) Successor() *common.RemoteNode {
-	neigh.mutex.RLock()
-	defer neigh.mutex.RUnlock()
+func (n *nearbyTradersOffering) Successor() *common.RemoteNode {
+	n.mutex.RLock()
+	defer n.mutex.RUnlock()
 
-	return neigh.successor
+	return n.successor
 }
 
-func (neigh *NearbyTradersOffering) SetSuccessor(newSuccessor *common.RemoteNode) {
-	neigh.mutex.Lock()
-	defer neigh.mutex.Unlock()
+func (n *nearbyTradersOffering) SetSuccessor(newSuccessor *common.RemoteNode) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
-	neigh.successor = newSuccessor
+	n.successor = newSuccessor
 }
 
-func (neigh *NearbyTradersOffering) Predecessor() *common.RemoteNode {
-	neigh.mutex.RLock()
-	defer neigh.mutex.RUnlock()
+func (n *nearbyTradersOffering) Predecessor() *common.RemoteNode {
+	n.mutex.RLock()
+	defer n.mutex.RUnlock()
 
-	return neigh.predecessor
+	return n.predecessor
 }
 
-func (neigh *NearbyTradersOffering) SetPredecessor(newPredecessor *common.RemoteNode) {
-	neigh.mutex.Lock()
-	defer neigh.mutex.Unlock()
+func (n *nearbyTradersOffering) SetPredecessor(newPredecessor *common.RemoteNode) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
 
-	neigh.predecessor = newPredecessor
+	n.predecessor = newPredecessor
 }
 
-func (neigh *NearbyTradersOffering) Neighbors() []*common.RemoteNode {
-	neigh.mutex.RLock()
-	defer neigh.mutex.RUnlock()
+func (n *nearbyTradersOffering) Neighbors() []*common.RemoteNode {
+	n.mutex.RLock()
+	defer n.mutex.RUnlock()
 
 	res := make([]*common.RemoteNode, 2)
-	res[0] = neigh.predecessor
-	res[1] = neigh.successor
+	res[0] = n.predecessor
+	res[1] = n.successor
 	return res
 }

@@ -15,43 +15,43 @@ type Listener struct {
 }
 
 // Fired when the a new predecessor of the local node appears in the overlay.
-func (cl *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *chord.Vnode) {
+func (l *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *chord.Vnode) {
 	if local != nil && newPredecessor != nil && previousPredecessor == nil {
 		// First time a virtual node is entering in the ring
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(local.Id)
 		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
 		predecessorNode := types.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
-		cl.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
+		l.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
 	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
 		// New predecessor for a existing node
 		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
 		predecessorNode := types.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
-		cl.chordOverlay.predecessorNodeChanged(local.Id, predecessorNode)
+		l.chordOverlay.predecessorNodeChanged(local.Id, predecessorNode)
 	}
 }
 
 // Fired when the local node is leaving the chord overlay.
-func (cl *Listener) Leaving(local, predecessor, successor *chord.Vnode) {
+func (l *Listener) Leaving(local, predecessor, successor *chord.Vnode) {
 	// DO NOTHING FOR NOW
 	log.Debug(util.LogTag("Chord") + "I am leaving!!")
 }
 
 // Fired when the current predecessor of the local node is leaving the chord overlay.
-func (cl *Listener) PredecessorLeaving(local, remote *chord.Vnode) {
+func (l *Listener) PredecessorLeaving(local, remote *chord.Vnode) {
 	// DO NOTHING FOR NOW
 	log.Debug(util.LogTag("Chord") + "Current predecessor is leaving!!")
 }
 
 // Fired when a current successor of the local node is leaving the chord overlay.
-func (cl *Listener) SuccessorLeaving(local, remote *chord.Vnode) {
+func (l *Listener) SuccessorLeaving(local, remote *chord.Vnode) {
 	// DO NOTHING FOR NOW
 	log.Debug(util.LogTag("Chord") + "A successor is leaving!!")
 }
 
 // Fired when when one node decided to shutdown the chord ring system.
 // Do the shutdown message propagates to all the nodes ??
-func (cl *Listener) Shutdown() {
+func (l *Listener) Shutdown() {
 	// DO NOTHING FOR NOW
 	log.Debug(util.LogTag("Chord") + "Shutting Down??")
 }

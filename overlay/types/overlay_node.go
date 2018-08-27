@@ -20,16 +20,16 @@ func NewOverlayNode(nodeIP string, port int, guid []byte) *OverlayNode {
 }
 
 // IP of the node
-func (rn *OverlayNode) IP() string {
-	return rn.nodeIP
+func (o *OverlayNode) IP() string {
+	return o.nodeIP
 }
 
 // Port of the overlay daemon
-func (rn *OverlayNode) Port() int {
-	return rn.port
+func (o *OverlayNode) Port() int {
+	return o.port
 }
 
 // Node identifier
-func (rn *OverlayNode) GUID() []byte {
-	return rn.guid
+func (o *OverlayNode) GUID() []byte {
+	return o.guid
 }

@@ -3,6 +3,7 @@ package supplier
 import (
 	"context"
 	"errors"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
@@ -65,32 +66,36 @@ func NewSupplier(config *configuration.Configuration, overlay external.Overlay, 
 }
 
 // start controls the time dependant actions like supplying the resources.
-func (sup *Supplier) start() {
+func (s *Supplier) start() {
 	for {
 		select {
-		case <-sup.supplyingTicker: // Offer the available resources into a random trader (responsible for them).
+		case <-s.supplyingTicker: // Offer the available resources into a random trader (responsible for them).
 			go func() {
-				sup.offersMutex.Lock()
-				defer sup.offersMutex.Unlock()
-				sup.updateOffers()
+				s.offersMutex.Lock()
+				defer s.offersMutex.Unlock()
+				s.updateOffers()
 			}()
-		case <-sup.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
-			sup.offersMutex.Lock()
+		case <-s.refreshesCheckTicker: // Check if the activeOffers are being refreshed by the respective trader
+			s.offersMutex.Lock()
 
-			for offerKey, offer := range sup.activeOffers {
-				offer.VerifyRefreshes(sup.config.RefreshMissedTimeout())
+			offerDown := false
+			for offerKey, offer := range s.activeOffers {
+				offer.VerifyRefreshes(s.config.RefreshMissedTimeout())
 
-				if offer.RefreshesMissed() >= sup.config.MaxRefreshesMissed() {
+				if offer.RefreshesMissed() >= s.config.MaxRefreshesMissed() {
 					log.Debugf(util.LogTag("SUPPLIER")+"Offer DOWN, Offer: %d, HandlerTrader: %s",
 						offer.ID(), offer.ResponsibleTraderIP())
-
-					sup.availableResources.Add(*offer.Resources())
-					delete(sup.activeOffers, offerKey)
+					offerDown = true
+					delete(s.activeOffers, offerKey)
 				}
 			}
 
-			sup.offersMutex.Unlock()
-		case res := <-sup.quitChan: // Stopping the supplier
+			if offerDown {
+				s.updateOffers()
+			}
+
+			s.offersMutex.Unlock()
+		case res := <-s.quitChan: // Stopping the supplier
 			if res {
 				log.Infof(util.LogTag("SUPPLIER") + "STOPPED")
 				return
@@ -100,31 +105,31 @@ func (sup *Supplier) start() {
 }
 
 // Find a list active Offers that best suit the target resources given.
-func (sup *Supplier) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	if !sup.IsWorking() {
+func (s *Supplier) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
+	if !s.IsWorking() {
 		panic(errors.New("can't find offers, supplier not working"))
 	}
 
 	if !targetResources.IsValid() { // If the resource combination is not valid we will search for the lowest one
-		targetResources = *sup.resourcesMap.LowestResources()
+		targetResources = *s.resourcesMap.LowestResources()
 	}
 
-	if sup.nodeGUID != nil {
-		ctx = context.WithValue(ctx, types.NodeGUIDKey, sup.nodeGUID.String())
+	if s.nodeGUID != nil {
+		ctx = context.WithValue(ctx, types.NodeGUIDKey, s.nodeGUID.String())
 	}
-	return sup.offersStrategy.FindOffers(ctx, targetResources)
+	return s.offersStrategy.FindOffers(ctx, targetResources)
 }
 
 // Tries refresh an offer. Called when a refresh message was received.
-func (sup *Supplier) RefreshOffer(fromTrader *types.Node, refreshOffer *types.Offer) bool {
-	if !sup.IsWorking() {
+func (s *Supplier) RefreshOffer(fromTrader *types.Node, refreshOffer *types.Offer) bool {
+	if !s.IsWorking() {
 		panic(errors.New("can't refresh offer, supplier not working"))
 	}
 
-	sup.offersMutex.Lock()
-	defer sup.offersMutex.Unlock()
+	s.offersMutex.Lock()
+	defer s.offersMutex.Unlock()
 
-	offer, exist := sup.activeOffers[common.OfferID(refreshOffer.ID)]
+	offer, exist := s.activeOffers[common.OfferID(refreshOffer.ID)]
 
 	if !exist {
 		log.Debugf(util.LogTag("SUPPLIER")+"Offer: %d refresh FAILED (Offer does not exist)", refreshOffer.ID)
@@ -143,40 +148,41 @@ func (sup *Supplier) RefreshOffer(fromTrader *types.Node, refreshOffer *types.Of
 
 // Tries to obtain a subset of the resources represented by the given offer in order to deploy  a container.
 // It updates the respective trader that manages the offer.
-func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
-	if !sup.IsWorking() {
+func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
+	if !s.IsWorking() {
 		panic(errors.New("can't obtain resources, supplier not working"))
 	}
 
-	sup.offersMutex.Lock()
-	defer sup.offersMutex.Unlock()
+	s.offersMutex.Lock()
+	defer s.offersMutex.Unlock()
 
-	supOffer, exist := sup.activeOffers[common.OfferID(offerID)]
-	if !exist || !supOffer.Resources().Contains(resourcesNecessary) || !sup.availableResources.Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
+	supOffer, exist := s.activeOffers[common.OfferID(offerID)]
+	if !exist || !supOffer.Resources().Contains(resourcesNecessary) || !s.availableResources.Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
 		return false
 	} else {
-		sup.availableResources.Sub(resourcesNecessary)
+		log.Infof("Obtaining: <%d,%d>, From: <%d,%d>", resourcesNecessary.CPUs(), resourcesNecessary.RAM(), s.availableResources.CPUs(), s.availableResources.RAM())
+		s.availableResources.Sub(resourcesNecessary)
 
-		delete(sup.activeOffers, common.OfferID(offerID))
+		delete(s.activeOffers, common.OfferID(offerID))
 
 		removeOffer := func() {
-			sup.client.RemoveOffer(
+			s.client.RemoveOffer(
 				context.Background(),
-				&types.Node{IP: sup.config.HostIP(), GUID: ""},
+				&types.Node{IP: s.config.HostIP(), GUID: ""},
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
 			)
 		}
 
-		if sup.config.Simulation() {
+		if s.config.Simulation() {
 			removeOffer()
-			sup.updateOffers() // Update its own offers
+			s.updateOffers() // Update its own offers
 		} else {
 			go removeOffer()
 			go func() {
-				sup.offersMutex.Lock()
-				defer sup.offersMutex.Unlock()
-				sup.updateOffers()
+				s.offersMutex.Lock()
+				defer s.offersMutex.Unlock()
+				s.updateOffers()
 			}() // Update its own offers
 		}
 		return true
@@ -184,91 +190,94 @@ func (sup *Supplier) ObtainResources(offerID int64, resourcesNecessary resources
 }
 
 // Release resources of an used offer into the supplier again in order to offer them again into the system.
-func (sup *Supplier) ReturnResources(releasedResources resources.Resources) {
-	if !sup.IsWorking() {
+func (s *Supplier) ReturnResources(releasedResources resources.Resources) {
+	if !s.IsWorking() {
 		panic(errors.New("can't return resources, supplier not working"))
 	}
 
-	sup.offersMutex.Lock()
-	defer sup.offersMutex.Unlock()
+	s.offersMutex.Lock()
+	defer s.offersMutex.Unlock()
 
 	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.RAM())
-	sup.availableResources.Add(releasedResources)
+	s.availableResources.Add(releasedResources)
+	log.Infof("Released: <%d,%d>, To: <%d,%d>", releasedResources.CPUs(), releasedResources.RAM(), s.availableResources.CPUs(), s.availableResources.RAM())
 
-	if sup.config.Simulation() {
-		sup.updateOffers() // Update its own offers sequential
+	if s.config.Simulation() {
+		s.updateOffers() // Update its own offers sequential
 	} else {
 		go func() {
-			sup.offersMutex.Lock()
-			defer sup.offersMutex.Unlock()
-			sup.updateOffers()
+			s.offersMutex.Lock()
+			defer s.offersMutex.Unlock()
+			s.updateOffers()
 		}() // Update its own offers in the background
 	}
 }
 
-func (sup *Supplier) updateOffers() {
-	sup.checkResourcesInvariant() // Runtime resources assertion!!!
-	if sup.availableResources.IsValid() {
-		sup.offersStrategy.UpdateOffers(*sup.availableResources)
+func (s *Supplier) updateOffers() {
+	s.checkResourcesInvariant() // Runtime resources assertion!!!
+	if s.availableResources.IsValid() {
+		s.offersStrategy.UpdateOffers(*s.availableResources)
 	}
 }
 
-func (sup *Supplier) newOfferID() common.OfferID {
-	res := sup.offersIDGen
-	sup.offersIDGen++
+func (s *Supplier) newOfferID() common.OfferID {
+	res := s.offersIDGen
+	s.offersIDGen++
 	return res
 }
 
-func (sup *Supplier) addOffer(offer *supplierOffer) {
-	sup.activeOffers[offer.ID()] = offer
+func (s *Supplier) addOffer(offer *supplierOffer) {
+	s.activeOffers[offer.ID()] = offer
 }
 
-func (sup *Supplier) removeOffer(offerID common.OfferID) {
-	delete(sup.activeOffers, offerID)
+func (s *Supplier) removeOffer(offerID common.OfferID) {
+	delete(s.activeOffers, offerID)
 }
 
-func (sup *Supplier) offers() []supplierOffer {
-	res := make([]supplierOffer, len(sup.activeOffers))
+func (s *Supplier) offers() []supplierOffer {
+	res := make([]supplierOffer, len(s.activeOffers))
 	i := 0
-	for _, supOffer := range sup.activeOffers {
+	for _, supOffer := range s.activeOffers {
 		res[i] = *supOffer
 		i++
 	}
 	return res
 }
 
-func (sup *Supplier) checkResourcesInvariant() {
-	if sup.availableResources.IsNegative() {
-		panic(errors.New("there are negative resources available :|"))
+func (s *Supplier) checkResourcesInvariant() {
+	if s.availableResources.IsNegative() {
+		panic(fmt.Errorf("more resources being used than maximum, available: <%d,%d>, max: <%d,%d>",
+			s.availableResources.CPUs(), s.availableResources.RAM(), s.maxResources.CPUs(), s.maxResources.RAM()))
 	}
-	if !sup.maxResources.Contains(*sup.availableResources) {
-		panic(errors.New("there are more resources than the maximum available :|"))
-	}
-}
-
-// Simulation
-func (sup *Supplier) SetNodeGUID(GUID guid.GUID) {
-	if sup.nodeGUID == nil {
-		sup.nodeGUID = guid.NewGUIDBytes(GUID.Bytes())
+	if !s.maxResources.Contains(*s.availableResources) {
+		panic(fmt.Errorf("there are more resources than the maximum, available: <%d,%d>, max: <%d,%d>",
+			s.availableResources.CPUs(), s.availableResources.RAM(), s.maxResources.CPUs(), s.maxResources.RAM()))
 	}
 }
 
 // Simulation
-func (sup *Supplier) AvailableResources() types.Resources {
-	sup.offersMutex.Lock()
-	defer sup.offersMutex.Unlock()
+func (s *Supplier) SetNodeGUID(GUID guid.GUID) {
+	if s.nodeGUID == nil {
+		s.nodeGUID = guid.NewGUIDBytes(GUID.Bytes())
+	}
+}
+
+// Simulation
+func (s *Supplier) AvailableResources() types.Resources {
+	s.offersMutex.Lock()
+	defer s.offersMutex.Unlock()
 
 	return types.Resources{
-		CPUs: sup.availableResources.CPUs(),
-		RAM:  sup.availableResources.RAM(),
+		CPUs: s.availableResources.CPUs(),
+		RAM:  s.availableResources.RAM(),
 	}
 }
 
 // Simulation
-func (sup *Supplier) MaximumResources() types.Resources {
+func (s *Supplier) MaximumResources() types.Resources {
 	return types.Resources{
-		CPUs: sup.maxResources.CPUs(),
-		RAM:  sup.maxResources.RAM(),
+		CPUs: s.maxResources.CPUs(),
+		RAM:  s.maxResources.RAM(),
 	}
 }
 
@@ -276,24 +285,24 @@ func (sup *Supplier) MaximumResources() types.Resources {
 // =							SubComponent Interface                           =
 // ===============================================================================
 
-func (sup *Supplier) Start() {
-	sup.Started(sup.config.Simulation(), func() {
-		if !sup.config.Simulation() {
-			go sup.start()
+func (s *Supplier) Start() {
+	s.Started(s.config.Simulation(), func() {
+		if !s.config.Simulation() {
+			go s.start()
 		} else {
-			sup.offersMutex.Lock()
-			defer sup.offersMutex.Unlock()
-			sup.updateOffers()
+			s.offersMutex.Lock()
+			defer s.offersMutex.Unlock()
+			s.updateOffers()
 		}
 	})
 }
 
-func (sup *Supplier) Stop() {
-	sup.Stopped(func() {
-		sup.quitChan <- true
+func (s *Supplier) Stop() {
+	s.Stopped(func() {
+		s.quitChan <- true
 	})
 }
 
-func (sup *Supplier) IsWorking() bool {
-	return sup.Working()
+func (s *Supplier) IsWorking() bool {
+	return s.Working()
 }

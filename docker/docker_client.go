@@ -18,33 +18,33 @@ import (
 	"strconv"
 )
 
-// DefaultClient interfaces with docker Golang's SDK/Client.
-type DefaultClient struct {
+// Client interfaces with docker Golang's SDK/Client.
+type Client struct {
 	docker        *dockerClient.Client
 	imagesBackend storage.Backend
 }
 
 // NewDockerClient creates a new docker client to interact with the local Docker Engine.
-func NewDockerClient(config *configuration.Configuration) *DefaultClient {
-	dockerClient, err := dockerClient.NewClientWithOpts(dockerClient.WithVersion(config.DockerAPIVersion()))
+func NewDockerClient(config *configuration.Configuration) *Client {
+	dockClient, err := dockerClient.NewClientWithOpts(dockerClient.WithVersion(config.DockerAPIVersion()))
 	if err != nil {
 		log.Fatalf(util.LogTag("DOCKER")+"Init error: %s", err)
 	}
 
 	imagesBackend := storage.CreateBackend(config)
-	imagesBackend.Init(dockerClient)
+	imagesBackend.Init(dockClient)
 
-	return &DefaultClient{
-		docker:        dockerClient,
+	return &Client{
+		docker:        dockClient,
 		imagesBackend: imagesBackend,
 	}
 }
 
-func (client *DefaultClient) Start() <-chan *events.Event {
+func (c *Client) Start() <-chan *events.Event {
 	caravelaEventChan := make(chan *events.Event, 15)
 	go func() {
 		eventsToListen := filters.NewArgs(filters.Arg("event", "die"))
-		eventChan, errChan := client.docker.Events(
+		eventChan, errChan := c.docker.Events(
 			context.Background(),
 			types.EventsOptions{
 				Filters: eventsToListen,
@@ -55,7 +55,7 @@ func (client *DefaultClient) Start() <-chan *events.Event {
 				caravelaEventChan <- &events.Event{Type: events.ContainerDied, Value: newDockerEvent.ID}
 			case newDockerErrEvent := <-errChan:
 				log.Fatalf(util.LogTag("DOCKER")+"Error receiving events, error: %s", newDockerErrEvent)
-				eventChan, errChan = client.docker.Events(
+				eventChan, errChan = c.docker.Events(
 					context.Background(),
 					types.EventsOptions{
 						Filters: eventsToListen,
@@ -67,9 +67,9 @@ func (client *DefaultClient) Start() <-chan *events.Event {
 }
 
 // isInit verify if the Docker client is initialized or not.
-func (client *DefaultClient) isInit() {
-	if client.docker != nil {
-		if _, err := client.docker.Ping(context.Background()); err != nil {
+func (c *Client) isInit() {
+	if c.docker != nil {
+		if _, err := c.docker.Ping(context.Background()); err != nil {
 			// TODO: Shutdown node gracefully in each place where docker calls can fail!!
 			log.Fatalf(util.LogTag("DOCKER") + "Please turn on the Docker Engine")
 		}
@@ -79,11 +79,11 @@ func (client *DefaultClient) isInit() {
 }
 
 // Get CPUs and RAM dedicated to Docker engine (Decided by the user in Docker configuration).
-func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
-	client.isInit()
+func (c *Client) GetDockerCPUAndRAM() (int, int) {
+	c.isInit()
 
 	ctx := context.Background()
-	info, err := client.docker.Info(ctx)
+	info, err := c.docker.Info(ctx)
 	if err != nil {
 		log.Errorf(util.LogTag("DOCKER")+"Get Docker Info error: %s", err)
 	}
@@ -94,11 +94,11 @@ func (client *DefaultClient) GetDockerCPUAndRAM() (int, int) {
 }
 
 // CheckContainerStatus checks the container status (running, stopped, etc)
-func (client *DefaultClient) CheckContainerStatus(containerID string) (myContainer.Status, error) {
-	client.isInit()
+func (c *Client) CheckContainerStatus(containerID string) (myContainer.Status, error) {
+	c.isInit()
 
 	ctx := context.Background()
-	status, err := client.docker.ContainerInspect(ctx, containerID)
+	status, err := c.docker.ContainerInspect(ctx, containerID)
 	if err != nil {
 		return myContainer.NewContainerStatus(myContainer.Unknown), err
 	}
@@ -111,10 +111,10 @@ func (client *DefaultClient) CheckContainerStatus(containerID string) (myContain
 }
 
 // RunContainer launches a container from an image in the local Docker Engine.
-func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConfig) (*caravelaTypes.ContainerStatus, error) {
-	client.isInit()
+func (c *Client) RunContainer(contConfig caravelaTypes.ContainerConfig) (*caravelaTypes.ContainerStatus, error) {
+	c.isInit()
 
-	dockerImageKey, err := client.imagesBackend.LoadImage(contConfig.ImageKey)
+	dockerImageKey, err := c.imagesBackend.LoadImage(contConfig.ImageKey)
 	if err != nil {
 		log.Errorf(util.LogTag("DOCKER")+"Loading image error", err)
 		return nil, err
@@ -134,7 +134,7 @@ func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConf
 		containerPortSet[port] = struct{}{}
 	}
 
-	resp, err := client.docker.ContainerCreate(context.Background(),
+	resp, err := c.docker.ContainerCreate(context.Background(),
 		&container.Config{
 			Image:        dockerImageKey,  // Image key name
 			Cmd:          contConfig.Args, // Command arguments to the container
@@ -148,13 +148,13 @@ func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConf
 			PortBindings: hostPortMap, // Port mappings between container's port and host's port
 		}, nil, contConfig.Name)
 	if err != nil { // Error creating the container
-		client.docker.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
+		c.docker.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
 		log.Errorf(util.LogTag("DOCKER")+"Creating container error: %s", err)
 		return nil, err
 	}
 
-	if err := client.docker.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
-		client.docker.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
+	if err := c.docker.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		c.docker.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{}) // Remove the container (avoid filling space)
 		log.Errorf(util.LogTag("DOCKER")+"Starting container error: %s", err)
 		return nil, err // Error starting the container
 	}
@@ -163,7 +163,7 @@ func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConf
 		contConfig.ImageKey, contConfig.Args, contConfig.Resources.CPUs, contConfig.Resources.RAM)
 
 	// Update the container's information with Docker's engine generated information, e.g. random name, random port etc
-	contDockerInfo, _ := client.docker.ContainerInspect(context.Background(), resp.ID)
+	contDockerInfo, _ := c.docker.ContainerInspect(context.Background(), resp.ID)
 	contConfig.Name = contDockerInfo.Name[1:]
 	for ui, userPortMap := range contConfig.PortMappings {
 		portKey, _ := nat.NewPort(userPortMap.Protocol, strconv.Itoa(userPortMap.ContainerPort))
@@ -181,10 +181,10 @@ func (client *DefaultClient) RunContainer(contConfig caravelaTypes.ContainerConf
 }
 
 // RemoveContainer removes a container from the Docker engine (to avoid filling space in the node).
-func (client *DefaultClient) RemoveContainer(containerID string) error {
-	client.isInit()
+func (c *Client) RemoveContainer(containerID string) error {
+	c.isInit()
 
-	err := client.docker.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{Force: true})
+	err := c.docker.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{Force: true})
 	if err != nil {
 		return fmt.Errorf("problem stopping/removing container error: %s", err)
 	}

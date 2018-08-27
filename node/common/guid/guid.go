@@ -106,25 +106,25 @@ func newGUIDBigInt(bytesID *big.Int) *GUID {
 }
 
 // GenerateInnerRandomGUID generates a random GUID that belongs to the interval [this, topGUID).
-func (guid *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
+func (g *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
 	dif := big.NewInt(0)
 	randOffset := big.NewInt(0)
 	res := big.NewInt(0)
 
-	dif.Sub(topGUID.id, guid.id)
+	dif.Sub(topGUID.id, g.id)
 
 	randOffset.Rand(randomGenerator, dif)
 
-	res.Add(guid.id, randOffset)
+	res.Add(g.id, randOffset)
 
 	return NewGUIDString(res.String()), nil
 }
 
 // PercentageOffset returns the number of ids (as a string with an integer in base 10) using % offset to higher GUID.
-func (guid *GUID) PercentageOffset(offsetPercentage int, nextGuid GUID) string {
+func (g *GUID) PercentageOffset(offsetPercentage int, nextGuid GUID) string {
 	offset := big.NewInt(int64(offsetPercentage))
 	dif := big.NewInt(0)
-	dif.Sub(nextGuid.id, guid.id) // Dif between nextGuid and receiver.
+	dif.Sub(nextGuid.id, g.id) // Dif between nextGuid and receiver.
 
 	offset.Mul(offset, dif)
 	offset.Div(offset, big.NewInt(100))
@@ -132,38 +132,38 @@ func (guid *GUID) PercentageOffset(offsetPercentage int, nextGuid GUID) string {
 }
 
 // AddOffset adds an offset (as a string in base 10) of ids to the GUID.
-func (guid *GUID) AddOffset(offset string) {
+func (g *GUID) AddOffset(offset string) {
 	toAdd := big.NewInt(0)
 	toAdd.SetString(offset, 10)
 
-	guid.id.Add(guid.id, toAdd)
+	g.id.Add(g.id, toAdd)
 }
 
 // Cmp used to check what if the guid is higher, lower or equal than the given guid.
-func (guid *GUID) Cmp(guid2 GUID) int {
-	return guid.id.Cmp(guid2.id)
+func (g *GUID) Cmp(guid2 GUID) int {
+	return g.id.Cmp(guid2.id)
 }
 
 // Higher returns true if guid is higher than the given guid and false otherwise.
-func (guid *GUID) Higher(guid2 GUID) bool {
-	return guid.id.Cmp(guid2.id) > 0
+func (g *GUID) Higher(guid2 GUID) bool {
+	return g.id.Cmp(guid2.id) > 0
 }
 
 // Greater returns true if guid is lower than the given guid and false otherwise.
-func (guid *GUID) Lower(guid2 GUID) bool {
-	return guid.id.Cmp(guid2.id) < 0
+func (g *GUID) Lower(guid2 GUID) bool {
+	return g.id.Cmp(guid2.id) < 0
 }
 
 // Compare if two GUIDs are equal or not.
-func (guid *GUID) Equals(guid2 GUID) bool {
-	return guid.id.Cmp(guid2.id) == 0
+func (g *GUID) Equals(guid2 GUID) bool {
+	return g.id.Cmp(guid2.id) == 0
 }
 
 // Bytes returns an array of bytes (with size of guidSizeBits) with the value of the GUID.
-func (guid *GUID) Bytes() []byte {
+func (g *GUID) Bytes() []byte {
 	numOfBytes := guidSizeBits / 8
 	res := make([]byte, numOfBytes)
-	idBytes := guid.id.Bytes()
+	idBytes := g.id.Bytes()
 	index := 0
 	for ; index < numOfBytes-cap(idBytes); index++ { // Padding the higher bytes with 0s.
 		res[index] = 0
@@ -176,21 +176,21 @@ func (guid *GUID) Bytes() []byte {
 }
 
 // Int64 returns an int64 that represents the GUID.
-func (guid *GUID) Int64() int64 {
-	return guid.id.Int64()
+func (g *GUID) Int64() int64 {
+	return g.id.Int64()
 }
 
 // Copy creates a copy of the GUID object.
-func (guid *GUID) Copy() *GUID {
-	return NewGUIDString(guid.String())
+func (g *GUID) Copy() *GUID {
+	return NewGUIDString(g.String())
 }
 
 // String returns the value of the GUID in a string representation (as an integer in base 10).
-func (guid *GUID) String() string {
-	return guid.id.String()
+func (g *GUID) String() string {
+	return g.id.String()
 }
 
 // Short returns the first digits of the GUID in a string representation.
-func (guid *GUID) Short() string {
-	return guid.id.String()[0:guidShortStringSize]
+func (g *GUID) Short() string {
+	return g.id.String()[0:guidShortStringSize]
 }

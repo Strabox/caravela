@@ -73,36 +73,36 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 
 // Start the node's functions. If the node is joining an instance of CARAVELA's it is called with join
 // as true and the joinIP contains the IP address of a node that already belongs to the CARAVELA's instance.
-func (node *Node) Start(join bool, joinIP string) error {
+func (n *Node) Start(join bool, joinIP string) error {
 	var err error
 
 	// Start creating/joining an overlay of CARAVELA nodes
 	if join {
 		log.Debugln(util.LogTag("Node") + "Joining a overlay...")
-		err = node.overlayComp.Join(context.Background(), joinIP, node.config.OverlayPort(), node)
+		err = n.overlayComp.Join(context.Background(), joinIP, n.config.OverlayPort(), n)
 	} else {
 		log.Debugln(util.LogTag("Node") + "Creating an overlay...")
-		err = node.overlayComp.Create(context.Background(), node)
+		err = n.overlayComp.Create(context.Background(), n)
 	}
 	if err != nil {
 		return err
 	}
 	log.Debug(util.LogTag("Node") + "Overlay INITIALIZED")
 
-	node.discoveryComp.Start()
-	node.containersManagerComp.Start()
-	node.schedulerComp.Start()
+	n.discoveryComp.Start()
+	n.containersManagerComp.Start()
+	n.schedulerComp.Start()
 
-	err = node.apiServerComp.Start(node) // Start CARAVELA's REST API web server
+	err = n.apiServerComp.Start(n) // Start CARAVELA's REST API web server
 	if err != nil {
 		return err
 	}
 
 	log.Debug(util.LogTag("Node") + "Node STARTED")
 
-	if !node.config.Simulation() {
+	if !n.config.Simulation() {
 		select {
-		case stop := <-node.stopChan: // Block main Goroutine until a stop message is received
+		case stop := <-n.stopChan: // Block main Goroutine until a stop message is received
 			if stop {
 				return nil
 			}
@@ -112,26 +112,26 @@ func (node *Node) Start(join bool, joinIP string) error {
 }
 
 // Stop the node's functions.
-func (node *Node) Stop(ctx context.Context) {
+func (n *Node) Stop(ctx context.Context) {
 	log.Debug(util.LogTag("Node") + "STOPPING...")
-	node.apiServerComp.Stop()
+	n.apiServerComp.Stop()
 	log.Debug(util.LogTag("Node") + "-> API SERVER STOPPED")
-	node.schedulerComp.Stop()
+	n.schedulerComp.Stop()
 	log.Debug(util.LogTag("Node") + "-> SCHEDULER STOPPED")
-	node.containersManagerComp.Stop()
+	n.containersManagerComp.Stop()
 	log.Debug(util.LogTag("Node") + "-> CONTAINERS MANAGER STOPPED")
-	node.discoveryComp.Stop()
+	n.discoveryComp.Stop()
 	log.Debug(util.LogTag("Node") + "-> DISCOVERY STOPPED")
-	node.overlayComp.Leave(context.Background())
+	n.overlayComp.Leave(context.Background())
 	log.Debug(util.LogTag("Node") + "-> OVERLAY STOPPED")
 	// Used to make the main goroutine quit and exit the process
-	node.stopChan <- true
+	n.stopChan <- true
 	log.Debug(util.LogTag("Node") + "-> STOPPED")
 }
 
 // Configuration returns the system's configuration of this node.
-func (node *Node) Configuration(c context.Context) *configuration.Configuration {
-	return node.config
+func (n *Node) Configuration(c context.Context) *configuration.Configuration {
+	return n.config
 }
 
 // ##############################################################################################
@@ -140,16 +140,16 @@ func (node *Node) Configuration(c context.Context) *configuration.Configuration 
 
 // =========================== User Component Interface (USER API) ==============================
 
-func (node *Node) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
-	return node.userManagerComp.SubmitContainers(ctx, containerConfigs)
+func (n *Node) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
+	return n.userManagerComp.SubmitContainers(ctx, containerConfigs)
 }
 
-func (node *Node) StopContainers(ctx context.Context, containersIDs []string) error {
-	return node.userManagerComp.StopContainers(ctx, containersIDs)
+func (n *Node) StopContainers(ctx context.Context, containersIDs []string) error {
+	return n.userManagerComp.StopContainers(ctx, containersIDs)
 }
 
-func (node *Node) ListContainers(_ context.Context) []types.ContainerStatus {
-	return node.userManagerComp.ListContainers()
+func (n *Node) ListContainers(_ context.Context) []types.ContainerStatus {
+	return n.userManagerComp.ListContainers()
 }
 
 // ##############################################################################################
@@ -158,72 +158,72 @@ func (node *Node) ListContainers(_ context.Context) []types.ContainerStatus {
 
 // =============================== Overlay Membership Interface =================================
 
-func (node *Node) AddTrader(guidBytes []byte) {
+func (n *Node) AddTrader(guidBytes []byte) {
 	guidRes := guid.NewGUIDBytes(guidBytes)
-	node.discoveryComp.AddTrader(*guidRes)
+	n.discoveryComp.AddTrader(*guidRes)
 }
 
 // =============================== Discovery Component Interface =================================
 
-func (node *Node) CreateOffer(ctx context.Context, fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
+func (n *Node) CreateOffer(ctx context.Context, fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	node.discoveryComp.CreateOffer(fromNode, toNode, offer)
+	n.discoveryComp.CreateOffer(fromNode, toNode, offer)
 }
 
-func (node *Node) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) {
+func (n *Node) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	node.discoveryComp.UpdateOffer(fromSupplier, toTrader, offer)
+	n.discoveryComp.UpdateOffer(fromSupplier, toTrader, offer)
 }
 
-func (node *Node) RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool {
+func (n *Node) RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	return node.discoveryComp.RefreshOffer(fromTrader, offer)
+	return n.discoveryComp.RefreshOffer(fromTrader, offer)
 }
 
-func (node *Node) RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+func (n *Node) RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	node.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
+	n.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
 }
 
-func (node *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+func (n *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	return node.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
+	return n.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
 }
 
-func (node *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) {
+func (n *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	node.discoveryComp.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
+	n.discoveryComp.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
 }
 
 // ================================ Scheduling Component Interface ==============================
 
-func (node *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
+func (n *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	return node.schedulerComp.Launch(ctx, fromBuyer, offer, containersConfigs)
+	return n.schedulerComp.Launch(ctx, fromBuyer, offer, containersConfigs)
 }
 
 // ============================== Containers Component Interface ================================
 
-func (node *Node) StopLocalContainer(ctx context.Context, containerID string) error {
+func (n *Node) StopLocalContainer(ctx context.Context, containerID string) error {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
-	return node.containersManagerComp.StopContainer(containerID)
+	return n.containersManagerComp.StopContainer(containerID)
 }
 
 // ##############################################################################################
@@ -234,36 +234,36 @@ func (node *Node) StopLocalContainer(ctx context.Context, containerID string) er
 
 // AvailableResourcesSim returns the current available resources of the node.
 // Note: Only available when the node is running in simulation mode.
-func (node *Node) AvailableResourcesSim() types.Resources {
-	if !node.config.Simulation() {
+func (n *Node) AvailableResourcesSim() types.Resources {
+	if !n.config.Simulation() {
 		panic(errors.New("AvailableResourcesSim request can only be used in simulation mode"))
 	}
-	return node.discoveryComp.AvailableResourcesSim()
+	return n.discoveryComp.AvailableResourcesSim()
 }
 
 // MaximumResourcesSim returns the maximum available resources of the node.
 // Note: Only available when the node is running in simulation mode.
-func (node *Node) MaximumResourcesSim() types.Resources {
-	if !node.config.Simulation() {
+func (n *Node) MaximumResourcesSim() types.Resources {
+	if !n.config.Simulation() {
 		panic(errors.New("MaximumResourcesSim request can only be used in simulation mode"))
 	}
-	return node.discoveryComp.MaximumResourcesSim()
+	return n.discoveryComp.MaximumResourcesSim()
 }
 
 // RefreshOffersSim triggers the inner actions to refresh all the offers that the node is handling.
 // Note: Only available when the node is running in simulation mode.
-func (node *Node) RefreshOffersSim() {
-	if !node.config.Simulation() {
+func (n *Node) RefreshOffersSim() {
+	if !n.config.Simulation() {
 		panic(errors.New("RefreshOffersSim request can only be used in simulation mode"))
 	}
-	node.discoveryComp.RefreshOffersSim()
+	n.discoveryComp.RefreshOffersSim()
 }
 
 // SpreadOffersSim triggers the inner actions to spread the offers that the node is handling.
 // Note: Only available when the node is running in simulation mode.
-func (node *Node) SpreadOffersSim() {
-	if !node.config.Simulation() {
+func (n *Node) SpreadOffersSim() {
+	if !n.config.Simulation() {
 		panic(errors.New("SpreadOffersSim request can only be used in simulation mode"))
 	}
-	node.discoveryComp.SpreadOffersSim()
+	n.discoveryComp.SpreadOffersSim()
 }

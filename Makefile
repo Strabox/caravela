@@ -1,7 +1,7 @@
 ##################### CARAVELA's MAKEFILE #########################
 GOCMD=go
 
-######### Builtin GO tools #########
+###################### Builtin GO tools ###########################
 GOBUILD=$(GOCMD) build
 GOINSTALL=$(GOCMD) install
 GOCLEAN=$(GOCMD) clean
@@ -10,19 +10,19 @@ GOVET=$(GOCMD) vet
 
 GOGET=$(GOCMD) get
 
-######### External GO tools #########
+###################### External GO tools ###########################
 GOLINT=golint
 GOCOV=gocov
 GOCOVHTML=gocov-html
 GODEPGRAPH=godepgraph
 
-############ Output Files ###########
+######################### Output Files #############################
 EXE=.exe
 BINARY_NAME=caravela$(EXE)
 BINARY_NAME_LINUX=$(BINARY_NAME)_linux$(EXE)
 BINARY_NAME_WIN=$(BINARY_NAME)_win$(EXE)
 
-############################## COMMANDS ############################
+########################## COMMANDS ################################
 
 all: build test
 

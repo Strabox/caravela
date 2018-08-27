@@ -36,19 +36,19 @@ func NewManager(config *configuration.Configuration, localScheduler localSchedul
 	}
 }
 
-func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
+func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	// Validate request
 	for i, contConfig := range containerConfigs {
 		if contConfig.Resources.RAM == 0 && contConfig.Resources.CPUs == 0 {
-			containerConfigs[i].Resources.CPUs = man.minRequestResources.CPUs()
-			containerConfigs[i].Resources.RAM = man.minRequestResources.RAM()
+			containerConfigs[i].Resources.CPUs = m.minRequestResources.CPUs()
+			containerConfigs[i].Resources.RAM = m.minRequestResources.RAM()
 		} else if contConfig.Resources.RAM == 0 || contConfig.Resources.CPUs == 0 {
 			return nil, fmt.Errorf("invalid resources resquest")
 		}
 	}
 
 	// Contact local scheduler to submit the request into the system
-	containersStatus, err := man.localScheduler.SubmitContainers(ctx, containerConfigs)
+	containersStatus, err := m.localScheduler.SubmitContainers(ctx, containerConfigs)
 	if err != nil {
 		return nil, err
 	}
@@ -59,21 +59,21 @@ func (man *Manager) SubmitContainers(ctx context.Context, containerConfigs []typ
 			*resources.NewResources(contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,
 			contStatus.SupplierIP)
 
-		man.containers.Store(container.ShortID(), container)
+		m.containers.Store(container.ShortID(), container)
 	}
 
 	return containersStatus, nil
 }
 
-func (man *Manager) StopContainers(ctx context.Context, containerIDs []string) error {
+func (m *Manager) StopContainers(ctx context.Context, containerIDs []string) error {
 	errMsg := "Failed to stop:"
 	fail := false
 	for _, contID := range containerIDs {
-		contTmp, contExist := man.containers.Load(contID[:common.ContainerShortIDSize])
+		contTmp, contExist := m.containers.Load(contID[:common.ContainerShortIDSize])
 		container, ok := contTmp.(*deployedContainer)
 		if contExist && ok {
-			if err := man.userRemoteCli.StopLocalContainer(ctx, &types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
-				man.containers.Delete(contID)
+			if err := m.userRemoteCli.StopLocalContainer(ctx, &types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
+				m.containers.Delete(contID)
 			} else {
 				fail = true
 				errMsg += " " + contID
@@ -90,10 +90,10 @@ func (man *Manager) StopContainers(ctx context.Context, containerIDs []string) e
 	return nil
 }
 
-func (man *Manager) ListContainers() []types.ContainerStatus {
+func (m *Manager) ListContainers() []types.ContainerStatus {
 	res := make([]types.ContainerStatus, 0)
 
-	man.containers.Range(func(_, value interface{}) bool {
+	m.containers.Range(func(_, value interface{}) bool {
 		if container, ok := value.(*deployedContainer); ok {
 			res = append(res,
 				types.ContainerStatus{
@@ -116,14 +116,14 @@ func (man *Manager) ListContainers() []types.ContainerStatus {
 // =							SubComponent Interface                           =
 // ===============================================================================
 
-func (man *Manager) Start() {
-	man.Started(man.config.Simulation(), func() { /* Do Nothing */ })
+func (m *Manager) Start() {
+	m.Started(m.config.Simulation(), func() { /* Do Nothing */ })
 }
 
-func (man *Manager) Stop() {
-	man.Stopped(func() { /* Do Nothing */ })
+func (m *Manager) Stop() {
+	m.Stopped(func() { /* Do Nothing */ })
 }
 
-func (man *Manager) isWorking() bool {
-	return man.Working()
+func (m *Manager) isWorking() bool {
+	return m.Working()
 }

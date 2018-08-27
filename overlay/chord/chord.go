@@ -62,19 +62,19 @@ func New(config *configuration.Configuration) (types.Overlay, error) {
 }
 
 // initialize the chord overlay and its respective inner structures.
-func (co *Chord) initialize(appNode types.OverlayMembership) (*chord.Config, chord.Transport, error) {
-	co.appNode = appNode
-	hostname := co.hostIP + ":" + strconv.Itoa(co.hostPort)
-	chordListener := &Listener{chordOverlay: co}
+func (c *Chord) initialize(appNode types.OverlayMembership) (*chord.Config, chord.Transport, error) {
+	c.appNode = appNode
+	hostname := c.hostIP + ":" + strconv.Itoa(c.hostPort)
+	chordListener := &Listener{chordOverlay: c}
 
 	config := chord.DefaultConfig(hostname)
 	config.Delegate = chordListener
-	config.NumVnodes = co.numVirtualNodes
-	config.NumSuccessors = co.numSuccessors
-	config.HashFunc = func() hash.Hash { return NewResourcesHash(co.hashSizeBytes, hostname) }
+	config.NumVnodes = c.numVirtualNodes
+	config.NumSuccessors = c.numSuccessors
+	config.HashFunc = func() hash.Hash { return NewResourcesHash(c.hashSizeBytes, hostname) }
 
 	// Initialize the TCP transport stack used in the chord implementation
-	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d", co.hostPort), co.timeout)
+	transport, err := chord.InitTCPTransport(fmt.Sprintf(":%d", c.hostPort), c.timeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -83,39 +83,39 @@ func (co *Chord) initialize(appNode types.OverlayMembership) (*chord.Config, cho
 }
 
 // Called when a new virtual node of this physical node has joined the chord ring.
-func (co *Chord) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *types.OverlayNode) {
-	if co.virtualNodesRunning == co.numVirtualNodes {
+func (c *Chord) newLocalVirtualNode(localVirtualNodeID []byte, predecessorNode *types.OverlayNode) {
+	if c.virtualNodesRunning == c.numVirtualNodes {
 		return
 	}
 
 	newLocalVirtualNodeID := big.NewInt(0)
 	newLocalVirtualNodeID.SetBytes(localVirtualNodeID)
-	if co.localID == nil {
-		co.localID = localVirtualNodeID
+	if c.localID == nil {
+		c.localID = localVirtualNodeID
 	} else {
 		localID := big.NewInt(0)
-		localID.SetBytes(co.localID)
+		localID.SetBytes(c.localID)
 		if newLocalVirtualNodeID.Cmp(localID) >= 0 {
-			co.localID = localVirtualNodeID
+			c.localID = localVirtualNodeID
 		}
 	}
-	co.virtualNodesRunning++
-	co.predecessors.Store(newLocalVirtualNodeID.String(), predecessorNode)
-	co.appNode.AddTrader(localVirtualNodeID) // Alert the node for the new virtual node/trader
+	c.virtualNodesRunning++
+	c.predecessors.Store(newLocalVirtualNodeID.String(), predecessorNode)
+	c.appNode.AddTrader(localVirtualNodeID) // Alert the node for the new virtual node/trader
 }
 
 // Called when the predecessor of a virtual node of the physical node changes.
 // e.g. Due to a crash in the previous predecessor or because he left the chord ring.
-func (co *Chord) predecessorNodeChanged(localVirtualNodeID []byte, predecessorNode *types.OverlayNode) {
+func (c *Chord) predecessorNodeChanged(localVirtualNodeID []byte, predecessorNode *types.OverlayNode) {
 	vNodeID := big.NewInt(0)
 	vNodeID.SetBytes(localVirtualNodeID)
-	co.predecessors.Store(vNodeID.String(), predecessorNode)
+	c.predecessors.Store(vNodeID.String(), predecessorNode)
 }
 
 /* ============================ Overlay Interface ============================ */
 
-func (co *Chord) Create(ctx context.Context, appNode types.OverlayMembership) error {
-	config, transport, err := co.initialize(appNode)
+func (c *Chord) Create(ctx context.Context, appNode types.OverlayMembership) error {
+	config, transport, err := c.initialize(appNode)
 	if err != nil {
 		return err
 	}
@@ -125,12 +125,12 @@ func (co *Chord) Create(ctx context.Context, appNode types.OverlayMembership) er
 		return fmt.Errorf("create chord error: %s", err)
 	}
 
-	co.chordRing = ring
+	c.chordRing = ring
 	return nil
 }
 
-func (co *Chord) Join(ctx context.Context, overlayNodeIP string, overlayNodePort int, appNode types.OverlayMembership) error {
-	config, transport, err := co.initialize(appNode)
+func (c *Chord) Join(ctx context.Context, overlayNodeIP string, overlayNodePort int, appNode types.OverlayMembership) error {
+	config, transport, err := c.initialize(appNode)
 	if err != nil {
 		return err
 	}
@@ -140,12 +140,12 @@ func (co *Chord) Join(ctx context.Context, overlayNodeIP string, overlayNodePort
 	if err != nil {
 		return fmt.Errorf("join chord error: %s", err)
 	}
-	co.chordRing = ring
+	c.chordRing = ring
 	return nil
 }
 
-func (co *Chord) Lookup(ctx context.Context, key []byte) ([]*types.OverlayNode, error) {
-	virtualNodes, err := co.chordRing.Lookup(co.numSuccessors, key)
+func (c *Chord) Lookup(ctx context.Context, key []byte) ([]*types.OverlayNode, error) {
+	virtualNodes, err := c.chordRing.Lookup(c.numSuccessors, key)
 	if err != nil {
 		log.Errorf(util.LogTag("Chord")+"Lookup error: %s", err)
 		return make([]*types.OverlayNode, 0), fmt.Errorf("lookup error")
@@ -159,12 +159,12 @@ func (co *Chord) Lookup(ctx context.Context, key []byte) ([]*types.OverlayNode, 
 	return res, nil
 }
 
-func (co *Chord) Neighbors(ctx context.Context, nodeID []byte) ([]*types.OverlayNode, error) {
+func (c *Chord) Neighbors(ctx context.Context, nodeID []byte) ([]*types.OverlayNode, error) {
 	id := big.NewInt(0)
 	id.SetBytes(nodeID)
 
 	res := make([]*types.OverlayNode, 0)
-	nodes, err := co.Lookup(ctx, nodeID) // TODO: Optional, avoid this lookup.
+	nodes, err := c.Lookup(ctx, nodeID) // TODO: Optional, avoid this lookup.
 	if err != nil {
 		return make([]*types.OverlayNode, 0), err
 	}
@@ -174,7 +174,7 @@ func (co *Chord) Neighbors(ctx context.Context, nodeID []byte) ([]*types.Overlay
 		hmm.SetBytes(nodes[1].GUID())
 		res = append(res, nodes[1]) // The successor of the given node
 	}
-	predecessorNode, exist := co.predecessors.Load(id.String())
+	predecessorNode, exist := c.predecessors.Load(id.String())
 	if exist {
 		node, ok := predecessorNode.(*types.OverlayNode)
 		if ok {
@@ -186,18 +186,18 @@ func (co *Chord) Neighbors(ctx context.Context, nodeID []byte) ([]*types.Overlay
 	return res, nil
 }
 
-func (co *Chord) NodeID(ctx context.Context) ([]byte, error) {
-	if co.localID != nil && co.virtualNodesRunning == co.numVirtualNodes {
+func (c *Chord) NodeID(ctx context.Context) ([]byte, error) {
+	if c.localID != nil && c.virtualNodesRunning == c.numVirtualNodes {
 		temp := big.NewInt(0)
-		temp.SetBytes(co.localID)
-		return co.localID, nil
+		temp.SetBytes(c.localID)
+		return c.localID, nil
 	} else {
 		return nil, fmt.Errorf("node ID not known yet")
 	}
 }
 
-func (co *Chord) Leave(ctx context.Context) error {
-	err := co.chordRing.Leave()
+func (c *Chord) Leave(ctx context.Context) error {
+	err := c.chordRing.Leave()
 	if err != nil {
 		return fmt.Errorf("leave chord error: %s", err)
 	}

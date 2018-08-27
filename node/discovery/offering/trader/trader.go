@@ -29,7 +29,7 @@ type Trader struct {
 	resourcesMap     *resources.Mapping   // GUID<->Resources mapping
 	handledResources *resources.Resources // Combination of resources that its responsible for managing (FIXED)
 
-	nearbyTradersOffering *NearbyTradersOffering    // Nearby traders that might have offers available
+	nearbyTradersOffering *nearbyTradersOffering    // Nearby traders that might have offers available
 	offers                map[offerKey]*traderOffer // Map with all the offers that the trader is managing
 	offersMutex           *sync.Mutex               // Mutex for managing the offers
 
@@ -52,7 +52,7 @@ func NewTrader(config *configuration.Configuration, overlay external.Overlay, cl
 		resourcesMap:     resourcesMapping,
 		handledResources: handledResources,
 
-		nearbyTradersOffering: NewNeighborTradersOffering(),
+		nearbyTradersOffering: newNeighborTradersOffering(),
 		offers:                make(map[offerKey]*traderOffer),
 		offersMutex:           &sync.Mutex{},
 

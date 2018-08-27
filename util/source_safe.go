@@ -21,14 +21,14 @@ func NewSourceSafe(source rand.Source) *SourceSafe {
 
 // =============================== math/rand source methods =================================
 
-func (source *SourceSafe) Int63() int64 {
-	source.mutex.Lock()
-	defer source.mutex.Unlock()
-	return source.source.Int63()
+func (s *SourceSafe) Int63() int64 {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.source.Int63()
 }
 
-func (source *SourceSafe) Seed(seed int64) {
-	source.mutex.Lock()
-	defer source.mutex.Unlock()
-	source.source.Seed(seed)
+func (s *SourceSafe) Seed(seed int64) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.source.Seed(seed)
 }

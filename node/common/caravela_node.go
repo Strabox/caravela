@@ -17,10 +17,10 @@ func NewRemoteNode(IPAddress string, guid guid.GUID) *RemoteNode {
 	}
 }
 
-func (rm *RemoteNode) IP() string {
-	return rm.ip
+func (r *RemoteNode) IP() string {
+	return r.ip
 }
 
-func (rm *RemoteNode) GUID() *guid.GUID {
-	return rm.guid.Copy()
+func (r *RemoteNode) GUID() *guid.GUID {
+	return r.guid.Copy()
 }

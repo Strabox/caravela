@@ -47,61 +47,61 @@ func NewOfferingDiscovery(config *configuration.Configuration, overlay external.
 // ====================== Local Services (Consumed by other Components) ============================
 
 // Adds a new local "virtual" trader when the overlay notifies its presence.
-func (disc *Discovery) AddTrader(traderGUID guid.GUID) {
-	disc.supplier.SetNodeGUID(traderGUID)
+func (d *Discovery) AddTrader(traderGUID guid.GUID) {
+	d.supplier.SetNodeGUID(traderGUID)
 
-	newTrader := trader.NewTrader(disc.config, disc.overlay, disc.client, traderGUID, disc.resourcesMap)
-	disc.traders.Store(traderGUID.String(), newTrader)
+	newTrader := trader.NewTrader(d.config, d.overlay, d.client, traderGUID, d.resourcesMap)
+	d.traders.Store(traderGUID.String(), newTrader)
 
 	newTrader.Start() // Start the node's trader module.
-	newTraderResources := disc.resourcesMap.ResourcesByGUID(traderGUID)
+	newTraderResources := d.resourcesMap.ResourcesByGUID(traderGUID)
 	log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s", traderGUID.Short(), newTraderResources.String())
 }
 
-func (disc *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
-	return disc.supplier.FindOffers(ctx, resources)
+func (d *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
+	return d.supplier.FindOffers(ctx, resources)
 }
 
-func (disc *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
-	return disc.supplier.ObtainResources(offerID, resourcesNecessary)
+func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
+	return d.supplier.ObtainResources(offerID, resourcesNecessary)
 }
 
-func (disc *Discovery) ReturnResources(resources resources.Resources) {
-	disc.supplier.ReturnResources(resources)
+func (d *Discovery) ReturnResources(resources resources.Resources) {
+	d.supplier.ReturnResources(resources)
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================
 
-func (disc *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
-	t, exist := disc.traders.Load(toTrader.GUID)
+func (d *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+	t, exist := d.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.CreateOffer(fromSupp, offer)
 	}
 }
 
-func (disc *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
-	return disc.supplier.RefreshOffer(fromTrader, offer)
+func (d *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
+	return d.supplier.RefreshOffer(fromTrader, offer)
 }
 
-func (disc *Discovery) UpdateOffer(fromSupp, toTrader *types.Node, offer *types.Offer) {
-	t, exist := disc.traders.Load(toTrader.GUID)
+func (d *Discovery) UpdateOffer(fromSupp, toTrader *types.Node, offer *types.Offer) {
+	t, exist := d.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.UpdateOffer(fromSupp, offer)
 	}
 }
 
-func (disc *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
-	t, exist := disc.traders.Load(toTrader.GUID)
+func (d *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+	t, exist := d.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.RemoveOffer(fromSupp, offer)
 	}
 }
 
-func (disc *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
-	t, exist := disc.traders.Load(toTrader.GUID)
+func (d *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+	t, exist := d.traders.Load(toTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		return targetTrader.GetOffers(ctx, fromNode, relay)
@@ -110,8 +110,8 @@ func (disc *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.
 	}
 }
 
-func (disc *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node) {
-	t, exist := disc.traders.Load(toNeighborTrader.GUID)
+func (d *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node) {
+	t, exist := d.traders.Load(toNeighborTrader.GUID)
 	targetTrader, ok := t.(*trader.Trader)
 	if exist && ok {
 		targetTrader.AdvertiseNeighborOffer(fromTrader, traderOffering)
@@ -121,18 +121,18 @@ func (disc *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, tra
 // ======================= External Services (Consumed during simulation ONLY) =========================
 
 // Simulation
-func (disc *Discovery) AvailableResourcesSim() types.Resources {
-	return disc.supplier.AvailableResources()
+func (d *Discovery) AvailableResourcesSim() types.Resources {
+	return d.supplier.AvailableResources()
 }
 
 // Simulation
-func (disc *Discovery) MaximumResourcesSim() types.Resources {
-	return disc.supplier.MaximumResources()
+func (d *Discovery) MaximumResourcesSim() types.Resources {
+	return d.supplier.MaximumResources()
 }
 
 // Simulation
-func (disc *Discovery) RefreshOffersSim() {
-	disc.traders.Range(func(key, value interface{}) bool {
+func (d *Discovery) RefreshOffersSim() {
+	d.traders.Range(func(key, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
 			currentTrader.RefreshOffersSim()
@@ -142,8 +142,8 @@ func (disc *Discovery) RefreshOffersSim() {
 }
 
 // Simulation
-func (disc *Discovery) SpreadOffersSim() {
-	disc.traders.Range(func(key, value interface{}) bool {
+func (d *Discovery) SpreadOffersSim() {
+	d.traders.Range(func(key, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
 			currentTrader.SpreadOffersSim()
@@ -156,16 +156,16 @@ func (disc *Discovery) SpreadOffersSim() {
 // =							SubComponent Interface                           =
 // ===============================================================================
 
-func (disc *Discovery) Start() {
-	disc.Started(disc.config.Simulation(), func() {
-		disc.supplier.Start()
+func (d *Discovery) Start() {
+	d.Started(d.config.Simulation(), func() {
+		d.supplier.Start()
 	})
 }
 
-func (disc *Discovery) Stop() {
-	disc.Stopped(func() {
-		disc.supplier.Stop()
-		disc.traders.Range(func(_, value interface{}) bool {
+func (d *Discovery) Stop() {
+	d.Stopped(func() {
+		d.supplier.Stop()
+		d.traders.Range(func(_, value interface{}) bool {
 			currentTrader, ok := value.(*trader.Trader)
 			if ok {
 				currentTrader.Stop()
@@ -175,6 +175,6 @@ func (disc *Discovery) Stop() {
 	})
 }
 
-func (disc *Discovery) IsWorking() bool {
-	return disc.Working()
+func (d *Discovery) IsWorking() bool {
+	return d.Working()
 }

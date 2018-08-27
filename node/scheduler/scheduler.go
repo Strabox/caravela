@@ -39,10 +39,10 @@ func NewScheduler(config *configuration.Configuration, internalDisc discoveryLoc
 }
 
 // Launch is executed when a system's node wants to launch a container in this node.
-func (scheduler *Scheduler) Launch(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
+func (s *Scheduler) Launch(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 
-	if !scheduler.IsWorking() {
+	if !s.IsWorking() {
 		panic(fmt.Errorf("can't launch container, scheduler not working"))
 	}
 
@@ -57,13 +57,13 @@ func (scheduler *Scheduler) Launch(ctx context.Context, fromBuyer *types.Node, o
 		totalResourcesNecessary.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM))
 	}
 
-	containerStatus, err := scheduler.containersManager.StartContainer(fromBuyer, offer, containersConfigs, *totalResourcesNecessary)
+	containerStatus, err := s.containersManager.StartContainer(fromBuyer, offer, containersConfigs, *totalResourcesNecessary)
 	return containerStatus, err
 }
 
 // SubmitContainers is called when the user submits a request to the node in order to deploy a set of containers.
-func (scheduler *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
-	if !scheduler.IsWorking() {
+func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
+	if !s.IsWorking() {
 		panic(fmt.Errorf("can't run container, scheduler not working"))
 	}
 
@@ -89,7 +89,7 @@ func (scheduler *Scheduler) SubmitContainers(ctx context.Context, contConfigs []
 
 	// ================== First try launch the co-located containers ==============
 
-	containersStatus, err := scheduler.launchContainers(ctx, coLocateContainers, *coLocateTotalResources)
+	containersStatus, err := s.launchContainers(ctx, coLocateContainers, *coLocateTotalResources)
 	if err != nil {
 		return nil, err
 	}
@@ -100,10 +100,10 @@ func (scheduler *Scheduler) SubmitContainers(ctx context.Context, contConfigs []
 	for _, contConfig := range spreadContainers {
 		resourcesNecessary := resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM)
 
-		containersStatus, err := scheduler.launchContainers(ctx, []types.ContainerConfig{contConfig}, *resourcesNecessary)
+		containersStatus, err := s.launchContainers(ctx, []types.ContainerConfig{contConfig}, *resourcesNecessary)
 		if err != nil {
 			for i := range resContainersStatus { // Stop all the previous launched containers
-				scheduler.client.StopLocalContainer(ctx, &types.Node{IP: resContainersStatus[i].SupplierIP}, resContainersStatus[i].ContainerID)
+				s.client.StopLocalContainer(ctx, &types.Node{IP: resContainersStatus[i].SupplierIP}, resContainersStatus[i].ContainerID)
 			}
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func (scheduler *Scheduler) SubmitContainers(ctx context.Context, contConfigs []
 }
 
 // launchContainer launches a container in a node with the resources necessary available.
-func (scheduler *Scheduler) launchContainers(ctx context.Context, containersConfigs []types.ContainerConfig,
+func (s *Scheduler) launchContainers(ctx context.Context, containersConfigs []types.ContainerConfig,
 	resourcesNecessary resources.Resources) ([]types.ContainerStatus, error) {
 
 	resContainersStatus := make([]types.ContainerStatus, 0)
@@ -124,7 +124,7 @@ func (scheduler *Scheduler) launchContainers(ctx context.Context, containersConf
 		return resContainersStatus, nil
 	}
 
-	offers := scheduler.discovery.FindOffers(ctx, resourcesNecessary)
+	offers := s.discovery.FindOffers(ctx, resourcesNecessary)
 	sort.Sort(types.AvailableOffers(offers))
 
 	if len(offers) == 0 {
@@ -136,9 +136,9 @@ func (scheduler *Scheduler) launchContainers(ctx context.Context, containersConf
 		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER [#%d]... SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
 			offerIndex, offer.SupplierIP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM)
 
-		containersStatus, err := scheduler.client.LaunchContainer(
+		containersStatus, err := s.client.LaunchContainer(
 			ctx,
-			&types.Node{IP: scheduler.config.HostIP()},
+			&types.Node{IP: s.config.HostIP()},
 			&types.Node{IP: offer.SupplierIP},
 			&types.Offer{ID: offer.ID},
 			containersConfigs)
@@ -163,14 +163,14 @@ func (scheduler *Scheduler) launchContainers(ctx context.Context, containersConf
 // =							SubComponent Interface                           =
 // ===============================================================================
 
-func (scheduler *Scheduler) Start() {
-	scheduler.Started(scheduler.config.Simulation(), func() { /* Do Nothing */ })
+func (s *Scheduler) Start() {
+	s.Started(s.config.Simulation(), func() { /* Do Nothing */ })
 }
 
-func (scheduler *Scheduler) Stop() {
-	scheduler.Stopped(func() { /* Do Nothing */ })
+func (s *Scheduler) Stop() {
+	s.Stopped(func() { /* Do Nothing */ })
 }
 
-func (scheduler *Scheduler) IsWorking() bool {
-	return scheduler.Working()
+func (s *Scheduler) IsWorking() bool {
+	return s.Working()
 }
