@@ -160,7 +160,6 @@ func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.R
 	if !exist || !supOffer.Resources().Contains(resourcesNecessary) || !s.availableResources.Contains(resourcesNecessary) { // Offer does not exist in the supplier OR asking more resources than the offer has available
 		return false
 	} else {
-		log.Infof("Obtaining: <%d,%d>, From: <%d,%d>", resourcesNecessary.CPUs(), resourcesNecessary.RAM(), s.availableResources.CPUs(), s.availableResources.RAM())
 		s.availableResources.Sub(resourcesNecessary)
 
 		delete(s.activeOffers, common.OfferID(offerID))
