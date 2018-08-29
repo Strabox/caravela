@@ -199,7 +199,6 @@ func (s *Supplier) ReturnResources(releasedResources resources.Resources) {
 
 	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.RAM())
 	s.availableResources.Add(releasedResources)
-	log.Infof("Released: <%d,%d>, To: <%d,%d>", releasedResources.CPUs(), releasedResources.RAM(), s.availableResources.CPUs(), s.availableResources.RAM())
 
 	if s.config.Simulation() {
 		s.updateOffers() // Update its own offers sequential
