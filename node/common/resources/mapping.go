@@ -246,6 +246,18 @@ func (m *Mapping) resourcesByIndexes(cpuPowerIndex, cpuCoresIndex, ramIndex int)
 	return NewResources(cpuCores, ram)
 }
 
+func (m *Mapping) SamePartitionResourcesSearch(arg1 Resources, arg2 Resources) (bool, error) {
+	arg1PartitionRes, err := m.getFittestResourcesSearch(arg1)
+	if err != nil {
+		return false, err
+	}
+	arg2PartitionRes, err := m.getFittestResourcesSearch(arg2)
+	if err != nil {
+		return false, err
+	}
+	return arg1PartitionRes.Equals(*arg2PartitionRes), nil
+}
+
 // getFittestResourcesSearch returns the fittest resources combination that contains the resources given..
 func (m *Mapping) getFittestResourcesSearch(resources Resources) (*Resources, error) {
 	fittestRes := NewResources(0, 0)

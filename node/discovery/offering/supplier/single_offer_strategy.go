@@ -45,10 +45,34 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources resources.Res
 			return // The active offer has the same resources has the node have now. No need to create other.
 		}
 
+		samePartition, _ := s.resourcesMapping.SamePartitionResourcesSearch(availableResources, *s.resourcesMapping.ResourcesByGUID(*activeOffer.ResponsibleTraderGUID()))
+		if samePartition { // if the new available resources fit in the same resource partition update the offer and exit.
+			updateOffer := func(offer supplierOffer) {
+				s.remoteClient.UpdateOffer(
+					context.Background(),
+					&types.Node{IP: s.configs.HostIP()},
+					&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
+					&types.Offer{
+						ID:     int64(offer.ID()),
+						Amount: 1,
+						Resources: types.Resources{
+							CPUs: availableResources.CPUs(),
+							RAM:  availableResources.RAM(),
+						},
+					})
+			}
+			if s.configs.Simulation() {
+				updateOffer(activeOffer) // Send update offer message sequential
+			} else {
+				go updateOffer(activeOffer) // Send update offer message in background
+			}
+			return
+		}
+
 		removeOffer := func(offer supplierOffer) {
 			s.remoteClient.RemoveOffer(
 				context.Background(),
-				&types.Node{IP: s.configs.HostIP(), GUID: ""},
+				&types.Node{IP: s.configs.HostIP()},
 				&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(offer.ID())},
 			)
