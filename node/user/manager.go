@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api/types"
@@ -37,23 +36,22 @@ func NewManager(config *configuration.Configuration, localScheduler localSchedul
 }
 
 func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
-	// Validate request
+	// Validate container submission request.
 	for i, contConfig := range containerConfigs {
-		if contConfig.Resources.RAM == 0 && contConfig.Resources.CPUs == 0 {
+		if contConfig.Resources.CPUs == 0 {
 			containerConfigs[i].Resources.CPUs = m.minRequestResources.CPUs()
+		} else if contConfig.Resources.RAM == 0 {
 			containerConfigs[i].Resources.RAM = m.minRequestResources.RAM()
-		} else if contConfig.Resources.RAM == 0 || contConfig.Resources.CPUs == 0 {
-			return nil, fmt.Errorf("invalid resources resquest")
 		}
 	}
 
-	// Contact local scheduler to submit the request into the system
+	// Submit the request into the local scheduler.
 	containersStatus, err := m.localScheduler.SubmitContainers(ctx, containerConfigs)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update internals
+	// Update internals.
 	for _, contStatus := range containersStatus {
 		container := newContainer(contStatus.Name, contStatus.ImageKey, contStatus.Args, contStatus.PortMappings,
 			*resources.NewResources(contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,

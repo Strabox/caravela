@@ -1,7 +1,9 @@
 [Caravela]
 APIPort = 8001
 APITimeout = "3s"
-ResourcesOvercommit = 50
+CPUSlices = 1
+CPUOvercommit = 100
+RAMOvercommit = 100
 [Caravela.DiscoveryBackend]
 Backend = "chord-single-offer"
     [Caravela.DiscoveryBackend.SmartChordBackend]
@@ -13,7 +15,7 @@ Backend = "chord-single-offer"
     MaxRefreshesMissed = 2
     RefreshMissedTimeout = "1m30s"
     [Caravela.DiscoveryBackend.RandomChordBackend]
-    RandBackendMaxRetries = 6
+    RandBackendMaxRetries = 3
 [Caravela.Resources]
     [[Caravela.Resources.CPUPowers]]
     Value = 0

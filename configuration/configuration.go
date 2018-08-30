@@ -43,12 +43,14 @@ type host struct {
 
 // Configurations for the CARAVELA's node specific parameters
 type caravela struct {
-	Simulation          bool                `json:"Simulation"`       // If the CARAVELA node is under simulation or not.
-	DiscoveryBackend    discoveryBackend    `json:"DiscoveryBackend"` // Define what strategy is used to manage the offers
-	APIPort             int                 `json:"APIPort"`          // Port of API REST endpoints
-	APITimeout          duration            `json:"APITimeout"`       // Timeout for API REST requests
-	Resources           ResourcesPartitions `json:"Resources"`
-	ResourcesOvercommit int                 `json:"ResourcesOvercommit"` // Percentage of overcommit to apply to available resources
+	Simulation       bool                `json:"Simulation"`       // If the CARAVELA node is under simulation or not.
+	DiscoveryBackend discoveryBackend    `json:"DiscoveryBackend"` // Define what strategy is used to manage the offers
+	APIPort          int                 `json:"APIPort"`          // Port of API REST endpoints
+	APITimeout       duration            `json:"APITimeout"`       // Timeout for API REST requests
+	Resources        ResourcesPartitions `json:"Resources"`
+	CPUSlices        int                 `json:"CPUSlices"`
+	CPUOvercommit    int                 `json:"CPUOvercommit"`
+	RAMOvercommit    int                 `json:"RAMOvercommit"`
 }
 
 type discoveryBackend struct {
@@ -108,10 +110,12 @@ func Default(hostIP string) *Configuration {
 			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
-			Simulation:          false,
-			APIPort:             defaultCaravelaAPIPort,
-			ResourcesOvercommit: 50,
-			APITimeout:          duration{Duration: 5 * time.Second},
+			Simulation:    false,
+			APIPort:       defaultCaravelaAPIPort,
+			APITimeout:    duration{Duration: 5 * time.Second},
+			CPUSlices:     1,
+			CPUOvercommit: 100,
+			RAMOvercommit: 100,
 			DiscoveryBackend: discoveryBackend{
 				Backend: "chord-single-offer",
 				SmartChordBackend: smartChordDiscBackend{
@@ -215,6 +219,18 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("invalid backend port: %d", c.APIPort())
 	}
 
+	if c.CPUSlices() <= 0 {
+		return fmt.Errorf("CPUSlices: %d, it must be >= 1", c.CPUSlices())
+	}
+
+	if c.CPUOvercommit() < 100 {
+		return fmt.Errorf("CPUOvercommit: %d, CPU overcommit percentage must be >= 100", c.CPUOvercommit())
+	}
+
+	if c.RAMOvercommit() < 100 {
+		return fmt.Errorf("RAMOvercommit: %d, RAM overcommit percentage must be >= 100", c.RAMOvercommit())
+	}
+
 	powerPercentageAcc := 0
 	for _, powerPart := range c.Caravela.Resources.CPUPowers {
 		powerPercentageAcc += powerPart.Percentage
@@ -245,10 +261,6 @@ func (c *Configuration) validate() error {
 
 	if c.MaxRefreshesMissed() < 0 {
 		return fmt.Errorf("maximum number of missed refreshes must be a positive integer")
-	}
-
-	if c.ResourcesOvercommit() <= 0 {
-		return fmt.Errorf("node's resources overcommit ratio must be a positive integer")
 	}
 
 	// ======================= Random Chord Discovery Backend specific ==========================
@@ -294,7 +306,19 @@ func (c *Configuration) Print() {
 	log.Printf("Simulation:                  %t", c.Simulation())
 	log.Printf("Port:                        %d", c.APIPort())
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
-	log.Printf("Resources overcommit:        %d", c.ResourcesOvercommit())
+	log.Printf("CPU Slices:                  %d", c.CPUSlices())
+	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
+	log.Printf("RAM Overcommit:              %d", c.RAMOvercommit())
+	log.Printf("Resources Partitions:")
+	for _, powerPart := range c.Caravela.Resources.CPUPowers {
+		log.Printf("  CPUPower: %d", powerPart.Value)
+		for _, corePart := range powerPart.CPUCores {
+			log.Printf("    CPUCores: %d", corePart.Value)
+			for _, ramPart := range corePart.RAMs {
+				log.Printf("      RAM: %d", ramPart.Value)
+			}
+		}
+	}
 
 	log.Printf("Discovery Backends:")
 	log.Printf("  Active Backend:                  %s", c.DiscoveryBackend())
@@ -308,17 +332,6 @@ func (c *Configuration) Print() {
 	log.Printf("      Refresh missed timeout:      %s", c.RefreshMissedTimeout().String())
 	log.Printf("      Max num of refreshes failed: %d", c.MaxRefreshesFailed())
 	log.Printf("      Max num of refreshes missed: %d", c.MaxRefreshesMissed())
-
-	log.Printf("Resources Partitions:")
-	for _, powerPart := range c.Caravela.Resources.CPUPowers {
-		log.Printf("  CPUPower: %d", powerPart.Value)
-		for _, corePart := range powerPart.CPUCores {
-			log.Printf("    CPUCores: %d", corePart.Value)
-			for _, ramPart := range corePart.RAMs {
-				log.Printf("      RAM: %d", ramPart.Value)
-			}
-		}
-	}
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$ IMAGES STORAGE $$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	log.Printf("Active Backend:              %s", c.ImagesStorageBackend())
@@ -364,8 +377,16 @@ func (c *Configuration) ResourcesPartitions() ResourcesPartitions {
 	return c.Caravela.Resources
 }
 
-func (c *Configuration) ResourcesOvercommit() int {
-	return c.Caravela.ResourcesOvercommit
+func (c *Configuration) CPUSlices() int {
+	return c.Caravela.CPUSlices
+}
+
+func (c *Configuration) CPUOvercommit() int {
+	return c.Caravela.CPUOvercommit
+}
+
+func (c *Configuration) RAMOvercommit() int {
+	return c.Caravela.RAMOvercommit
 }
 
 // ========================== Discovery Backend ================================

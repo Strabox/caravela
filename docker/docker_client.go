@@ -22,6 +22,7 @@ import (
 type Client struct {
 	docker        *dockerClient.Client
 	imagesBackend storage.Backend
+	configs       *configuration.Configuration
 }
 
 // NewDockerClient creates a new docker client to interact with the local Docker Engine.
@@ -37,6 +38,7 @@ func NewDockerClient(config *configuration.Configuration) *Client {
 	return &Client{
 		docker:        dockClient,
 		imagesBackend: imagesBackend,
+		configs:       config,
 	}
 }
 
@@ -142,8 +144,9 @@ func (c *Client) RunContainer(contConfig caravelaTypes.ContainerConfig) (*carave
 			ExposedPorts: containerPortSet, // Container's exposed ports
 		}, &container.HostConfig{
 			Resources: container.Resources{
-				CPUCount: int64(contConfig.Resources.CPUs),          // Number of CPUs available to the container
-				Memory:   int64(contConfig.Resources.RAM) * 1000000, // Maximum memory available to container
+				CPUPeriod: 100000,
+				CPUQuota:  int64(float64(100000) * (float64(contConfig.Resources.CPUs) / float64(c.configs.CPUSlices()))), // CPU maximum quota for the container using the Linux CFS scheduler.
+				Memory:    int64(contConfig.Resources.RAM) * 1000000,                                                      // Maximum memory available to the container.
 			},
 			PortBindings: hostPortMap, // Port mappings between container's port and host's port
 		}, nil, contConfig.Name)
