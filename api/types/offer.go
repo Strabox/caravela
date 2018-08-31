@@ -43,8 +43,7 @@ func (ao AvailableOffers) Less(i, j int) bool {
 type CPUClass uint
 
 const (
-	_ = iota
-	LowCPUPClass
+	LowCPUPClass CPUClass = iota
 	HighCPUClass
 )
 

@@ -29,8 +29,7 @@ type PortMapping struct {
 type GroupPolicy uint
 
 const (
-	_ GroupPolicy = iota
-	SpreadGroupPolicy
+	SpreadGroupPolicy GroupPolicy = iota
 	CoLocationGroupPolicy
 )
 
