@@ -179,14 +179,16 @@ func (m *Mapping) HigherRandGUIDSearch(currentGUID guid.GUID, targetResources Re
 
 ExitLoop:
 	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-			if coresPartition.Value == float64(currentGuidResources.CPUs()) {
-				for ramIndex, ramPartition := range coresPartition.ramPartitions {
-					if ramPartition.Value == float64(currentGuidResources.RAM()) {
-						currentCpuClassIndex = cpuClassIndex
-						currentCoresIndex = coresIndex
-						currentRamIndex = ramIndex
-						break ExitLoop
+		if cpuClassPartition.Value == float64(currentGuidResources.CPUClass()) {
+			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
+				if coresPartition.Value == float64(currentGuidResources.CPUs()) {
+					for ramIndex, ramPartition := range coresPartition.ramPartitions {
+						if ramPartition.Value == float64(currentGuidResources.RAM()) {
+							currentCpuClassIndex = cpuClassIndex
+							currentCoresIndex = coresIndex
+							currentRamIndex = ramIndex
+							break ExitLoop
+						}
 					}
 				}
 			}
@@ -226,14 +228,16 @@ func (m *Mapping) LowerRandGUIDOffer(currentGUID guid.GUID, targetResources Reso
 	currentCPUClassIndex, currentCoresIndex, currentRamIndex := 0, 0, 0
 ExitLoop:
 	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-			if coresPartition.Value == float64(currentGuidResources.CPUs()) {
-				for ramIndex, ramPartition := range coresPartition.ramPartitions {
-					if ramPartition.Value == float64(currentGuidResources.RAM()) {
-						currentCPUClassIndex = cpuClassIndex
-						currentCoresIndex = coresIndex
-						currentRamIndex = ramIndex
-						break ExitLoop
+		if cpuClassPartition.Value == float64(currentGuidResources.CPUClass()) {
+			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
+				if coresPartition.Value == float64(currentGuidResources.CPUs()) {
+					for ramIndex, ramPartition := range coresPartition.ramPartitions {
+						if ramPartition.Value == float64(currentGuidResources.RAM()) {
+							currentCPUClassIndex = cpuClassIndex
+							currentCoresIndex = coresIndex
+							currentRamIndex = ramIndex
+							break ExitLoop
+						}
 					}
 				}
 			}
