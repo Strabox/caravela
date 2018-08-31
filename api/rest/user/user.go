@@ -31,7 +31,7 @@ func runContainer(w http.ResponseWriter, req *http.Request) (interface{}, error)
 		return nil, err
 	}
 	for i, containerConfig := range runContainerConfigs {
-		log.Infof("<-- RUN [%d] Img: %s, Args: %v, PortMaps: %v, Res: <%d;%d;%d>, GrpPolicy: %d",
+		log.Infof("<-- RUN [%d] Img: %s, Args: %v, PortMaps: %v, Res: <<%d;%d>;%d>, GrpPolicy: %d",
 			i, containerConfig.ImageKey, containerConfig.Args, containerConfig.PortMappings,
 			containerConfig.Resources.CPUClass, containerConfig.Resources.CPUs, containerConfig.Resources.RAM,
 			containerConfig.GroupPolicy)

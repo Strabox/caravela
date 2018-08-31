@@ -90,7 +90,7 @@ func (c *Client) GetDockerEngineTotalResources() (int, int, int) {
 		log.Errorf(util.LogTag("DOCKER")+"Get Docker Info error: %s", err)
 	}
 
-	cpuClass := 1
+	cpuClass := 1 // TODO: Dehardcode the value. Try calculate it based on CPU info or a benchmark IDK.
 	cpuCores := info.NCPU
 	ram := info.MemTotal / 1000000 // Return in MB (MegaBytes)
 

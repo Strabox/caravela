@@ -24,9 +24,9 @@ func launchContainer(w http.ResponseWriter, req *http.Request) (interface{}, err
 		return nil, err
 	}
 	for i, contConfig := range launchContainerMsg.ContainersConfigs {
-		log.Infof("<-- LAUNCH [%d] From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>",
+		log.Infof("<-- LAUNCH [%d] From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <<%d;%d>;%d>",
 			i, launchContainerMsg.FromBuyer.IP, launchContainerMsg.Offer.ID, contConfig.ImageKey,
-			contConfig.PortMappings, contConfig.Args, contConfig.Resources.CPUs, contConfig.Resources.RAM)
+			contConfig.PortMappings, contConfig.Args, contConfig.Resources.CPUClass, contConfig.Resources.CPUs, contConfig.Resources.RAM)
 	}
 
 	containersStatus, err := nodeSchedulingAPI.LaunchContainers(req.Context(), &launchContainerMsg.FromBuyer,
