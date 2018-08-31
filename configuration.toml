@@ -17,37 +17,37 @@ Backend = "chord-single-offer"
     [Caravela.DiscoveryBackend.RandomChordBackend]
     RandBackendMaxRetries = 3
 [Caravela.Resources]
-    [[Caravela.Resources.CPUPowers]]
-    Value = 0
+    [[Caravela.Resources.CPUClasses]]
+    Value = 1
     Percentage = 100
-        [[Caravela.Resources.CPUPowers.CPUCores]]
+        [[Caravela.Resources.CPUClasses.CPUCores]]
         Value = 1
         Percentage = 50
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 256
             Percentage = 50
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 512
             Percentage = 50
-        [[Caravela.Resources.CPUPowers.CPUCores]]
+        [[Caravela.Resources.CPUClasses.CPUCores]]
         Value = 2
         Percentage = 30
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 512
             Percentage = 50
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 1024
             Percentage = 50
-        [[Caravela.Resources.CPUPowers.CPUCores]]
+        [[Caravela.Resources.CPUClasses.CPUCores]]
         Value = 4
         Percentage = 20
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 1024
             Percentage = 25
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 2048
             Percentage = 50
-            [[Caravela.Resources.CPUPowers.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
             Value = 4096
             Percentage = 25
 

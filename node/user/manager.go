@@ -37,11 +37,23 @@ func NewManager(config *configuration.Configuration, localScheduler localSchedul
 
 func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	// Validate container submission request.
+	coLocationPolicy := -1
 	for i, contConfig := range containerConfigs {
-		if contConfig.Resources.CPUs == 0 {
+		// If a resource constraint is specified to 0 (user does not care) we use the minimum resources in our partitions.
+		if contConfig.Resources.CPUClass == 0 {
+			containerConfigs[i].Resources.CPUClass = types.CPUClass(m.minRequestResources.CPUClass())
+		} else if contConfig.Resources.CPUs == 0 {
 			containerConfigs[i].Resources.CPUs = m.minRequestResources.CPUs()
 		} else if contConfig.Resources.RAM == 0 {
 			containerConfigs[i].Resources.RAM = m.minRequestResources.RAM()
+		}
+
+		// Containers with co-location group policy must have the same CPU Class specified.
+		if contConfig.GroupPolicy == types.CoLocationGroupPolicy && coLocationPolicy == -1 {
+			coLocationPolicy = int(contConfig.GroupPolicy)
+		} else if contConfig.GroupPolicy == types.CoLocationGroupPolicy &&
+			coLocationPolicy != -1 && int(contConfig.GroupPolicy) != coLocationPolicy {
+			return nil, errors.New("containers with co-location policy must have the same CPU Class constraint")
 		}
 	}
 
@@ -54,7 +66,7 @@ func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types
 	// Update internals.
 	for _, contStatus := range containersStatus {
 		container := newContainer(contStatus.Name, contStatus.ImageKey, contStatus.Args, contStatus.PortMappings,
-			*resources.NewResources(contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,
+			*resources.NewResourcesCPUClass(int(contStatus.Resources.CPUClass), contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,
 			contStatus.SupplierIP)
 
 		m.containers.Store(container.ShortID(), container)

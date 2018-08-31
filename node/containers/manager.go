@@ -100,7 +100,7 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 
 	for i, contConfig := range containersConfigs {
 		containerID := deployedContStatus[i].ContainerID
-		contResources := resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM)
+		contResources := resources.NewResourcesCPUClass(int(contConfig.Resources.CPUClass), contConfig.Resources.CPUs, contConfig.Resources.RAM)
 		newContainer := newContainer(contConfig.Name, contConfig.ImageKey, contConfig.Args, contConfig.PortMappings,
 			*contResources, containerID, fromBuyer.IP)
 

@@ -7,31 +7,31 @@ type ResourcePartition struct {
 }
 
 type ResourcePartitions struct {
-	cpuPowerPartitions []CPUPowerPartition
+	cpuClassPartitions []CPUClassPartition
 }
 
-func (r *ResourcePartitions) CPUPowerPartitions() []ResourcePartition {
+func (r *ResourcePartitions) CPUClassPartitions() []ResourcePartition {
 	res := make([]ResourcePartition, 0)
-	for _, partition := range r.cpuPowerPartitions {
+	for _, partition := range r.cpuClassPartitions {
 		res = append(res, partition.ResourcePartition)
 	}
 	return res
 }
 
-func (r *ResourcePartitions) CPUPowerPercentages() []int {
+func (r *ResourcePartitions) CPUClassPercentages() []int {
 	res := make([]int, 0)
-	for _, partition := range r.cpuPowerPartitions {
+	for _, partition := range r.cpuClassPartitions {
 		res = append(res, partition.ResourcePartition.Percentage)
 	}
 	return res
 }
 
-type CPUPowerPartition struct {
+type CPUClassPartition struct {
 	ResourcePartition
 	cpuCoresPartitions []CPUCoresPartition
 }
 
-func (c *CPUPowerPartition) CPUCoresPartitions() []ResourcePartition {
+func (c *CPUClassPartition) CPUCoresPartitions() []ResourcePartition {
 	res := make([]ResourcePartition, 0)
 	for _, partition := range c.cpuCoresPartitions {
 		res = append(res, partition.ResourcePartition)
@@ -39,7 +39,7 @@ func (c *CPUPowerPartition) CPUCoresPartitions() []ResourcePartition {
 	return res
 }
 
-func (c *CPUPowerPartition) CPUCoresPercentages() []int {
+func (c *CPUClassPartition) CPUCoresPercentages() []int {
 	res := make([]int, 0)
 	for _, partition := range c.cpuCoresPartitions {
 		res = append(res, partition.ResourcePartition.Percentage)

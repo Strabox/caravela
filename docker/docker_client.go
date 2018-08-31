@@ -81,7 +81,7 @@ func (c *Client) isInit() {
 }
 
 // Get CPUs and RAM dedicated to Docker engine (Decided by the user in Docker configuration).
-func (c *Client) GetDockerCPUAndRAM() (int, int) {
+func (c *Client) GetDockerEngineTotalResources() (int, int, int) {
 	c.isInit()
 
 	ctx := context.Background()
@@ -90,9 +90,11 @@ func (c *Client) GetDockerCPUAndRAM() (int, int) {
 		log.Errorf(util.LogTag("DOCKER")+"Get Docker Info error: %s", err)
 	}
 
-	cpu := info.NCPU
+	cpuClass := 1
+	cpuCores := info.NCPU
 	ram := info.MemTotal / 1000000 // Return in MB (MegaBytes)
-	return cpu, int(ram)
+
+	return cpuClass, cpuCores, int(ram)
 }
 
 // CheckContainerStatus checks the container status (running, stopped, etc)

@@ -3,7 +3,7 @@ package types
 import "github.com/pkg/errors"
 
 type Resources struct {
-	CPUPower CPUPower `json:"CPUPower"`
+	CPUClass CPUClass `json:"CPUClass"`
 	CPUs     int      `json:"CPUs"`
 	RAM      int      `json:"RAM"`
 }
@@ -40,36 +40,36 @@ func (ao AvailableOffers) Less(i, j int) bool {
 
 // ======================= CPU Power ========================
 
-type CPUPower uint
+type CPUClass uint
 
 const (
-	LowCPUPower CPUPower = iota
-	MediumCPUPower
-	HighCPUPower
+	_ = iota
+	LowCPUPClass
+	HighCPUClass
 )
 
-var cpuPowers = []string{"low", "medium", "high"}
+var cpuPowers = []string{"low", "high"}
 
-func (cp CPUPower) name() string {
+func (cp CPUClass) name() string {
 	return cpuPowers[cp]
 }
 
-func (cp CPUPower) ordinal() int {
+func (cp CPUClass) ordinal() int {
 	return int(cp)
 }
 
-func (cp CPUPower) String() string {
+func (cp CPUClass) String() string {
 	return cpuPowers[cp]
 }
 
-func (cp CPUPower) values() *[]string {
+func (cp CPUClass) values() *[]string {
 	return &cpuPowers
 }
 
-func (cp *CPUPower) ValueOf(arg string) error {
+func (cp *CPUClass) ValueOf(arg string) error {
 	for i, name := range cpuPowers {
 		if name == arg {
-			*cp = CPUPower(i)
+			*cp = CPUClass(i)
 			return nil
 		}
 	}

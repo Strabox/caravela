@@ -59,7 +59,7 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 			for _, node := range overlayNodes {
 				offers, err := b.remoteClient.GetOffers(
 					ctx,
-					&types.Node{},
+					&types.Node{}, //TODO: Remove this crap!
 					&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
 					true)
 				if err == nil && len(offers) != 0 {
@@ -122,9 +122,14 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 		&types.Node{IP: b.configs.HostIP(), GUID: ""},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{
-			ID:        newOfferID,
-			Amount:    1,
-			Resources: types.Resources{CPUs: realAvailableRes.CPUs(), RAM: realAvailableRes.RAM()}})
+			ID:     newOfferID,
+			Amount: 1,
+			Resources: types.Resources{
+				CPUClass: types.CPUClass(realAvailableRes.CPUClass()),
+				CPUs:     realAvailableRes.CPUs(),
+				RAM:      realAvailableRes.RAM(),
+			},
+		})
 	if err == nil {
 		return newSupplierOffer(common.OfferID(newOfferID), 1, realAvailableRes, chosenNode.IP(), *chosenNodeGUID), nil
 	}

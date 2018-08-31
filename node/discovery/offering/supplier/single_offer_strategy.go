@@ -56,8 +56,9 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources resources.Res
 						ID:     int64(offer.ID()),
 						Amount: 1,
 						Resources: types.Resources{
-							CPUs: availableResources.CPUs(),
-							RAM:  availableResources.RAM(),
+							CPUClass: types.CPUClass(availableResources.CPUClass()),
+							CPUs:     availableResources.CPUs(),
+							RAM:      availableResources.RAM(),
 						},
 					})
 			}

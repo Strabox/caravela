@@ -7,7 +7,7 @@ import (
 
 func TestResourcePartitions_CPUPowerPartitions(t *testing.T) {
 	resources := ResourcePartitions{}
-	resources.cpuPowerPartitions = []CPUPowerPartition{
+	resources.cpuClassPartitions = []CPUClassPartition{
 		{
 			ResourcePartition:  ResourcePartition{Value: 0, Percentage: 50},
 			cpuCoresPartitions: nil,
@@ -22,7 +22,7 @@ func TestResourcePartitions_CPUPowerPartitions(t *testing.T) {
 		},
 	}
 
-	resPartitions := resources.CPUPowerPartitions()
+	resPartitions := resources.CPUClassPartitions()
 
 	expectedPartitions := []ResourcePartition{{Value: 0, Percentage: 50}, {Value: 1, Percentage: 25}, {Value: 2, Percentage: 25}}
 	assert.Equal(t, expectedPartitions, resPartitions, "")
@@ -30,7 +30,7 @@ func TestResourcePartitions_CPUPowerPartitions(t *testing.T) {
 
 func TestResourcePartitions_CPUPowerPercentages(t *testing.T) {
 	resources := ResourcePartitions{}
-	resources.cpuPowerPartitions = []CPUPowerPartition{
+	resources.cpuClassPartitions = []CPUClassPartition{
 		{
 			ResourcePartition:  ResourcePartition{Value: 0, Percentage: 50},
 			cpuCoresPartitions: nil,
@@ -45,13 +45,13 @@ func TestResourcePartitions_CPUPowerPercentages(t *testing.T) {
 		},
 	}
 
-	resPercentages := resources.CPUPowerPercentages()
+	resPercentages := resources.CPUClassPercentages()
 	expectedPercentages := []int{50, 25, 25}
 	assert.Equal(t, expectedPercentages, resPercentages, "")
 }
 
 func TestCPUPowerPartitions_CPUCoresPartitions(t *testing.T) {
-	cpuPowerPartition := CPUPowerPartition{}
+	cpuPowerPartition := CPUClassPartition{}
 	cpuPowerPartition.cpuCoresPartitions = []CPUCoresPartition{
 		{
 			ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
@@ -79,7 +79,7 @@ func TestCPUPowerPartitions_CPUCoresPartitions(t *testing.T) {
 }
 
 func TestCPUPowerPartitions_CPUCoresPercentages(t *testing.T) {
-	cpuPowerPartition := CPUPowerPartition{}
+	cpuPowerPartition := CPUClassPartition{}
 	cpuPowerPartition.cpuCoresPartitions = []CPUCoresPartition{
 		{
 			ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},

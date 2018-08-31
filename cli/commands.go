@@ -58,8 +58,8 @@ var (
 					Value: &cli.StringSlice{}, // No predefined port mapping
 				},
 				cli.StringFlag{
-					Name:  "cpuPower, cp",
-					Usage: "Power/Class of the CPU necessary for the container",
+					Name:  "cpuClass, cc",
+					Usage: "Class of the CPU necessary for the container",
 					Value: defaultCPUPower,
 				},
 				cli.UintFlag{

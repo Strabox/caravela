@@ -4,13 +4,26 @@ import "fmt"
 
 // Resources represent of the resources that a user can ask for a container to have available.
 type Resources struct {
-	cpus int
-	ram  int
+	cpuClass int
+	cpus     int
+	ram      int
 }
 
-// NewResources creates a new resource combination object.
+// NewResourcesCPUClass creates a new resource combination object.
+func NewResourcesCPUClass(cpuClass int, cpus int, ram int) *Resources {
+	return &Resources{
+		cpuClass: cpuClass,
+		cpus:     cpus,
+		ram:      ram,
+	}
+}
+
+//
 func NewResources(cpus int, ram int) *Resources {
-	return &Resources{cpus: cpus, ram: ram}
+	return &Resources{
+		cpus: cpus,
+		ram:  ram,
+	}
 }
 
 // AddCPUs adds a given number of cpus to the resources.
@@ -43,6 +56,7 @@ func (r *Resources) SetZero() {
 
 // SetTo sets the resources into a specific combination of resources.
 func (r *Resources) SetTo(resources Resources) {
+	r.cpuClass = resources.CPUClass()
 	r.cpus = resources.CPUs()
 	r.ram = resources.RAM()
 }
@@ -64,25 +78,31 @@ func (r *Resources) IsNegative() bool {
 
 // Contains returns true if the given resources are contained inside the receiver.
 func (r *Resources) Contains(contained Resources) bool {
-	return r.cpus >= contained.CPUs() && r.ram >= contained.RAM()
+	return r.CPUClass() == contained.CPUClass() && r.cpus >= contained.CPUs() && r.ram >= contained.RAM()
 }
 
 // Equals returns true if the given resource combination is equal to the receiver.
 func (r *Resources) Equals(resources Resources) bool {
-	return r.cpus == resources.cpus && r.ram == resources.ram
+	return r.cpuClass == resources.cpuClass && r.cpus == resources.cpus && r.ram == resources.ram
 }
 
 // Copy returns a object that is a exact copy of the receiver.
 func (r *Resources) Copy() *Resources {
-	res := &Resources{}
-	res.cpus = r.cpus
-	res.ram = r.ram
-	return res
+	return &Resources{
+		cpuClass: r.cpuClass,
+		cpus:     r.cpus,
+		ram:      r.ram,
+	}
 }
 
 // String stringify the receiver resources object.
 func (r *Resources) String() string {
-	return fmt.Sprintf("Resources: <%d;%d>", r.cpus, r.ram)
+	return fmt.Sprintf("<<%d;%d>;%d>", r.cpuClass, r.cpus, r.ram)
+}
+
+// CPUClass getter.
+func (r *Resources) CPUClass() int {
+	return r.cpuClass
 }
 
 // CPUs getter.
@@ -93,6 +113,11 @@ func (r *Resources) CPUs() int {
 // RAM getter.
 func (r *Resources) RAM() int {
 	return r.ram
+}
+
+// SetCPUClass CPU Class setter.
+func (r *Resources) SetCPUClass(cpuClass int) {
+	r.cpuClass = cpuClass
 }
 
 // SetCPUs CPUs setter.

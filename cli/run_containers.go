@@ -41,8 +41,8 @@ func runContainers(c *cli.Context) {
 				fatalPrintf("Service %s. %s\n", serviceName, err)
 			}
 
-			var cpuPower types.CPUPower
-			err = cpuPower.ValueOf(service.CPUPower)
+			var cpuClass types.CPUClass
+			err = cpuClass.ValueOf(service.CPUPower)
 			if err != nil {
 				fatalPrintf("Service %s. %s\n", serviceName, err)
 			}
@@ -59,7 +59,7 @@ func runContainers(c *cli.Context) {
 				Args:         service.Args,
 				PortMappings: portMappings,
 				Resources: types.Resources{
-					CPUPower: cpuPower,
+					CPUClass: cpuClass,
 					CPUs:     service.CPUs,
 					RAM:      service.RAM,
 				},
@@ -82,8 +82,8 @@ func runContainers(c *cli.Context) {
 			}
 		}
 
-		var cpuPower types.CPUPower
-		err = cpuPower.ValueOf(c.String("cp"))
+		var cpuClass types.CPUClass
+		err = cpuClass.ValueOf(c.String("cp"))
 		if err != nil {
 			fatalPrintln(err)
 		}
@@ -95,7 +95,7 @@ func runContainers(c *cli.Context) {
 			Args:         containerArgs,
 			PortMappings: portMappings,
 			Resources: types.Resources{
-				CPUPower: cpuPower,
+				CPUClass: cpuClass,
 				CPUs:     int(c.Uint("cpus")),
 				RAM:      int(c.Uint("ram")),
 			},

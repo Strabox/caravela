@@ -125,7 +125,7 @@ func (t *Trader) start() {
 
 // Receives a resource offer from other node (supplier) of the system
 func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
-	resourcesOffered := resources.NewResources(newOffer.Resources.CPUs, newOffer.Resources.RAM)
+	resourcesOffered := resources.NewResourcesCPUClass(int(newOffer.Resources.CPUClass), newOffer.Resources.CPUs, newOffer.Resources.RAM)
 
 	// Verify if the offer contains the resources of trader.
 	// Basically verify if the offer is bigger than the handled resources of the trader.
@@ -162,7 +162,8 @@ func (t *Trader) UpdateOffer(fromSupp *types.Node, offer *types.Offer) {
 	defer t.offersMutex.Unlock()
 
 	if traderOffer, exist := t.offers[offerKey{id: common.OfferID(offer.ID), supplierIP: fromSupp.IP}]; exist {
-		traderOffer.UpdateResources(*resources.NewResources(offer.Resources.CPUs, offer.Resources.RAM), offer.Amount)
+		newOfferRes := *resources.NewResourcesCPUClass(int(offer.Resources.CPUClass), offer.Resources.CPUs, offer.Resources.RAM)
+		traderOffer.UpdateResources(newOfferRes, offer.Amount)
 	}
 }
 
@@ -180,8 +181,9 @@ func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []typ
 			allOffers[index].ID = int64(traderOffer.ID())
 			allOffers[index].Amount = traderOffer.Amount()
 			allOffers[index].Resources = types.Resources{
-				CPUs: traderOffer.Resources().CPUs(),
-				RAM:  traderOffer.Resources().RAM(),
+				CPUClass: types.CPUClass(traderOffer.Resources().CPUClass()),
+				CPUs:     traderOffer.Resources().CPUs(),
+				RAM:      traderOffer.Resources().RAM(),
 			}
 			index++
 		}

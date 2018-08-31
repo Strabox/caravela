@@ -62,7 +62,7 @@ OfferLoop:
 		removeOffer := func(suppOffer supplierOffer) {
 			m.remoteClient.RemoveOffer(
 				context.Background(),
-				&types.Node{IP: m.configs.HostIP(), GUID: ""},
+				&types.Node{IP: m.configs.HostIP()},
 				&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(suppOffer.ID())})
 		}
@@ -87,8 +87,9 @@ OfferLoop:
 							ID:     int64(suppOffer.ID()),
 							Amount: 1,
 							Resources: types.Resources{
-								CPUs: availableResources.CPUs(),
-								RAM:  availableResources.RAM(),
+								CPUClass: types.CPUClass(availableResources.CPUClass()),
+								CPUs:     availableResources.CPUs(),
+								RAM:      availableResources.RAM(),
 							},
 						})
 				}

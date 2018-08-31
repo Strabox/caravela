@@ -132,7 +132,7 @@ func Default(hostIP string) *Configuration {
 				},
 			},
 			Resources: ResourcesPartitions{
-				CPUPowers: []CPUPowerPartition{
+				CPUClasses: []CPUClassPartition{
 					{
 						ResourcesPartition: ResourcesPartition{Value: 0, Percentage: 100},
 						CPUCores: []CPUCoresPartition{
@@ -232,7 +232,7 @@ func (c *Configuration) validate() error {
 	}
 
 	powerPercentageAcc := 0
-	for _, powerPart := range c.Caravela.Resources.CPUPowers {
+	for _, powerPart := range c.Caravela.Resources.CPUClasses {
 		powerPercentageAcc += powerPart.Percentage
 		currCoresPercentageAcc := 0
 		for _, corePart := range powerPart.CPUCores {
@@ -310,8 +310,8 @@ func (c *Configuration) Print() {
 	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
 	log.Printf("RAM Overcommit:              %d", c.RAMOvercommit())
 	log.Printf("Resources Partitions:")
-	for _, powerPart := range c.Caravela.Resources.CPUPowers {
-		log.Printf("  CPUPower: %d", powerPart.Value)
+	for _, powerPart := range c.Caravela.Resources.CPUClasses {
+		log.Printf("  CPUClass: %d", powerPart.Value)
 		for _, corePart := range powerPart.CPUCores {
 			log.Printf("    CPUCores: %d", corePart.Value)
 			for _, ramPart := range corePart.RAMs {

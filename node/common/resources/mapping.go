@@ -15,53 +15,53 @@ type Mapping struct {
 
 // NewResourcesMap creates a new resource map given the CPUs and RAM partitions and the respective GUID distributions.
 func NewResourcesMap(partitions *ResourcePartitions) *Mapping {
-	cpuPowerPartitions := make([][][]*guid.Range, len(partitions.cpuPowerPartitions))
+	cpuClassPartitions := make([][][]*guid.Range, len(partitions.cpuClassPartitions))
 
-	cpuPowerPercentages := partitions.CPUPowerPercentages()
-	cpuPowerRanges := guid.NewGUIDRange(*guid.NewZero(), *guid.MaximumGUID()).CreatePartitions(cpuPowerPercentages)
-	for i := range cpuPowerPartitions {
-		currentCPUCoresPercentages := partitions.cpuPowerPartitions[i].CPUCoresPercentages()
-		currentCPUCoresRanges := cpuPowerRanges[i].CreatePartitions(currentCPUCoresPercentages)
-		cpuPowerPartitions[i] = make([][]*guid.Range, len(partitions.cpuPowerPartitions[i].cpuCoresPartitions))
+	cpuClassPercentages := partitions.CPUClassPercentages()
+	cpuClassRanges := guid.NewGUIDRange(*guid.NewZero(), *guid.MaximumGUID()).CreatePartitions(cpuClassPercentages)
+	for i := range cpuClassPartitions {
+		currentCPUCoresPercentages := partitions.cpuClassPartitions[i].CPUCoresPercentages()
+		currentCPUCoresRanges := cpuClassRanges[i].CreatePartitions(currentCPUCoresPercentages)
+		cpuClassPartitions[i] = make([][]*guid.Range, len(partitions.cpuClassPartitions[i].cpuCoresPartitions))
 
-		for k := range cpuPowerPartitions[i] {
-			currentCPURamPercentages := partitions.cpuPowerPartitions[i].cpuCoresPartitions[k].RAMPercentages()
-			cpuPowerPartitions[i][k] = currentCPUCoresRanges[k].CreatePartitions(currentCPURamPercentages)
+		for k := range cpuClassPartitions[i] {
+			currentCPURamPercentages := partitions.cpuClassPartitions[i].cpuCoresPartitions[k].RAMPercentages()
+			cpuClassPartitions[i][k] = currentCPUCoresRanges[k].CreatePartitions(currentCPURamPercentages)
 		}
 	}
 
 	resourcesRangeMap := make(map[float64]map[float64]map[float64]*guid.Range)
-	for i, powerPartition := range partitions.cpuPowerPartitions {
-		resourcesRangeMap[powerPartition.Value] = make(map[float64]map[float64]*guid.Range)
-		for k, coresPartition := range powerPartition.cpuCoresPartitions {
-			resourcesRangeMap[powerPartition.Value][coresPartition.Value] = make(map[float64]*guid.Range)
-			for j, ramPartition := range coresPartition.ramPartitions {
-				resourcesRangeMap[powerPartition.Value][coresPartition.Value][ramPartition.Value] = cpuPowerPartitions[i][k][j]
+	for i, cpuClassPartition := range partitions.cpuClassPartitions {
+		resourcesRangeMap[cpuClassPartition.Value] = make(map[float64]map[float64]*guid.Range)
+		for k, cpuCoresPartition := range cpuClassPartition.cpuCoresPartitions {
+			resourcesRangeMap[cpuClassPartition.Value][cpuCoresPartition.Value] = make(map[float64]*guid.Range)
+			for j, ramPartition := range cpuCoresPartition.ramPartitions {
+				resourcesRangeMap[cpuClassPartition.Value][cpuCoresPartition.Value][ramPartition.Value] = cpuClassPartitions[i][k][j]
 			}
 		}
 	}
 
 	return &Mapping{
 		partitions:        partitions,
-		resourcesGUIDMap:  cpuPowerPartitions,
+		resourcesGUIDMap:  cpuClassPartitions,
 		resourcesRangeMap: resourcesRangeMap,
 	}
 }
 
 func ObtainConfiguredPartitions(configPartitions configuration.ResourcesPartitions) *ResourcePartitions {
 	res := &ResourcePartitions{}
-	res.cpuPowerPartitions = make([]CPUPowerPartition, len(configPartitions.CPUPowers))
-	for p, powerPart := range configPartitions.CPUPowers {
-		res.cpuPowerPartitions[p].Value = float64(powerPart.Value)
-		res.cpuPowerPartitions[p].Percentage = powerPart.Percentage
-		res.cpuPowerPartitions[p].cpuCoresPartitions = make([]CPUCoresPartition, len(powerPart.CPUCores))
-		for c, corePart := range powerPart.CPUCores {
-			res.cpuPowerPartitions[p].cpuCoresPartitions[c].Value = float64(corePart.Value)
-			res.cpuPowerPartitions[p].cpuCoresPartitions[c].Percentage = corePart.Percentage
-			res.cpuPowerPartitions[p].cpuCoresPartitions[c].ramPartitions = make([]RAMPartition, len(corePart.RAMs))
-			for r, ramPart := range corePart.RAMs {
-				res.cpuPowerPartitions[p].cpuCoresPartitions[c].ramPartitions[r].Value = float64(ramPart.Value)
-				res.cpuPowerPartitions[p].cpuCoresPartitions[c].ramPartitions[r].Percentage = ramPart.Percentage
+	res.cpuClassPartitions = make([]CPUClassPartition, len(configPartitions.CPUClasses))
+	for p, cpuClassPart := range configPartitions.CPUClasses {
+		res.cpuClassPartitions[p].Value = float64(cpuClassPart.Value)
+		res.cpuClassPartitions[p].Percentage = cpuClassPart.Percentage
+		res.cpuClassPartitions[p].cpuCoresPartitions = make([]CPUCoresPartition, len(cpuClassPart.CPUCores))
+		for c, cpuCoresPart := range cpuClassPart.CPUCores {
+			res.cpuClassPartitions[p].cpuCoresPartitions[c].Value = float64(cpuCoresPart.Value)
+			res.cpuClassPartitions[p].cpuCoresPartitions[c].Percentage = cpuCoresPart.Percentage
+			res.cpuClassPartitions[p].cpuCoresPartitions[c].ramPartitions = make([]RAMPartition, len(cpuCoresPart.RAMs))
+			for r, ramPart := range cpuCoresPart.RAMs {
+				res.cpuClassPartitions[p].cpuCoresPartitions[c].ramPartitions[r].Value = float64(ramPart.Value)
+				res.cpuClassPartitions[p].cpuCoresPartitions[c].ramPartitions[r].Percentage = ramPart.Percentage
 			}
 		}
 	}
@@ -76,9 +76,11 @@ func (m *Mapping) LowerPartitionsOffer(availableResources Resources) ([]Resource
 		return nil, err
 	}
 
+	CPUClassIndex := m.cpuClassIndexByValue(fittestAvailableRes.CPUClass())
+
 	currentCoresIndex, currentRamIndex := 0, 0
 ExitLoop:
-	for coresIndex, coresPartition := range m.partitions.cpuPowerPartitions[0].cpuCoresPartitions {
+	for coresIndex, coresPartition := range m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions {
 		if coresPartition.Value == float64(fittestAvailableRes.CPUs()) {
 			for ramIndex, ramPartition := range coresPartition.ramPartitions {
 				if ramPartition.Value == float64(fittestAvailableRes.RAM()) {
@@ -92,17 +94,18 @@ ExitLoop:
 
 	for coresIndex := currentCoresIndex; coresIndex >= 0; coresIndex-- {
 		for ramIndex := currentRamIndex; ramIndex >= 0; ramIndex-- {
-			currentCores := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].Value
-			currentRam := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
+			currentCores := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].Value
+			currentRam := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
 			if currentCores <= float64(fittestAvailableRes.CPUs()) && currentRam <= float64(fittestAvailableRes.RAM()) {
 				resources := NewResources(0, 0)
-				resources.SetCPUs(int(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].Value))
-				resources.SetRAM(int(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value))
+				resources.SetCPUClass(fittestAvailableRes.CPUClass())
+				resources.SetCPUs(int(m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].Value))
+				resources.SetRAM(int(m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value))
 				lowerPartitions = append(lowerPartitions, *resources)
 			}
 		}
 		if coresIndex-1 >= 0 {
-			currentRamIndex = len(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
+			currentRamIndex = len(m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
 		}
 	}
 	return lowerPartitions, nil
@@ -114,7 +117,7 @@ func (m *Mapping) RandGUIDSearch(targetResources Resources) (*guid.GUID, error) 
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[0][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].GenerateRandom()
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].GenerateRandom()
 }
 
 // RandGUIDOffer returns a random GUID in the range of the respective "fittest" target resource combination.
@@ -123,7 +126,7 @@ func (m *Mapping) RandGUIDOffer(targetResources Resources) (*guid.GUID, error) {
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[0][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].GenerateRandom()
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].GenerateRandom()
 }
 
 // FirstGUIDOffer returns the first GUID that represents the given resources.
@@ -132,15 +135,17 @@ func (m *Mapping) FirstGUIDOffer(resources Resources) (*guid.GUID, error) {
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[0][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].LowerGUID(), nil
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].LowerGUID(), nil
 }
 
 // ResourcesByGUID returns the resources combination that maps to the given GUID.
 func (m *Mapping) ResourcesByGUID(resGUID guid.GUID) *Resources {
-	for indexCPUCores := range m.resourcesGUIDMap[0] {
-		for indexRAM := range m.resourcesGUIDMap[0][indexCPUCores] {
-			if m.resourcesGUIDMap[0][indexCPUCores][indexRAM].Inside(resGUID) {
-				return m.resourcesByIndexes(0, indexCPUCores, indexRAM)
+	for indexCPUClass := range m.resourcesGUIDMap {
+		for indexCPUCores := range m.resourcesGUIDMap[indexCPUClass] {
+			for indexRAM := range m.resourcesGUIDMap[indexCPUClass][indexCPUCores] {
+				if m.resourcesGUIDMap[indexCPUClass][indexCPUCores][indexRAM].Inside(resGUID) {
+					return m.resourcesByIndexes(indexCPUClass, indexCPUCores, indexRAM)
+				}
 			}
 		}
 	}
@@ -149,10 +154,10 @@ func (m *Mapping) ResourcesByGUID(resGUID guid.GUID) *Resources {
 
 // LowestResources returns the lowest resource combination available.
 func (m *Mapping) LowestResources() *Resources {
-	lowestResources := NewResources(0, 0)
-	// m.partitions.cpuPowerPartitions[0].Value Not used for now
-	lowestResources.SetCPUs(int(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[0].Value))
-	lowestResources.SetRAM(int(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[0].ramPartitions[0].Value))
+	lowestResources := NewResourcesCPUClass(0, 0, 0)
+	lowestResources.SetCPUClass(int(m.partitions.cpuClassPartitions[0].Value))
+	lowestResources.SetCPUs(int(m.partitions.cpuClassPartitions[0].cpuCoresPartitions[0].Value))
+	lowestResources.SetRAM(int(m.partitions.cpuClassPartitions[0].cpuCoresPartitions[0].ramPartitions[0].Value))
 	return lowestResources
 }
 
@@ -164,8 +169,11 @@ func (m *Mapping) HigherRandGUIDSearch(currentGUID guid.GUID, targetResources Re
 	currentGuidResources := m.ResourcesByGUID(currentGUID)
 	currentCoresIndex := 0
 	currentRamIndex := 0
+
+	CPUClassIndex := m.cpuClassIndexByValue(currentGuidResources.CPUClass())
+
 ExitLoop:
-	for coresIndex, coresPartition := range m.partitions.cpuPowerPartitions[0].cpuCoresPartitions {
+	for coresIndex, coresPartition := range m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions {
 		if coresPartition.Value == float64(currentGuidResources.CPUs()) {
 			for ramIndex, ramPartition := range coresPartition.ramPartitions {
 				if ramPartition.Value == float64(currentGuidResources.RAM()) {
@@ -178,16 +186,16 @@ ExitLoop:
 	}
 
 	firstHit := true
-	for coresIndex := currentCoresIndex; coresIndex < len(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions); coresIndex++ {
-		for ramIndex := currentRamIndex; ramIndex < len(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].ramPartitions); ramIndex++ {
-			currentCores := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].Value
-			currentRam := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
+	for coresIndex := currentCoresIndex; coresIndex < len(m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions); coresIndex++ {
+		for ramIndex := currentRamIndex; ramIndex < len(m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].ramPartitions); ramIndex++ {
+			currentCores := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].Value
+			currentRam := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
 			if currentCores >= float64(targetResources.CPUs()) && currentRam >= float64(targetResources.RAM()) {
 				if firstHit {
 					firstHit = false
 					continue
 				}
-				return m.resourcesGUIDMap[0][coresIndex][ramIndex].GenerateRandom()
+				return m.resourcesGUIDMap[CPUClassIndex][coresIndex][ramIndex].GenerateRandom()
 			}
 		}
 		currentRamIndex = 0
@@ -203,9 +211,11 @@ ExitLoop:
 func (m *Mapping) LowerRandGUIDOffer(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
 	currentGuidResources := m.ResourcesByGUID(currentGUID)
 
+	CPUClassIndex := m.cpuClassIndexByValue(currentGuidResources.CPUClass())
+
 	currentCoresIndex, currentRamIndex := 0, 0
 ExitLoop:
-	for coresIndex, coresPartition := range m.partitions.cpuPowerPartitions[0].cpuCoresPartitions {
+	for coresIndex, coresPartition := range m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions {
 		if coresPartition.Value == float64(currentGuidResources.CPUs()) {
 			for ramIndex, ramPartition := range coresPartition.ramPartitions {
 				if ramPartition.Value == float64(currentGuidResources.RAM()) {
@@ -220,18 +230,18 @@ ExitLoop:
 	firstHit := true
 	for coresIndex := currentCoresIndex; coresIndex >= 0; coresIndex-- {
 		for ramIndex := currentRamIndex; ramIndex >= 0; ramIndex-- {
-			currentCores := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].Value
-			currentRam := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
+			currentCores := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].Value
+			currentRam := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
 			if currentCores <= float64(targetResources.CPUs()) && currentRam <= float64(targetResources.RAM()) {
 				if firstHit {
 					firstHit = false
 					continue
 				}
-				return m.resourcesGUIDMap[0][coresIndex][ramIndex].GenerateRandom()
+				return m.resourcesGUIDMap[CPUClassIndex][coresIndex][ramIndex].GenerateRandom()
 			}
 		}
 		if coresIndex-1 >= 0 {
-			currentRamIndex = len(m.partitions.cpuPowerPartitions[0].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
+			currentRamIndex = len(m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
 		}
 	}
 
@@ -239,11 +249,11 @@ ExitLoop:
 }
 
 //
-func (m *Mapping) resourcesByIndexes(cpuPowerIndex, cpuCoresIndex, ramIndex int) *Resources {
-	//cpuPower := int(m.partitions.cpuPowerPartitions[cpuPowerIndex].Value)
-	cpuCores := int(m.partitions.cpuPowerPartitions[cpuPowerIndex].cpuCoresPartitions[cpuCoresIndex].Value)
-	ram := int(m.partitions.cpuPowerPartitions[cpuPowerIndex].cpuCoresPartitions[cpuCoresIndex].ramPartitions[ramIndex].Value)
-	return NewResources(cpuCores, ram)
+func (m *Mapping) resourcesByIndexes(cpuClassIndex, cpuCoresIndex, ramIndex int) *Resources {
+	cpuClass := int(m.partitions.cpuClassPartitions[cpuClassIndex].Value)
+	cpuCores := int(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[cpuCoresIndex].Value)
+	ram := int(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[cpuCoresIndex].ramPartitions[ramIndex].Value)
+	return NewResourcesCPUClass(cpuClass, cpuCores, ram)
 }
 
 func (m *Mapping) SamePartitionResourcesSearch(arg1 Resources, arg2 Resources) (bool, error) {
@@ -260,9 +270,11 @@ func (m *Mapping) SamePartitionResourcesSearch(arg1 Resources, arg2 Resources) (
 
 // getFittestResourcesSearch returns the fittest resources combination that contains the resources given..
 func (m *Mapping) getFittestResourcesSearch(resources Resources) (*Resources, error) {
-	fittestRes := NewResources(0, 0)
+	fittestRes := NewResourcesCPUClass(resources.CPUClass(), 0, 0)
 
-	cpuCoresPartitions := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions // Hack: Hardcoded for now!!!
+	CPUClassIndex := m.cpuClassIndexByValue(resources.CPUClass())
+
+	cpuCoresPartitions := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions
 ExitLoop:
 	for _, coresPartition := range cpuCoresPartitions {
 		if resources.CPUs() <= int(coresPartition.Value) {
@@ -283,9 +295,11 @@ ExitLoop:
 
 // getFittestResourcesOffer returns the fittest resources combination that can be responsible by the resources.
 func (m *Mapping) getFittestResourcesOffer(resources Resources) (*Resources, error) {
-	fittestRes := NewResources(0, 0)
+	fittestRes := NewResourcesCPUClass(resources.CPUClass(), 0, 0)
 
-	cpuCoresPartitions := m.partitions.cpuPowerPartitions[0].cpuCoresPartitions // Hack: Hardcoded for now!!!
+	CPUClassIndex := m.cpuClassIndexByValue(resources.CPUClass())
+
+	cpuCoresPartitions := m.partitions.cpuClassPartitions[CPUClassIndex].cpuCoresPartitions
 ExitLoop:
 	for coresIndex := len(cpuCoresPartitions) - 1; coresIndex >= 0; coresIndex-- {
 		if resources.CPUs() >= int(cpuCoresPartitions[coresIndex].Value) {
@@ -303,4 +317,15 @@ ExitLoop:
 		return nil, errors.New("no target resources that can handle available")
 	}
 	return fittestRes, nil
+}
+
+func (m *Mapping) cpuClassIndexByValue(cpuClass int) int {
+	CPUClassIndex := 0
+	for i, cpuClassPartition := range m.partitions.cpuClassPartitions {
+		if int(cpuClassPartition.Value) == cpuClass {
+			CPUClassIndex = i
+			break
+		}
+	}
+	return CPUClassIndex
 }

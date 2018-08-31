@@ -71,7 +71,7 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 
 	// ================== Check for the containers group policy ==================
 
-	coLocateTotalResources := resources.NewResources(0, 0)
+	coLocateTotalResources := resources.NewResourcesCPUClass(types.LowCPUPClass, 0, 0)
 	coLocateContainers := make([]types.ContainerConfig, 0)
 	spreadContainers := make([]types.ContainerConfig, 0)
 
@@ -82,6 +82,7 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 		if contConfig.GroupPolicy == types.CoLocationGroupPolicy {
 			coLocateContainers = append(coLocateContainers, contConfig)
 			coLocateTotalResources.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM))
+			coLocateTotalResources.SetCPUClass(int(contConfig.Resources.CPUClass))
 		} else if contConfig.GroupPolicy == types.SpreadGroupPolicy {
 			spreadContainers = append(spreadContainers, contConfig)
 		}
@@ -98,7 +99,7 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 	// ================ Then launch the containers that can be spread ==============
 
 	for _, contConfig := range spreadContainers {
-		resourcesNecessary := resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM)
+		resourcesNecessary := resources.NewResourcesCPUClass(int(contConfig.Resources.CPUClass), contConfig.Resources.CPUs, contConfig.Resources.RAM)
 
 		containersStatus, err := s.launchContainers(ctx, []types.ContainerConfig{contConfig}, *resourcesNecessary)
 		if err != nil {

@@ -6,10 +6,10 @@ type ResourcesPartition struct {
 }
 
 type ResourcesPartitions struct {
-	CPUPowers []CPUPowerPartition `json:"CPUPowers"`
+	CPUClasses []CPUClassPartition `json:"CPUClasses"`
 }
 
-type CPUPowerPartition struct {
+type CPUClassPartition struct {
 	ResourcesPartition `json:"ResourcesPartition"`
 	CPUCores           []CPUCoresPartition `json:"CPUCoresPartitions"`
 }

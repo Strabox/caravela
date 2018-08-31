@@ -56,8 +56,9 @@ func (s *SystemResourcePartitions) PartitionsState() []types.PartitionState {
 		if partitionState, ok := value.(*ResourcePartitionState); ok {
 			res = append(res, types.PartitionState{
 				PartitionResources: types.Resources{
-					CPUs: partResources.CPUs(),
-					RAM:  partResources.RAM(),
+					CPUClass: types.CPUClass(partResources.CPUClass()),
+					CPUs:     partResources.CPUs(),
+					RAM:      partResources.RAM(),
 				},
 				Hits: partitionState.hits,
 			})
@@ -69,7 +70,8 @@ func (s *SystemResourcePartitions) PartitionsState() []types.PartitionState {
 
 func (s *SystemResourcePartitions) MergePartitionsState(newPartitionsState []types.PartitionState) {
 	for _, newPartitionState := range newPartitionsState {
-		partRes := resources.NewResources(newPartitionState.PartitionResources.CPUs, newPartitionState.PartitionResources.RAM)
+		partRes := resources.NewResourcesCPUClass(int(newPartitionState.PartitionResources.CPUClass),
+			newPartitionState.PartitionResources.CPUs, newPartitionState.PartitionResources.RAM)
 		if partition, exist := s.partitionsState.Load(*partRes); exist {
 			if partitionState, ok := partition.(*ResourcePartitionState); ok {
 				partitionState.Merge(newPartitionState.Hits)
