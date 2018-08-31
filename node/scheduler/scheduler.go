@@ -112,7 +112,6 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 		resContainersStatus = append(resContainersStatus, containersStatus...)
 	}
 
-	log.Infof("SCHEDULER Res: %d", len(resContainersStatus))
 	return resContainersStatus, nil
 }
 
