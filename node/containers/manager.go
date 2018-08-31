@@ -76,8 +76,8 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 
 	obtained := man.supplier.ObtainResources(offer.ID, totalResourcesNecessary)
 	if !obtained {
-		log.Debugf(util.LogTag("CONTAINER")+"Container NOT RUNNING, invalid offer: %v", offer)
-		return nil, fmt.Errorf("can't start container, invalid offer: %v", offer)
+		log.Debugf(util.LogTag("CONTAINER")+"Container NOT RUNNING, invalid offer: %d", offer.ID)
+		return nil, fmt.Errorf("can't start container, invalid offer: %d", offer.ID)
 	}
 
 	// =================== Launch container in the Docker Engine ================

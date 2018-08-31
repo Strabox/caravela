@@ -78,7 +78,7 @@ func (r *Resources) IsNegative() bool {
 
 // Contains returns true if the given resources are contained inside the receiver.
 func (r *Resources) Contains(contained Resources) bool {
-	return r.CPUClass() == contained.CPUClass() && r.cpus >= contained.CPUs() && r.ram >= contained.RAM()
+	return r.CPUClass() >= contained.CPUClass() && r.cpus >= contained.CPUs() && r.ram >= contained.RAM()
 }
 
 // Equals returns true if the given resource combination is equal to the receiver.

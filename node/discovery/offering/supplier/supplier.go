@@ -167,7 +167,7 @@ func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.R
 		removeOffer := func() {
 			s.client.RemoveOffer(
 				context.Background(),
-				&types.Node{IP: s.config.HostIP(), GUID: ""},
+				&types.Node{IP: s.config.HostIP()},
 				&types.Node{IP: supOffer.ResponsibleTraderIP(), GUID: supOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(supOffer.ID())},
 			)
