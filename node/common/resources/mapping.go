@@ -80,14 +80,16 @@ func (m *Mapping) LowerPartitionsOffer(availableResources Resources) ([]Resource
 	currentCPUClassIndex, currentCoresIndex, currentRamIndex := 0, 0, 0
 ExitLoop:
 	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-			if coresPartition.Value == float64(fittestAvailableRes.CPUs()) {
-				for ramIndex, ramPartition := range coresPartition.ramPartitions {
-					if ramPartition.Value == float64(fittestAvailableRes.RAM()) {
-						currentCPUClassIndex = cpuClassIndex
-						currentCoresIndex = coresIndex
-						currentRamIndex = ramIndex
-						break ExitLoop
+		if cpuClassPartition.Value == float64(fittestAvailableRes.CPUClass()) {
+			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
+				if coresPartition.Value == float64(fittestAvailableRes.CPUs()) {
+					for ramIndex, ramPartition := range coresPartition.ramPartitions {
+						if ramPartition.Value == float64(fittestAvailableRes.RAM()) {
+							currentCPUClassIndex = cpuClassIndex
+							currentCoresIndex = coresIndex
+							currentRamIndex = ramIndex
+							break ExitLoop
+						}
 					}
 				}
 			}
@@ -102,17 +104,20 @@ ExitLoop:
 				currentRam := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
 				if currentCPUClass <= float64(fittestAvailableRes.CPUClass()) && currentCores <= float64(fittestAvailableRes.CPUs()) && currentRam <= float64(fittestAvailableRes.RAM()) {
 					resources := NewResources(0, 0)
-					resources.SetCPUClass(fittestAvailableRes.CPUClass())
+					resources.SetCPUClass(int(m.partitions.cpuClassPartitions[cpuClassIndex].Value))
 					resources.SetCPUs(int(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].Value))
 					resources.SetRAM(int(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value))
 					lowerPartitions = append(lowerPartitions, *resources)
 				}
 			}
-			if coresIndex-1 >= 0 {
+			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {
+				tmpCoresIndex := len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions) - 1
+				currentRamIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions[tmpCoresIndex].ramPartitions) - 1
+			} else if (coresIndex - 1) >= 0 {
 				currentRamIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
 			}
 		}
-		if cpuClassIndex-1 >= 0 {
+		if (cpuClassIndex - 1) >= 0 {
 			currentCoresIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions) - 1
 		}
 	}
@@ -258,7 +263,10 @@ ExitLoop:
 					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][ramIndex].GenerateRandom()
 				}
 			}
-			if coresIndex-1 >= 0 {
+			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {
+				tmpCoresIndex := len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions) - 1
+				currentRamIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions[tmpCoresIndex].ramPartitions) - 1
+			} else if (coresIndex - 1) >= 0 {
 				currentRamIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
 			}
 		}

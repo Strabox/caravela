@@ -175,6 +175,15 @@ func TestEqualsTrue_AllEqual(t *testing.T) {
 	assert.Equal(t, true, res, "It should have returned true!")
 }
 
+func TestContainsTrue_HigherCPUClass(t *testing.T) {
+	resources := NewResourcesCPUClass(3, 2, 512)
+	containedResources := NewResourcesCPUClass(2, 2, 512)
+
+	res := resources.Contains(*containedResources)
+
+	assert.True(t, res, "It should have returned true!")
+}
+
 func TestContainsTrue_MoreCPUs(t *testing.T) {
 	resources := NewResourcesCPUClass(2, 3, 512)
 	containedResources := NewResourcesCPUClass(2, 2, 512)
@@ -220,9 +229,9 @@ func TestContainsFalse_RAMGreater(t *testing.T) {
 	assert.Equal(t, false, res, "It should have returned false!")
 }
 
-func TestEqualsFalse_DifferentCPUCLass(t *testing.T) {
+func TestEqualsFalse_LowerCPUCLass(t *testing.T) {
 	resources := NewResourcesCPUClass(1, 2, 256)
-	resources2 := NewResourcesCPUClass(3, 2, 256)
+	resources2 := NewResourcesCPUClass(2, 2, 256)
 
 	res := resources.Equals(*resources2)
 
