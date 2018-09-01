@@ -9,6 +9,7 @@ import (
 	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/discovery/offering"
 	"github.com/strabox/caravela/node/discovery/random"
+	"github.com/strabox/caravela/node/discovery/swarm"
 	"github.com/strabox/caravela/node/external"
 	"strings"
 )
@@ -26,6 +27,7 @@ func init() {
 	RegisterDiscoveryBackend("chord-multiple-offer", offering.NewOfferingDiscovery)
 	RegisterDiscoveryBackend("chord-multiple-offer-updates", offering.NewOfferingDiscovery)
 	RegisterDiscoveryBackend("chord-random", random.NewRandomDiscovery)
+	RegisterDiscoveryBackend("swarm", swarm.NewSwarmResourcesDiscovery)
 }
 
 // RegisterOffersStrategy can be used to register a discovery backend in order to be available.

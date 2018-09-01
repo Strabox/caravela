@@ -21,8 +21,8 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	maxResources resources.Resources
-	nodeGUID     *guid.GUID
+	maximumResources resources.Resources
+	nodeGUID         *guid.GUID
 
 	availableResources *resources.Resources
 	resourcesMutex     sync.Mutex
@@ -36,8 +36,8 @@ func NewRandomDiscovery(config *configuration.Configuration, overlay external.Ov
 		overlay: overlay,
 		client:  client,
 
-		maxResources: maxResources,
-		nodeGUID:     nil,
+		maximumResources: maxResources,
+		nodeGUID:         nil,
 
 		availableResources: maxResources.Copy(),
 		resourcesMutex:     sync.Mutex{},
@@ -175,8 +175,8 @@ func (d *Discovery) AvailableResourcesSim() types.Resources {
 func (d *Discovery) MaximumResourcesSim() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
-		CPUs:     d.maxResources.CPUs(),
-		RAM:      d.maxResources.RAM(),
+		CPUs:     d.maximumResources.CPUs(),
+		RAM:      d.maximumResources.RAM(),
 	}
 }
 

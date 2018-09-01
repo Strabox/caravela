@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-var GlobalState = NewSystemResourcePartitions(13)
+var GlobalState = NewSystemResourcePartitions(12)
 
 type SystemResourcePartitions struct {
 	partitionsState sync.Map

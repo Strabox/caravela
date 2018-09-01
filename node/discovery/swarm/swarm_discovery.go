@@ -2,12 +2,18 @@ package swarm
 
 import (
 	"context"
+	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
+	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/util"
+	"math/rand"
+	"sync"
+	"time"
 )
 
 type Discovery struct {
@@ -17,38 +23,96 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	resourcesMap *resources.Mapping // GUID<->Resources mapping
+	nodeGUID *guid.GUID
+
+	//clusterNodesByIP map[string]*node
+	clusterNodes []*node // Cluster nodes contains all the nodes.
+
+	maximumResources *resources.Resources //
+
+	availableResources *resources.Resources //
+	resourcesMutex     sync.Mutex           //
+}
+
+func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay external.Overlay,
+	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
+
+	return &Discovery{
+		config:   config,
+		overlay:  overlay,
+		client:   client,
+		nodeGUID: nil,
+		//clusterNodesByIP: make(map[string]*node),
+		clusterNodes:       make([]*node, 0),
+		maximumResources:   maxResources.Copy(),
+		availableResources: maxResources.Copy(),
+		resourcesMutex:     sync.Mutex{},
+	}, nil
 }
 
 // ====================== Local Services (Consumed by other Components) ============================
 
-// Adds a new local "virtual" trader when the overlay notifies its presence.
 func (d *Discovery) AddTrader(traderGUID guid.GUID) {
-	// Do Nothing - Not necessary for this backend.
+	d.nodeGUID = guid.NewGUIDBytes(traderGUID.Bytes())
+	log.Debugf(util.LogTag("RandDisc")+"NEW TRADER GUID: %s", traderGUID.Short())
 }
 
+var randomGenerator = rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix())))
+
 func (d *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
-	// Do Nothing - Not necessary for this backend.
-	return nil
+	res := make([]types.AvailableOffer, 0)
+
+	randNodeIndex := randomGenerator.Intn(len(d.clusterNodes) - 1)
+
+	res = append(res, types.AvailableOffer{
+		SupplierIP: d.clusterNodes[randNodeIndex].ip,
+		Offer: types.Offer{
+			Resources: types.Resources{
+				CPUClass: types.CPUClass(d.clusterNodes[randNodeIndex].availableResources.CPUClass()),
+				CPUs:     d.clusterNodes[randNodeIndex].availableResources.CPUs(),
+				RAM:      d.clusterNodes[randNodeIndex].availableResources.RAM(),
+			},
+		},
+	})
+	return res
 }
 
 func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
-	// Do Nothing - Not necessary for this backend.
+	d.resourcesMutex.Lock()
+	defer d.resourcesMutex.Unlock()
+
+	if d.availableResources.Contains(resourcesNecessary) {
+		d.availableResources.Sub(resourcesNecessary)
+		return true
+	}
+
 	return false
 }
 
-func (d *Discovery) ReturnResources(resources resources.Resources) {
-	// Do Nothing - Not necessary for this backend.
+func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
+	d.resourcesMutex.Lock()
+	defer d.resourcesMutex.Unlock()
+
+	d.availableResources.Add(releasedResources)
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================
 
 func (d *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
-	// Do Nothing - Not necessary for this backend.
+	d.resourcesMutex.Lock()
+	defer d.resourcesMutex.Unlock()
+
+	d.clusterNodes = append(
+		d.clusterNodes,
+		&node{
+			availableResources: *resources.NewResourcesCPUClass(int(offer.Resources.CPUClass), offer.Resources.CPUs, offer.Resources.RAM),
+			ip:                 fromSupp.IP,
+		})
 }
 
 func (d *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
 	// Do Nothing - Not necessary for this backend.
+	// TODO: Refresh offers (pinging each node)
 	return false
 }
 
@@ -73,14 +137,23 @@ func (d *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, trader
 
 // Simulation
 func (d *Discovery) AvailableResourcesSim() types.Resources {
-	// Do Nothing - Not necessary for this backend.
-	return types.Resources{} //TODO
+	d.resourcesMutex.Lock()
+	defer d.resourcesMutex.Unlock()
+
+	return types.Resources{
+		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+		CPUs:     d.availableResources.CPUs(),
+		RAM:      d.availableResources.RAM(),
+	}
 }
 
 // Simulation
 func (d *Discovery) MaximumResourcesSim() types.Resources {
-	// Do Nothing - Not necessary for this backend.
-	return types.Resources{} //TODO
+	return types.Resources{
+		CPUClass: types.CPUClass(d.maximumResources.CPUClass()),
+		CPUs:     d.maximumResources.CPUs(),
+		RAM:      d.maximumResources.RAM(),
+	}
 }
 
 // Simulation
@@ -99,7 +172,34 @@ func (d *Discovery) SpreadOffersSim() {
 
 func (d *Discovery) Start() {
 	d.Started(d.config.Simulation(), func() {
-		// Do Nothing
+		d.resourcesMutex.Lock()
+		defer d.resourcesMutex.Unlock()
+
+		nodes, _ := d.overlay.Lookup(
+			context.Background(),
+			guid.NewGUIDInteger(0).Bytes(), // Master's node has GUID 0 (in simulator).
+		)
+
+		masterNode := nodes[0]
+		masterNodeGUIDStr := guid.NewGUIDBytes(masterNode.GUID()).String()
+		d.client.CreateOffer(
+			context.Background(),
+			&types.Node{
+				IP:   d.config.HostIP(),
+				GUID: d.nodeGUID.String(),
+			},
+			&types.Node{
+				IP:   masterNode.IP(),
+				GUID: masterNodeGUIDStr,
+			},
+			&types.Offer{
+				Resources: types.Resources{
+					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+					CPUs:     d.availableResources.CPUs(),
+					RAM:      d.availableResources.RAM(),
+				},
+			},
+		)
 	})
 }
 
