@@ -2,7 +2,6 @@ package swarm
 
 import (
 	"context"
-	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
@@ -54,7 +53,6 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 
 func (d *Discovery) AddTrader(traderGUID guid.GUID) {
 	d.nodeGUID = guid.NewGUIDBytes(traderGUID.Bytes())
-	log.Debugf(util.LogTag("RandDisc")+"NEW TRADER GUID: %s", traderGUID.Short())
 }
 
 var randomGenerator = rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix())))
