@@ -49,6 +49,10 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 	}, nil
 }
 
+func (d *Discovery) IsMaster() bool {
+	return d.nodeGUID.Equals(*guid.NewGUIDInteger(0))
+}
+
 // ====================== Local Services (Consumed by other Components) ============================
 
 func (d *Discovery) AddTrader(traderGUID guid.GUID) {
@@ -170,34 +174,36 @@ func (d *Discovery) SpreadOffersSim() {
 
 func (d *Discovery) Start() {
 	d.Started(d.config.Simulation(), func() {
-		d.resourcesMutex.Lock()
-		defer d.resourcesMutex.Unlock()
+		if !d.IsMaster() {
+			d.resourcesMutex.Lock()
+			defer d.resourcesMutex.Unlock()
 
-		nodes, _ := d.overlay.Lookup(
-			context.Background(),
-			guid.NewGUIDInteger(0).Bytes(), // Master's node has GUID 0 (in simulator).
-		)
+			nodes, _ := d.overlay.Lookup(
+				context.Background(),
+				guid.NewGUIDInteger(0).Bytes(), // Master's node has GUID 0 (in simulator).
+			)
 
-		masterNode := nodes[0]
-		masterNodeGUIDStr := guid.NewGUIDBytes(masterNode.GUID()).String()
-		d.client.CreateOffer(
-			context.Background(),
-			&types.Node{
-				IP:   d.config.HostIP(),
-				GUID: d.nodeGUID.String(),
-			},
-			&types.Node{
-				IP:   masterNode.IP(),
-				GUID: masterNodeGUIDStr,
-			},
-			&types.Offer{
-				Resources: types.Resources{
-					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
-					CPUs:     d.availableResources.CPUs(),
-					RAM:      d.availableResources.RAM(),
+			masterNode := nodes[0]
+			masterNodeGUIDStr := guid.NewGUIDBytes(masterNode.GUID()).String()
+			d.client.CreateOffer(
+				context.Background(),
+				&types.Node{
+					IP:   d.config.HostIP(),
+					GUID: d.nodeGUID.String(),
 				},
-			},
-		)
+				&types.Node{
+					IP:   masterNode.IP(),
+					GUID: masterNodeGUIDStr,
+				},
+				&types.Offer{
+					Resources: types.Resources{
+						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+						CPUs:     d.availableResources.CPUs(),
+						RAM:      d.availableResources.RAM(),
+					},
+				},
+			)
+		}
 	})
 }
 
