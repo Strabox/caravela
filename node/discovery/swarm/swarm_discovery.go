@@ -57,11 +57,14 @@ func (d *Discovery) AddTrader(traderGUID guid.GUID) {
 	d.nodeGUID = guid.NewGUIDBytes(traderGUID.Bytes())
 }
 
-func (d *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
+func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
+	d.resourcesMutex.Lock()
+	defer d.resourcesMutex.Unlock()
+
 	res := make([]types.AvailableOffer, 0)
 
 	for _, clusterNode := range d.clusterNodes {
-		if resources.Contains(clusterNode.availableResources) {
+		if clusterNode.availableResources.Contains(targetResources) {
 			res = append(res, types.AvailableOffer{
 				SupplierIP: clusterNode.ip,
 				Offer: types.Offer{
