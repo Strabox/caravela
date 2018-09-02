@@ -54,14 +54,9 @@ func (d *Discovery) start() {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
-	if !d.IsMasterNode() {
-		nodes, _ := d.overlay.Lookup(
-			context.Background(),
-			guid.NewGUIDInteger(0).Bytes(), // Master's node has GUID 0 (in simulator).
-		)
+	if !d.isMasterNode() {
+		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
 
-		masterNode := nodes[0]
-		masterNodeGUIDStr := guid.NewGUIDBytes(masterNode.GUID()).String()
 		d.client.CreateOffer(
 			context.Background(),
 			&types.Node{
@@ -69,8 +64,8 @@ func (d *Discovery) start() {
 				GUID: d.nodeGUID.String(),
 			},
 			&types.Node{
-				IP:   masterNode.IP(),
-				GUID: masterNodeGUIDStr,
+				IP:   masterNodeIP,
+				GUID: masterNodeGUID,
 			},
 			&types.Offer{
 				Resources: types.Resources{
@@ -89,20 +84,46 @@ func (d *Discovery) start() {
 			})
 	}
 
-	if !d.config.Simulation() && !d.IsMasterNode() {
+	if !d.config.Simulation() && !d.isMasterNode() {
 		go func() {
 			for {
 				select {
 				case <-d.refreshTicker:
-					// TODO: Refresh
+					masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
+
+					d.client.RefreshOffer(
+						context.Background(),
+						&types.Node{
+							IP:   d.config.HostIP(),
+							GUID: d.nodeGUID.String(),
+						},
+						&types.Node{
+							IP:   masterNodeIP,
+							GUID: masterNodeGUID,
+						},
+						&types.Offer{
+						// TODO: Empty ??
+						},
+					)
 				}
 			}
 		}()
 	}
 }
 
-// IsMasterNode ...
-func (d *Discovery) IsMasterNode() bool {
+// getMasterNodeGUID
+func (d *Discovery) getMasterNodeIDs() (string, string) {
+	nodes, _ := d.overlay.Lookup(
+		context.Background(),
+		guid.NewGUIDInteger(0).Bytes(), // Master's node has GUID 0 (in simulator).
+	)
+
+	masterNode := nodes[0]
+	return masterNode.IP(), guid.NewGUIDBytes(masterNode.GUID()).String()
+}
+
+// isMasterNode ...
+func (d *Discovery) isMasterNode() bool {
 	return d.nodeGUID.Equals(*guid.NewGUIDInteger(0))
 }
 
@@ -113,11 +134,15 @@ func (d *Discovery) AddTrader(traderGUID guid.GUID) {
 }
 
 func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	if d.IsMasterNode() {
+	if d.isMasterNode() {
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
-		res := make([]types.AvailableOffer, 0)
+		resultOffers := make([]types.AvailableOffer, 0)
+
+		if !targetResources.IsValid() { // If the resource combination is not valid we will refuse the request.
+			return resultOffers
+		}
 
 		log.Infof("FindOffers TotalNodes: %d", len(d.clusterNodes))
 
@@ -125,7 +150,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 			log.Infof("TryingNode NodesResources: %s, TargetResources: %s", clusterNode.availableResources.String(), targetResources.String())
 			if clusterNode.availableResources.Contains(targetResources) {
 				log.Infof("Offer Found")
-				res = append(res, types.AvailableOffer{
+				resultOffers = append(resultOffers, types.AvailableOffer{
 					SupplierIP: clusterNode.ip,
 					Offer: types.Offer{
 						Resources: types.Resources{
@@ -135,11 +160,11 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 						},
 					},
 				})
-				return res
+				return resultOffers
 			}
 		}
 
-		return res
+		return resultOffers
 	}
 	return nil
 }
@@ -166,7 +191,7 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 // ======================= External Services (Consumed by other Nodes) ==============================
 
 func (d *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
-	if d.IsMasterNode() {
+	if d.isMasterNode() {
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
@@ -182,25 +207,25 @@ func (d *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offe
 
 func (d *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
 	// TODO:
-	return false
+	return true
 }
 
 func (d *Discovery) UpdateOffer(fromSupp, toTrader *types.Node, offer *types.Offer) {
-	if d.IsMasterNode() {
+	if d.isMasterNode() {
 		// TODO: Update
 	}
 }
 
-func (d *Discovery) RemoveOffer(fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
+func (d *Discovery) RemoveOffer(_ *types.Node, _ *types.Node, _ *types.Offer) {
 	// Do Nothing - Not necessary for this backend.
 }
 
-func (d *Discovery) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
+func (d *Discovery) GetOffers(_ context.Context, _, _ *types.Node, _ bool) []types.AvailableOffer {
 	// Do Nothing - Not necessary for this backend.
 	return nil
 }
 
-func (d *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering *types.Node) {
+func (d *Discovery) AdvertiseNeighborOffers(_, _, _ *types.Node) {
 	// Do Nothing - Not necessary for this backend.
 }
 
@@ -229,12 +254,22 @@ func (d *Discovery) MaximumResourcesSim() types.Resources {
 
 // Simulation
 func (d *Discovery) RefreshOffersSim() {
-	if !d.IsMasterNode() {
+	if !d.isMasterNode() {
+		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
+
 		d.client.RefreshOffer(
 			context.Background(),
-			&types.Node{},
-			&types.Node{},
-			&types.Offer{},
+			&types.Node{
+				IP:   d.config.HostIP(),
+				GUID: d.nodeGUID.String(),
+			},
+			&types.Node{
+				IP:   masterNodeIP,
+				GUID: masterNodeGUID,
+			},
+			&types.Offer{
+			// TODO: Empty ??
+			},
 		)
 	}
 }
