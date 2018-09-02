@@ -160,10 +160,6 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 						},
 					},
 				})
-				if len(resultOffers) < 3 {
-					continue
-				}
-				return resultOffers
 			}
 		}
 
