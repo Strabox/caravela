@@ -111,7 +111,7 @@ func (d *Discovery) start() {
 	}
 }
 
-// getMasterNodeGUID
+// getMasterNodeGUID ...
 func (d *Discovery) getMasterNodeIDs() (string, string) {
 	nodes, _ := d.overlay.Lookup(
 		context.Background(),
@@ -160,6 +160,9 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 						},
 					},
 				})
+				if len(resultOffers) < 3 {
+					continue
+				}
 				return resultOffers
 			}
 		}
