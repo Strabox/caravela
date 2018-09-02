@@ -122,8 +122,9 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 		log.Infof("FindOffers TotalNodes: %d", len(d.clusterNodes))
 
 		for _, clusterNode := range d.clusterNodes {
-			log.Infof("TryingNode NodesResources: %s, TargetResources: %s", clusterNode.availableResources, targetResources)
+			log.Infof("TryingNode NodesResources: %s, TargetResources: %s", clusterNode.availableResources.String(), targetResources.String())
 			if clusterNode.availableResources.Contains(targetResources) {
+				log.Infof("Offer Found")
 				res = append(res, types.AvailableOffer{
 					SupplierIP: clusterNode.ip,
 					Offer: types.Offer{
