@@ -47,16 +47,17 @@ type caravela struct {
 	DiscoveryBackend discoveryBackend    `json:"DiscoveryBackend"` // Define what strategy is used to manage the offers
 	APIPort          int                 `json:"APIPort"`          // Port of API REST endpoints
 	APITimeout       duration            `json:"APITimeout"`       // Timeout for API REST requests
-	Resources        ResourcesPartitions `json:"Resources"`
-	CPUSlices        int                 `json:"CPUSlices"`
-	CPUOvercommit    int                 `json:"CPUOvercommit"`
-	RAMOvercommit    int                 `json:"RAMOvercommit"`
+	CPUSlices        int                 `json:"CPUSlices"`        // Number of equal slices for a CPU/Core e.g. 2
+	CPUOvercommit    int                 `json:"CPUOvercommit"`    // CPU overcommit percentage e.g. 140%
+	RAMOvercommit    int                 `json:"RAMOvercommit"`    // RAM overcommit percentage e.g. 120%
+	Resources        ResourcesPartitions `json:"Resources"`        // Resources partitions
+	SchedulingPolicy string              `json:"SchedulingPolicy"` // Scheduling policy used when several nodes are available.
 }
 
 type discoveryBackend struct {
 	Backend            string                 `json:"Backend"`           // Selected discovery backend.
-	SmartChordBackend  smartChordDiscBackend  `json:"SmartChordBackend"` //
-	RandomChordBackend randomChordDiscBackend `json:"SmartChordBackend"` //
+	SmartChordBackend  smartChordDiscBackend  `json:"SmartChordBackend"` // SmartChord discovery backend configs.
+	RandomChordBackend randomChordDiscBackend `json:"SmartChordBackend"` // RandomChord discovery backend configs.
 }
 
 type smartChordDiscBackend struct {
@@ -110,12 +111,13 @@ func Default(hostIP string) *Configuration {
 			DockerAPIVersion: minimumDockerEngineVersion,
 		},
 		Caravela: caravela{
-			Simulation:    false,
-			APIPort:       defaultCaravelaAPIPort,
-			APITimeout:    duration{Duration: 5 * time.Second},
-			CPUSlices:     1,
-			CPUOvercommit: 100,
-			RAMOvercommit: 100,
+			Simulation:       false,
+			APIPort:          defaultCaravelaAPIPort,
+			APITimeout:       duration{Duration: 5 * time.Second},
+			CPUSlices:        1,
+			CPUOvercommit:    100,
+			RAMOvercommit:    100,
+			SchedulingPolicy: "binpack",
 			DiscoveryBackend: discoveryBackend{
 				Backend: "chord-single-offer",
 				SmartChordBackend: smartChordDiscBackend{
@@ -309,6 +311,7 @@ func (c *Configuration) Print() {
 	log.Printf("CPU Slices:                  %d", c.CPUSlices())
 	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
 	log.Printf("RAM Overcommit:              %d", c.RAMOvercommit())
+	log.Printf("Scheduling Policy:           %d", c.SchedulingPolicy())
 	log.Printf("Resources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUClasses {
 		log.Printf("  CPUClass: %d", powerPart.Value)
@@ -387,6 +390,10 @@ func (c *Configuration) CPUOvercommit() int {
 
 func (c *Configuration) RAMOvercommit() int {
 	return c.Caravela.RAMOvercommit
+}
+
+func (c *Configuration) SchedulingPolicy() string {
+	return c.Caravela.SchedulingPolicy
 }
 
 // ========================== Discovery Backend ================================

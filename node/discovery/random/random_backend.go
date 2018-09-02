@@ -21,11 +21,11 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	maximumResources resources.Resources
-	nodeGUID         *guid.GUID
+	maximumResources resources.Resources //
+	nodeGUID         *guid.GUID          //
 
-	availableResources *resources.Resources
-	resourcesMutex     sync.Mutex
+	availableResources *resources.Resources //
+	resourcesMutex     sync.Mutex           //
 }
 
 func NewRandomDiscovery(config *configuration.Configuration, overlay external.Overlay,

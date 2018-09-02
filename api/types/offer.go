@@ -38,7 +38,7 @@ func (ao AvailableOffers) Less(i, j int) bool {
 	return false
 }
 
-// ======================= CPU Power ========================
+// ======================= CPU Class ========================
 
 type CPUClass uint
 
@@ -47,10 +47,10 @@ const (
 	HighCPUClass
 )
 
-var cpuPowers = []string{"low", "high"}
+var cpuClasses = []string{"low", "high"}
 
 func (cp CPUClass) name() string {
-	return cpuPowers[cp]
+	return cpuClasses[cp]
 }
 
 func (cp CPUClass) ordinal() int {
@@ -58,15 +58,15 @@ func (cp CPUClass) ordinal() int {
 }
 
 func (cp CPUClass) String() string {
-	return cpuPowers[cp]
+	return cpuClasses[cp]
 }
 
 func (cp CPUClass) values() *[]string {
-	return &cpuPowers
+	return &cpuClasses
 }
 
 func (cp *CPUClass) ValueOf(arg string) error {
-	for i, name := range cpuPowers {
+	for i, name := range cpuClasses {
 		if name == arg {
 			*cp = CPUClass(i)
 			return nil
