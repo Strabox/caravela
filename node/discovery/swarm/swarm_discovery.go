@@ -2,7 +2,6 @@ package swarm
 
 import (
 	"context"
-	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
@@ -17,18 +16,16 @@ import (
 type Discovery struct {
 	common.NodeComponent // Base component
 
-	config  *configuration.Configuration // System's configurations.
-	overlay external.Overlay             // Overlay component.
-	client  external.Caravela            // Remote caravela's client.
-
+	config   *configuration.Configuration // System's configurations.
+	overlay  external.Overlay             // Overlay component.
+	client   external.Caravela            // Remote caravela's client.
 	nodeGUID *guid.GUID
 
-	clusterNodesByIP map[string]*node
-	clusterNodes     []*node // Cluster nodes contains all the nodes.
+	clusterNodesByGUID map[string]*node
+	clusterNodes       []*node // Cluster nodes contains all the nodes.
 
-	refreshTicker    <-chan time.Time
-	maximumResources *resources.Resources //
-
+	refreshTicker      <-chan time.Time
+	maximumResources   *resources.Resources //
 	availableResources *resources.Resources //
 	resourcesMutex     sync.Mutex           //
 }
@@ -41,7 +38,7 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 		overlay:            overlay,
 		client:             client,
 		nodeGUID:           nil,
-		clusterNodesByIP:   make(map[string]*node),
+		clusterNodesByGUID: make(map[string]*node),
 		clusterNodes:       make([]*node, 0),
 		refreshTicker:      time.NewTicker(config.RefreshesCheckInterval()).C,
 		maximumResources:   maxResources.Copy(),
@@ -144,12 +141,8 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 			return resultOffers
 		}
 
-		log.Infof("FindOffers TotalNodes: %d", len(d.clusterNodes))
-
 		for _, clusterNode := range d.clusterNodes {
-			log.Infof("TryingNode NodesResources: %s, TargetResources: %s", clusterNode.availableResources.String(), targetResources.String())
 			if clusterNode.availableResources.Contains(targetResources) {
-				log.Infof("Offer Found")
 				resultOffers = append(resultOffers, types.AvailableOffer{
 					SupplierIP: clusterNode.ip,
 					Offer: types.Offer{
@@ -165,7 +158,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 
 		return resultOffers
 	}
-	return nil
+	return make([]types.AvailableOffer, 0)
 }
 
 func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
@@ -174,6 +167,27 @@ func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.
 
 	if d.availableResources.Contains(resourcesNecessary) {
 		d.availableResources.Sub(resourcesNecessary)
+
+		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
+		d.client.UpdateOffer( // Update the resources offered in the master.
+			context.Background(),
+			&types.Node{
+				IP:   d.config.HostIP(),
+				GUID: d.nodeGUID.String(),
+			},
+			&types.Node{
+				IP:   masterNodeIP,
+				GUID: masterNodeGUID,
+			},
+			&types.Offer{
+				Resources: types.Resources{
+					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+					CPUs:     d.availableResources.CPUs(),
+					RAM:      d.availableResources.RAM(),
+				},
+			},
+		)
+
 		return true
 	}
 
@@ -185,6 +199,26 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 	defer d.resourcesMutex.Unlock()
 
 	d.availableResources.Add(releasedResources)
+
+	masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
+	d.client.UpdateOffer( // Update the resources offered in the master.
+		context.Background(),
+		&types.Node{
+			IP:   d.config.HostIP(),
+			GUID: d.nodeGUID.String(),
+		},
+		&types.Node{
+			IP:   masterNodeIP,
+			GUID: masterNodeGUID,
+		},
+		&types.Offer{
+			Resources: types.Resources{
+				CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+				CPUs:     d.availableResources.CPUs(),
+				RAM:      d.availableResources.RAM(),
+			},
+		},
+	)
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================
@@ -200,18 +234,23 @@ func (d *Discovery) CreateOffer(fromSupp *types.Node, toTrader *types.Node, offe
 		}
 
 		d.clusterNodes = append(d.clusterNodes, clusterNode)
-		d.clusterNodesByIP[fromSupp.IP] = clusterNode
+		d.clusterNodesByGUID[fromSupp.GUID] = clusterNode
 	}
 }
 
 func (d *Discovery) RefreshOffer(fromTrader *types.Node, offer *types.Offer) bool {
-	// TODO:
 	return true
 }
 
 func (d *Discovery) UpdateOffer(fromSupp, toTrader *types.Node, offer *types.Offer) {
 	if d.isMasterNode() {
-		// TODO: Update
+		d.resourcesMutex.Lock()
+		defer d.resourcesMutex.Unlock()
+
+		if node, exist := d.clusterNodesByGUID[fromSupp.GUID]; exist {
+			nodeUpdatedResources := *resources.NewResourcesCPUClass(int(offer.Resources.CPUClass), offer.Resources.CPUs, offer.Resources.RAM)
+			node.availableResources.SetTo(nodeUpdatedResources)
+		}
 	}
 }
 
