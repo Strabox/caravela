@@ -72,13 +72,6 @@ func (d *Discovery) start() {
 				},
 			},
 		)
-	} else {
-		d.clusterNodes = append(
-			d.clusterNodes,
-			&node{
-				availableResources: *resources.NewResourcesCPUClass(int(d.availableResources.CPUClass()), d.availableResources.CPUs(), d.availableResources.RAM()),
-				ip:                 d.config.HostIP(),
-			})
 	}
 
 	if !d.config.Simulation() && !d.isMasterNode() {
@@ -162,11 +155,46 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 }
 
 func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
-	d.resourcesMutex.Lock()
-	defer d.resourcesMutex.Unlock()
+	if !d.isMasterNode() {
+		d.resourcesMutex.Lock()
+		defer d.resourcesMutex.Unlock()
 
-	if d.availableResources.Contains(resourcesNecessary) {
-		d.availableResources.Sub(resourcesNecessary)
+		if d.availableResources.Contains(resourcesNecessary) {
+			d.availableResources.Sub(resourcesNecessary)
+
+			masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
+			d.client.UpdateOffer( // Update the resources offered in the master.
+				context.Background(),
+				&types.Node{
+					IP:   d.config.HostIP(),
+					GUID: d.nodeGUID.String(),
+				},
+				&types.Node{
+					IP:   masterNodeIP,
+					GUID: masterNodeGUID,
+				},
+				&types.Offer{
+					Resources: types.Resources{
+						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+						CPUs:     d.availableResources.CPUs(),
+						RAM:      d.availableResources.RAM(),
+					},
+				},
+			)
+
+			return true
+		}
+		return false
+	}
+	return false
+}
+
+func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
+	if !d.isMasterNode() {
+		d.resourcesMutex.Lock()
+		defer d.resourcesMutex.Unlock()
+
+		d.availableResources.Add(releasedResources)
 
 		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
 		d.client.UpdateOffer( // Update the resources offered in the master.
@@ -187,38 +215,7 @@ func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.
 				},
 			},
 		)
-
-		return true
 	}
-
-	return false
-}
-
-func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
-	d.resourcesMutex.Lock()
-	defer d.resourcesMutex.Unlock()
-
-	d.availableResources.Add(releasedResources)
-
-	masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
-	d.client.UpdateOffer( // Update the resources offered in the master.
-		context.Background(),
-		&types.Node{
-			IP:   d.config.HostIP(),
-			GUID: d.nodeGUID.String(),
-		},
-		&types.Node{
-			IP:   masterNodeIP,
-			GUID: masterNodeGUID,
-		},
-		&types.Offer{
-			Resources: types.Resources{
-				CPUClass: types.CPUClass(d.availableResources.CPUClass()),
-				CPUs:     d.availableResources.CPUs(),
-				RAM:      d.availableResources.RAM(),
-			},
-		},
-	)
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================
