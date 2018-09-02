@@ -9,10 +9,7 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/external"
-	"github.com/strabox/caravela/util"
-	"math/rand"
 	"sync"
-	"time"
 )
 
 type Discovery struct {
@@ -49,6 +46,7 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 	}, nil
 }
 
+// IsMaster ...
 func (d *Discovery) IsMaster() bool {
 	return d.nodeGUID.Equals(*guid.NewGUIDInteger(0))
 }
@@ -59,23 +57,25 @@ func (d *Discovery) AddTrader(traderGUID guid.GUID) {
 	d.nodeGUID = guid.NewGUIDBytes(traderGUID.Bytes())
 }
 
-var randomGenerator = rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix())))
-
 func (d *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
 	res := make([]types.AvailableOffer, 0)
 
-	randNodeIndex := randomGenerator.Intn(len(d.clusterNodes) - 1)
+	for _, clusterNode := range d.clusterNodes {
+		if resources.Contains(clusterNode.availableResources) {
+			res = append(res, types.AvailableOffer{
+				SupplierIP: clusterNode.ip,
+				Offer: types.Offer{
+					Resources: types.Resources{
+						CPUClass: types.CPUClass(clusterNode.availableResources.CPUClass()),
+						CPUs:     clusterNode.availableResources.CPUs(),
+						RAM:      clusterNode.availableResources.RAM(),
+					},
+				},
+			})
+			return res
+		}
+	}
 
-	res = append(res, types.AvailableOffer{
-		SupplierIP: d.clusterNodes[randNodeIndex].ip,
-		Offer: types.Offer{
-			Resources: types.Resources{
-				CPUClass: types.CPUClass(d.clusterNodes[randNodeIndex].availableResources.CPUClass()),
-				CPUs:     d.clusterNodes[randNodeIndex].availableResources.CPUs(),
-				RAM:      d.clusterNodes[randNodeIndex].availableResources.RAM(),
-			},
-		},
-	})
 	return res
 }
 
@@ -174,10 +174,10 @@ func (d *Discovery) SpreadOffersSim() {
 
 func (d *Discovery) Start() {
 	d.Started(d.config.Simulation(), func() {
-		if !d.IsMaster() {
-			d.resourcesMutex.Lock()
-			defer d.resourcesMutex.Unlock()
+		d.resourcesMutex.Lock()
+		defer d.resourcesMutex.Unlock()
 
+		if !d.IsMaster() {
 			nodes, _ := d.overlay.Lookup(
 				context.Background(),
 				guid.NewGUIDInteger(0).Bytes(), // Master's node has GUID 0 (in simulator).
@@ -203,6 +203,13 @@ func (d *Discovery) Start() {
 					},
 				},
 			)
+		} else {
+			d.clusterNodes = append(
+				d.clusterNodes,
+				&node{
+					availableResources: *resources.NewResourcesCPUClass(int(d.availableResources.CPUClass()), d.availableResources.CPUs(), d.availableResources.RAM()),
+					ip:                 d.config.HostIP(),
+				})
 		}
 	})
 }
