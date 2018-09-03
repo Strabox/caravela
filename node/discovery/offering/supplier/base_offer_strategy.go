@@ -52,7 +52,7 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 		targetResPartition := *b.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: %s", targetResPartition)
 
-		if partitions.GlobalState.Try(targetResPartition) && b.configs.SpreadPartitionsState() {
+		if partitions.GlobalState.Try(targetResPartition) || !b.configs.SpreadPartitionsState() {
 			overlayNodes, _ := b.overlay.Lookup(ctx, destinationGUID.Bytes())
 			overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
@@ -102,7 +102,7 @@ func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetRes
 		targetResPartition := *b.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: %s", targetResPartition)
 
-		if partitions.GlobalState.Try(targetResPartition) && b.configs.SpreadPartitionsState() {
+		if partitions.GlobalState.Try(targetResPartition) || !b.configs.SpreadPartitionsState() {
 			overlayNodes, _ := b.overlay.Lookup(ctx, destinationGUID.Bytes())
 			overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
