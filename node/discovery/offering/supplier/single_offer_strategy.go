@@ -32,7 +32,13 @@ func (s *singleOfferChordStrategy) Init(supp *Supplier, resourcesMap *resources.
 }
 
 func (s *singleOfferChordStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	return s.findOffersLowToHigher(ctx, targetResources)
+	if s.configs.SchedulingPolicy() == "binpack" {
+		return s.findOffersLowToHigher(ctx, targetResources)
+	} else if s.configs.SchedulingPolicy() == "spread" {
+		return s.findOffersHigherToLow(ctx, targetResources)
+	} else {
+		panic("invalid scheduling policy")
+	}
 }
 
 func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResources resources.Resources) {

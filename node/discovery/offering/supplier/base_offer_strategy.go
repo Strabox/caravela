@@ -169,7 +169,7 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 
 	err = b.remoteClient.CreateOffer(
 		context.Background(),
-		&types.Node{IP: b.configs.HostIP(), GUID: ""},
+		&types.Node{IP: b.configs.HostIP()},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{
 			ID:     newOfferID,
