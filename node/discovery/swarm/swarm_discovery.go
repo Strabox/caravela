@@ -17,7 +17,7 @@ import (
 const mastersNodeGUID = 0
 
 // Discovery backend is based on a master-slave cluster architecture (Centralized) that simulates the Docker Swarm.
-// It is implemented on top of a Chord overlay because it suits our prototype framework.
+// It is implemented on top of a Chord overlay because it suits better our prototype framework.
 // It is NOT DESIGNED to be used in REAL DEPLOYMENT, we only use it in Simulation to compare with our discovery backends.
 type Discovery struct {
 	common.NodeComponent // Base component.
@@ -41,6 +41,7 @@ type Discovery struct {
 	resourcesMutex     sync.Mutex           //
 }
 
+// NewSwarmResourcesDiscovery creates a resource discovery backend based on the Docker Swarm.
 func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
@@ -62,6 +63,7 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 	}, nil
 }
 
+// start starts the discovery backend in the node.
 func (d *Discovery) start() {
 	if !d.isMasterNode {
 		d.resourcesMutex.Lock()
@@ -99,7 +101,7 @@ func (d *Discovery) start() {
 						context.Background(),
 						&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 						&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
-						&types.Offer{ /* TODO: Empty ?? */ },
+						&types.Offer{ /* Nothing (only used to simulate real world refreshes in swarm) */ },
 					)
 				}
 			}
@@ -107,13 +109,14 @@ func (d *Discovery) start() {
 	}
 }
 
+// usedResources returns the amount of used resources in this node (if it is not the master).
 func (d *Discovery) usedResources() *resources.Resources {
 	usedResources := d.maximumResources.Copy()
 	usedResources.Sub(*d.availableResources)
 	return usedResources
 }
 
-// getMasterNodeGUID ...
+// getMasterNodeIDs returns the IP and GUID of the master node.
 func (d *Discovery) getMasterNodeIDs() (string, string) {
 	nodes, _ := d.overlay.Lookup(
 		context.Background(),
@@ -145,7 +148,7 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 
 		for _, clusterNode := range d.clusterNodes {
 			// Skip nodes that are smaller than the requested resources.
-			if !clusterNode.availableResources.Contains(targetResources) {
+			if !clusterNode.freeResources.Contains(targetResources) {
 				continue
 			}
 
@@ -153,9 +156,9 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 				SupplierIP: clusterNode.ip(),
 				Offer: types.Offer{
 					FreeResources: types.Resources{
-						CPUClass: types.CPUClass(clusterNode.availableResources.CPUClass()),
-						CPUs:     clusterNode.availableResources.CPUs(),
-						RAM:      clusterNode.availableResources.RAM(),
+						CPUClass: types.CPUClass(clusterNode.freeResources.CPUClass()),
+						CPUs:     clusterNode.freeResources.CPUs(),
+						RAM:      clusterNode.freeResources.RAM(),
 					},
 					UsedResources: types.Resources{
 						CPUClass: types.CPUClass(clusterNode.usedResources.CPUClass()),
@@ -266,7 +269,7 @@ func (d *Discovery) UpdateOffer(fromSupp, _ *types.Node, offer *types.Offer) {
 				nodeFreeUpdatedRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
 				nodeUsedUpdatedRes := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.RAM)
 
-				nodePtr.setAvailableResources(nodeFreeUpdatedRes)
+				nodePtr.setFreeResources(nodeFreeUpdatedRes)
 				nodePtr.setUsedResources(nodeUsedUpdatedRes)
 				nodePtr.setContainerRunning(offer.Amount) // HACK: Careful if we use stack deployments!
 			}
@@ -319,7 +322,7 @@ func (d *Discovery) RefreshOffersSim() {
 			context.Background(),
 			&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 			&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
-			&types.Offer{ /* TODO: Empty ?? */ },
+			&types.Offer{ /* Nothing (only used to simulate real world refreshes in swarm) */ },
 		)
 	}
 }

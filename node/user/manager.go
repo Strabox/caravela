@@ -48,12 +48,12 @@ func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types
 			containerConfigs[i].Resources.RAM = m.minRequestResources.RAM()
 		}
 
-		// Containers with co-location group policy must have the same CPU Class specified.
+		// Containers with co-location group policies must have the same CPU Class specified.
 		if contConfig.GroupPolicy == types.CoLocationGroupPolicy && coLocationPolicy == -1 {
 			coLocationPolicy = int(contConfig.GroupPolicy)
 		} else if contConfig.GroupPolicy == types.CoLocationGroupPolicy &&
 			coLocationPolicy != -1 && int(contConfig.GroupPolicy) != coLocationPolicy {
-			return nil, errors.New("containers with co-location policy must have the same CPU Class constraint")
+			return nil, errors.New("containers with co-location policies must have the same CPU Class constraint")
 		}
 	}
 

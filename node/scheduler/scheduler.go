@@ -68,7 +68,7 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 
 	resContainersStatus := make([]types.ContainerStatus, 0)
 
-	// ================== Check for the containers group policy ==================
+	// ================== Check for the containers group policies ==================
 
 	coLocateTotalResources := resources.NewResourcesCPUClass(int(types.LowCPUPClass), 0, 0)
 	coLocateContainers := make([]types.ContainerConfig, 0)
@@ -125,13 +125,7 @@ func (s *Scheduler) launchContainers(ctx context.Context, containersConfigs []ty
 	}
 
 	offers := s.discovery.FindOffers(ctx, resourcesNecessary)
-	if s.config.SchedulingPolicy() == "spread" {
-		(&SpreadSchedulingPolicy{}).Sort(offers, resourcesNecessary)
-	} else if s.config.SchedulingPolicy() == "binpack" {
-		(&BinPackSchedulingPolicy{}).Sort(offers, resourcesNecessary)
-	} else {
-		panic("invalid scheduling policy")
-	}
+	CreateSchedulePolicy(s.config).Sort(offers, resourcesNecessary) // Sort the offers according with the schedule policy.
 
 	if len(offers) == 0 {
 		log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")

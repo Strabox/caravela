@@ -36,7 +36,7 @@ func (m *multipleOfferStrategy) FindOffers(ctx context.Context, targetResources 
 	} else if m.configs.SchedulingPolicy() == "spread" {
 		return m.findOffersHigherToLow(ctx, targetResources)
 	} else {
-		panic("invalid scheduling policy")
+		panic("invalid scheduling policies")
 	}
 }
 

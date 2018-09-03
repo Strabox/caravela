@@ -110,7 +110,7 @@ func (t *Trader) start() {
 		case <-t.spreadOffersTimer:
 			// Advertise offers (if any) into the neighbors traders.
 			// Necessary only to overcame the problems of unnoticed death of a neighbor.
-			if t.haveOffers() {
+			if t.haveOffers() && t.config.SpreadOffers() {
 				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
 					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
 			}
@@ -145,7 +145,7 @@ func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
 
 		t.offersMutex.Unlock()
 
-		if advertise { // If node had no offers, advertise it has now for all the neighbors
+		if advertise && t.config.SpreadOffers() { // If node had no offers, advertise it has now for all the neighbors
 			if t.config.Simulation() {
 				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
 					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
@@ -169,7 +169,7 @@ func (t *Trader) UpdateOffer(fromSupp *types.Node, offer *types.Offer) {
 
 // Returns all the offers that the trader is managing.
 func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []types.AvailableOffer {
-	if t.haveOffers() || !relay { // Trader has offers so return them immediately or we are not relaying
+	if t.haveOffers() || !relay || !t.config.SpreadOffers() { // Trader has offers so return them immediately or we are not relaying
 		t.offersMutex.Lock()
 		defer t.offersMutex.Unlock()
 
@@ -262,7 +262,7 @@ func (t *Trader) AdvertiseNeighborOffer(fromTrader, traderOffering *types.Node) 
 	}
 
 	// Do not relay the advertise if the node has offers.
-	if !t.haveOffers() {
+	if !t.haveOffers() && t.config.SpreadOffers() {
 		if t.config.Simulation() {
 			t.advertiseOffersToNeighbors(isValidNeighbor, traderOffering)
 		} else {
@@ -354,7 +354,7 @@ func (t *Trader) RefreshOffersSim() {
 func (t *Trader) SpreadOffersSim() {
 	// Advertise offers (if any) into the neighbors traders.
 	// Necessary only to overcame the problems of unnoticed death of a neighbor.
-	if t.haveOffers() {
+	if t.haveOffers() && t.config.SpreadOffers() {
 		t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
 			&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
 	}

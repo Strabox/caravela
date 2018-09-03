@@ -1,14 +1,14 @@
-package scheduler
+package policies
 
 import (
 	"github.com/strabox/caravela/node/common/resources"
-	"sort"
 )
 
-type BinPackSchedulingPolicy struct {
+// BaseSchedulePolicy is the base for the implemented scheduling policies.
+type BaseSchedulePolicy struct {
 }
 
-func (s *BinPackSchedulingPolicy) Sort(availableOffers weightedOffers, necessaryResources resources.Resources) {
+func (b *BaseSchedulePolicy) Rank(availableOffers WeightedOffers, necessaryResources resources.Resources) {
 	for i, offer := range availableOffers {
 		offerResources := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
 		// Skip nodes that don't have sufficient available resources.
@@ -34,5 +34,4 @@ func (s *BinPackSchedulingPolicy) Sort(availableOffers weightedOffers, necessary
 			availableOffers[i].Weight = cpuScore + memoryScore
 		}
 	}
-	sort.Sort(sort.Reverse(availableOffers))
 }

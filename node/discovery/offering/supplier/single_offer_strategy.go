@@ -3,6 +3,7 @@ package supplier
 import (
 	"context"
 	"errors"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
@@ -37,7 +38,7 @@ func (s *singleOfferChordStrategy) FindOffers(ctx context.Context, targetResourc
 	} else if s.configs.SchedulingPolicy() == "spread" {
 		return s.findOffersHigherToLow(ctx, targetResources)
 	} else {
-		panic("invalid scheduling policy")
+		panic(fmt.Errorf("invalid scheduling policy, %s, for this discovery backend, offering", s.configs.SchedulingPolicy()))
 	}
 }
 

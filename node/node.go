@@ -168,42 +168,42 @@ func (n *Node) AddTrader(guidBytes []byte) {
 // =============================== Discovery Component Interface =================================
 
 func (n *Node) CreateOffer(ctx context.Context, fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.CreateOffer(fromNode, toNode, offer)
 }
 
 func (n *Node) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.UpdateOffer(fromSupplier, toTrader, offer)
 }
 
 func (n *Node) RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return n.discoveryComp.RefreshOffer(fromTrader, offer)
 }
 
 func (n *Node) RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
 }
 
 func (n *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return n.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
 }
 
 func (n *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
@@ -213,7 +213,7 @@ func (n *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighb
 
 func (n *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return n.schedulerComp.Launch(ctx, fromBuyer, offer, containersConfigs)
@@ -222,7 +222,7 @@ func (n *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offe
 // ============================== Containers Component Interface ================================
 
 func (n *Node) StopLocalContainer(ctx context.Context, containerID string) error {
-	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil {
+	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
 		partitions.GlobalState.MergePartitionsState(partitionsState)
 	}
 	return n.containersManagerComp.StopContainer(containerID)
@@ -238,7 +238,7 @@ func (n *Node) StopLocalContainer(ctx context.Context, containerID string) error
 // Note: Only available when the node is running in simulation mode.
 func (n *Node) AvailableResourcesSim() types.Resources {
 	if !n.config.Simulation() {
-		panic(errors.New("AvailableResourcesSim request can only be used in simulation mode"))
+		panic(errors.New("AvailableResourcesSim request can only be used in Simulation Mode"))
 	}
 	return n.discoveryComp.AvailableResourcesSim()
 }
@@ -247,7 +247,7 @@ func (n *Node) AvailableResourcesSim() types.Resources {
 // Note: Only available when the node is running in simulation mode.
 func (n *Node) MaximumResourcesSim() types.Resources {
 	if !n.config.Simulation() {
-		panic(errors.New("MaximumResourcesSim request can only be used in simulation mode"))
+		panic(errors.New("MaximumResourcesSim request can only be used in Simulation Mode"))
 	}
 	return n.discoveryComp.MaximumResourcesSim()
 }
@@ -256,7 +256,7 @@ func (n *Node) MaximumResourcesSim() types.Resources {
 // Note: Only available when the node is running in simulation mode.
 func (n *Node) RefreshOffersSim() {
 	if !n.config.Simulation() {
-		panic(errors.New("RefreshOffersSim request can only be used in simulation mode"))
+		panic(errors.New("RefreshOffersSim request can only be used in Simulation Mode"))
 	}
 	n.discoveryComp.RefreshOffersSim()
 }
@@ -265,7 +265,7 @@ func (n *Node) RefreshOffersSim() {
 // Note: Only available when the node is running in simulation mode.
 func (n *Node) SpreadOffersSim() {
 	if !n.config.Simulation() {
-		panic(errors.New("SpreadOffersSim request can only be used in simulation mode"))
+		panic(errors.New("SpreadOffersSim request can only be used in Simulation Mode"))
 	}
 	n.discoveryComp.SpreadOffersSim()
 }

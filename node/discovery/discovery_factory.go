@@ -18,7 +18,7 @@ import (
 type BackendFactory func(config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error)
 
-// manageOffers holds all the registered discovery backends available.
+// discoveryBackends holds all the registered discovery backends available.
 var discoveryBackends = make(map[string]BackendFactory)
 
 // init initializes our predefined offers managers.
@@ -30,7 +30,7 @@ func init() {
 	RegisterDiscoveryBackend("swarm", swarm.NewSwarmResourcesDiscovery)
 }
 
-// RegisterOffersStrategy can be used to register a discovery backend in order to be available.
+// RegisterDiscoveryBackend can be used to register a discovery backend in order to be available.
 func RegisterDiscoveryBackend(discBackendName string, factory BackendFactory) {
 	if factory == nil {
 		log.Panic("nil offers factory registering")

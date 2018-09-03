@@ -18,15 +18,15 @@ import (
 // Client is used to contact the REST API of other nodes.
 type Client struct {
 	httpClient *http.Client
-	config     *configuration.Configuration
+	apiPort    int
 }
 
-func NewClient(config *configuration.Configuration) *Client {
+func NewClient(apiPort int, requestTimeout time.Duration) *Client {
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: config.APITimeout(),
+			Timeout: requestTimeout,
 		},
-		config: config,
+		apiPort: apiPort,
 	}
 }
 
@@ -41,7 +41,7 @@ func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.N
 		Offer:    *offer,
 	}
 
-	url := util.BuildHttpURL(false, toNode.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
+	url := util.BuildHttpURL(false, toNode.IP, client.apiPort, discovery.OfferBaseEndpoint)
 
 	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPost, createOfferMsg, nil)
 	if err != nil {
@@ -61,7 +61,7 @@ func (client *Client) RefreshOffer(ctx context.Context, fromTrader, toSupp *type
 	}
 	var refreshOfferResp util.RefreshOfferResponseMsg
 
-	url := util.BuildHttpURL(false, toSupp.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
+	url := util.BuildHttpURL(false, toSupp.IP, client.apiPort, discovery.OfferBaseEndpoint)
 
 	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPatch, refreshOfferMsg,
 		&refreshOfferResp)
@@ -83,7 +83,7 @@ func (client *Client) UpdateOffer(ctx context.Context, fromSupplier, toTrader *t
 	}
 	var refreshOfferResp util.RefreshOfferResponseMsg
 
-	url := util.BuildHttpURL(false, toTrader.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
+	url := util.BuildHttpURL(false, toTrader.IP, client.apiPort, discovery.OfferBaseEndpoint)
 
 	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPut, updateOfferMsg,
 		&refreshOfferResp)
@@ -104,7 +104,7 @@ func (client *Client) RemoveOffer(ctx context.Context, fromSupp, toTrader *types
 		ToTrader:     *toTrader,
 		Offer:        *offer}
 
-	url := util.BuildHttpURL(false, toTrader.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
+	url := util.BuildHttpURL(false, toTrader.IP, client.apiPort, discovery.OfferBaseEndpoint)
 
 	err, _ := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodDelete, offerRemoveMsg, nil)
 	if err != nil {
@@ -125,7 +125,7 @@ func (client *Client) GetOffers(ctx context.Context, fromNode, toTrader *types.N
 	}
 	var offers []types.AvailableOffer
 
-	url := util.BuildHttpURL(false, toTrader.IP, client.config.APIPort(), discovery.OfferBaseEndpoint)
+	url := util.BuildHttpURL(false, toTrader.IP, client.apiPort, discovery.OfferBaseEndpoint)
 
 	client.httpClient.Timeout = 10 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, getOffersMsg, &offers)
@@ -154,7 +154,7 @@ func (client *Client) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, t
 		NeighborOffering: *traderOffering,
 	}
 
-	url := util.BuildHttpURL(false, toNeighborTrader.IP, client.config.APIPort(), discovery.NeighborOfferBaseEndpoint)
+	url := util.BuildHttpURL(false, toNeighborTrader.IP, client.apiPort, discovery.NeighborOfferBaseEndpoint)
 
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPatch, neighborOfferMsg, nil)
 	if err != nil {
@@ -186,7 +186,7 @@ func (client *Client) LaunchContainer(ctx context.Context, fromBuyer, toSupplier
 
 	var contStatusResp []types.ContainerStatus
 
-	url := util.BuildHttpURL(false, toSupplier.IP, client.config.APIPort(), containers.BaseEndpoint)
+	url := util.BuildHttpURL(false, toSupplier.IP, client.apiPort, containers.BaseEndpoint)
 
 	client.httpClient.Timeout = 600 * time.Second // TODO: Hack to avoid early timeouts -> Run container sequence of calls should be assynchronous
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodPost, launchContainerMsg, &contStatusResp)
@@ -209,7 +209,7 @@ func (client *Client) StopLocalContainer(ctx context.Context, toSupplier *types.
 		ContainerID: containerID,
 	}
 
-	url := util.BuildHttpURL(false, toSupplier.IP, client.config.APIPort(), containers.BaseEndpoint)
+	url := util.BuildHttpURL(false, toSupplier.IP, client.apiPort, containers.BaseEndpoint)
 
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodDelete, stopLocalContainerMsg, nil)
 	if err != nil {
@@ -228,7 +228,7 @@ func (client *Client) ObtainConfiguration(ctx context.Context, systemsNode *type
 	log.Infof("--> OBTAIN CONFIGS To: %s", systemsNode.IP)
 	var systemsNodeConfigsResp configuration.Configuration
 
-	url := util.BuildHttpURL(false, systemsNode.IP, client.config.APIPort(), configREST.BaseEndpoint)
+	url := util.BuildHttpURL(false, systemsNode.IP, client.apiPort, configREST.BaseEndpoint)
 
 	err, httpCode := util.DoHttpRequestJSON(ctx, client.httpClient, url, http.MethodGet, nil, &systemsNodeConfigsResp)
 	if err != nil {
