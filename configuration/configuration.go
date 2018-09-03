@@ -311,7 +311,7 @@ func (c *Configuration) Print() {
 	log.Printf("CPU Slices:                  %d", c.CPUSlices())
 	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
 	log.Printf("RAM Overcommit:              %d", c.RAMOvercommit())
-	log.Printf("Scheduling Policy:           %d", c.SchedulingPolicy())
+	log.Printf("Scheduling Policy:           %s", c.SchedulingPolicy())
 	log.Printf("FreeResources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUClasses {
 		log.Printf("  CPUClass: %d", powerPart.Value)

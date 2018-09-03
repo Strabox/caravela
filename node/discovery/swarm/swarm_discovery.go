@@ -157,6 +157,11 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 						CPUs:     clusterNode.availableResources.CPUs(),
 						RAM:      clusterNode.availableResources.RAM(),
 					},
+					UsedResources: types.Resources{
+						CPUClass: types.CPUClass(clusterNode.usedResources.CPUClass()),
+						CPUs:     clusterNode.usedResources.CPUs(),
+						RAM:      clusterNode.usedResources.RAM(),
+					},
 				},
 			})
 		}
@@ -258,12 +263,12 @@ func (d *Discovery) UpdateOffer(fromSupp, _ *types.Node, offer *types.Offer) {
 	if d.isMasterNode {
 		if nodeStored, exist := d.clusterNodesByGUID.Load(fromSupp.GUID); exist {
 			if nodePtr, ok := nodeStored.(*node); ok {
-				nodeUpdatedResources := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
+				nodeFreeUpdatedRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
+				nodeUsedUpdatedRes := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.RAM)
 
-				nodePtr.mutex.Lock()
-				nodePtr.availableResources.SetTo(nodeUpdatedResources)
+				nodePtr.setAvailableResources(nodeFreeUpdatedRes)
+				nodePtr.setUsedResources(nodeUsedUpdatedRes)
 				nodePtr.setContainerRunning(offer.Amount) // HACK: Careful if we use stack deployments!
-				nodePtr.mutex.Unlock()
 			}
 		}
 	}
