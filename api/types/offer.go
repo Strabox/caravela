@@ -9,33 +9,16 @@ type Resources struct {
 }
 
 type Offer struct {
-	ID        int64     `json:"ID"`
-	Amount    int       `json:"Amount"`
-	Resources Resources `json:"Resources"`
+	ID            int64     `json:"ID"`
+	Amount        int       `json:"Amount"`
+	FreeResources Resources `json:"FreeResources"`
+	UsedResources Resources `json:"UsedResources"`
 }
 
 type AvailableOffer struct {
 	Offer      `json:"Offer"`
 	SupplierIP string `json:"SupplierIP"`
-}
-
-type AvailableOffers []AvailableOffer
-
-func (ao AvailableOffers) Len() int {
-	return len(ao)
-}
-func (ao AvailableOffers) Swap(i, j int) {
-	ao[i], ao[j] = ao[j], ao[i]
-}
-func (ao AvailableOffers) Less(i, j int) bool {
-	if ao[i].Resources.CPUs < ao[j].Resources.CPUs {
-		return true
-	} else if ao[i].Resources.CPUs == ao[j].Resources.CPUs {
-		if ao[i].Resources.RAM <= ao[j].Resources.RAM {
-			return true
-		}
-	}
-	return false
+	Weight     int    `json:"-"` // Used locally only by the scheduler.
 }
 
 // ======================= CPU Class ========================

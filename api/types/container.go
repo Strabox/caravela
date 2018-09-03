@@ -7,7 +7,7 @@ type ContainerConfig struct {
 	ImageKey     string        `json:"ImageKey"`
 	Args         []string      `json:"Args"`
 	PortMappings []PortMapping `json:"PortMappings"`
-	Resources    Resources     `json:"Resources"`
+	Resources    Resources     `json:"FreeResources"`
 	GroupPolicy  GroupPolicy   `json:"GroupPolicy"`
 }
 

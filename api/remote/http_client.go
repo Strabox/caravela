@@ -33,7 +33,7 @@ func NewClient(config *configuration.Configuration) *Client {
 func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.Node, offer *types.Offer) error {
 	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> CREATE OFFER From: %s, ID: %d, Amt: %d, Res: <%d;%d>, To: <%s;%s>",
-		fromNode.IP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM, toNode.IP, toNode.GUID[0:12])
+		fromNode.IP, offer.ID, offer.Amount, offer.FreeResources.CPUs, offer.FreeResources.RAM, toNode.IP, toNode.GUID[0:12])
 
 	createOfferMsg := util.CreateOfferMsg{
 		FromNode: *fromNode,

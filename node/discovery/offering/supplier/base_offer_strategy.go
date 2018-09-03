@@ -38,7 +38,7 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 		var err error = nil
 
 		if findPhase == 0 { // Random trader inside resources zone
-			destinationGUID, err = b.resourcesMapping.RandGUIDSearch(targetResources)
+			destinationGUID, err = b.resourcesMapping.RandGUIDFittestSearch(targetResources)
 			if err != nil { // System can't handle that many resources
 				return availableOffers
 			}
@@ -80,7 +80,57 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 	}
 }
 
-func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, realAvailableRes resources.Resources) (*supplierOffer, error) {
+func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
+	var destinationGUID *guid.GUID = nil
+	findPhase := 0
+	availableOffers := make([]types.AvailableOffer, 0)
+	for {
+		var err error = nil
+
+		if findPhase == 0 { // Random trader inside resources zone
+			destinationGUID, err = b.resourcesMapping.RandGUIDHighestSearch(targetResources)
+			if err != nil { // System can't handle that many resources
+				return availableOffers
+			}
+		} else { // Random trader in higher resources zone
+			destinationGUID, err = b.resourcesMapping.LowerRandGUIDSearch(*destinationGUID, targetResources)
+			if err != nil { // No more resource partitions to search
+				return availableOffers
+			}
+		}
+
+		targetResPartition := *b.resourcesMapping.ResourcesByGUID(*destinationGUID)
+		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: %s", targetResPartition)
+
+		if partitions.GlobalState.Try(targetResPartition) {
+			overlayNodes, _ := b.overlay.Lookup(ctx, destinationGUID.Bytes())
+			overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
+
+			for _, node := range overlayNodes {
+				offers, err := b.remoteClient.GetOffers(
+					ctx,
+					&types.Node{}, //TODO: Remove this crap!
+					&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
+					true)
+				if err == nil && len(offers) != 0 {
+					availableOffers = append(availableOffers, offers...)
+					partitions.GlobalState.Hit(targetResPartition)
+					break
+				} else if err == nil && len(offers) == 0 {
+					partitions.GlobalState.Miss(targetResPartition)
+				}
+			}
+
+			if len(availableOffers) > 0 {
+				return availableOffers
+			}
+		}
+
+		findPhase++
+	}
+}
+
+func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, realAvailableRes, usedResources resources.Resources) (*supplierOffer, error) {
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
 
@@ -124,10 +174,15 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 		&types.Offer{
 			ID:     newOfferID,
 			Amount: 1,
-			Resources: types.Resources{
+			FreeResources: types.Resources{
 				CPUClass: types.CPUClass(realAvailableRes.CPUClass()),
 				CPUs:     realAvailableRes.CPUs(),
 				RAM:      realAvailableRes.RAM(),
+			},
+			UsedResources: types.Resources{
+				CPUClass: types.CPUClass(usedResources.CPUClass()),
+				CPUs:     usedResources.CPUs(),
+				RAM:      usedResources.RAM(),
 			},
 		})
 	if err == nil {

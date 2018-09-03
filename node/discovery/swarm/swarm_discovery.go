@@ -20,7 +20,7 @@ const mastersNodeGUID = 0
 // It is implemented on top of a Chord overlay because it suits our prototype framework.
 // It is NOT DESIGNED to be used in REAL DEPLOYMENT, we only use it in Simulation to compare with our discovery backends.
 type Discovery struct {
-	common.NodeComponent // Base component
+	common.NodeComponent // Base component.
 
 	// Common fields
 	config       *configuration.Configuration // System's configurations.
@@ -68,16 +68,21 @@ func (d *Discovery) start() {
 		defer d.resourcesMutex.Unlock()
 
 		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
-
+		usedResources := d.usedResources()
 		d.client.CreateOffer(
 			context.Background(),
 			&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 			&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
 			&types.Offer{
-				Resources: types.Resources{
+				FreeResources: types.Resources{
 					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 					CPUs:     d.availableResources.CPUs(),
 					RAM:      d.availableResources.RAM(),
+				},
+				UsedResources: types.Resources{
+					CPUClass: types.CPUClass(usedResources.CPUClass()),
+					CPUs:     usedResources.CPUs(),
+					RAM:      usedResources.RAM(),
 				},
 			},
 		)
@@ -100,6 +105,12 @@ func (d *Discovery) start() {
 			}
 		}()
 	}
+}
+
+func (d *Discovery) usedResources() *resources.Resources {
+	usedResources := d.maximumResources.Copy()
+	usedResources.Sub(*d.availableResources)
+	return usedResources
 }
 
 // getMasterNodeGUID ...
@@ -127,7 +138,8 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 
 		resultOffers := make([]types.AvailableOffer, 0)
 
-		if !targetResources.IsValid() { // If the resource combination is not valid we will refuse the request.
+		// If the resource combination is not valid we will refuse the request.
+		if !targetResources.IsValid() {
 			return resultOffers
 		}
 
@@ -140,7 +152,7 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 			resultOffers = append(resultOffers, types.AvailableOffer{
 				SupplierIP: clusterNode.ip(),
 				Offer: types.Offer{
-					Resources: types.Resources{
+					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(clusterNode.availableResources.CPUClass()),
 						CPUs:     clusterNode.availableResources.CPUs(),
 						RAM:      clusterNode.availableResources.RAM(),
@@ -164,16 +176,23 @@ func (d *Discovery) ObtainResources(_ int64, resourcesNecessary resources.Resour
 			d.containersRunning++
 
 			masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
-			d.client.UpdateOffer( // Update the resources offered in the master.
+			usedResources := d.usedResources()
+			// Update the resources offered in the master.
+			d.client.UpdateOffer(
 				context.Background(),
 				&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 				&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
 				&types.Offer{
 					Amount: d.containersRunning,
-					Resources: types.Resources{
+					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 						CPUs:     d.availableResources.CPUs(),
 						RAM:      d.availableResources.RAM(),
+					},
+					UsedResources: types.Resources{
+						CPUClass: types.CPUClass(usedResources.CPUClass()),
+						CPUs:     usedResources.CPUs(),
+						RAM:      usedResources.RAM(),
 					},
 				},
 			)
@@ -193,16 +212,22 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 		d.containersRunning--
 
 		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
+		usedResources := d.usedResources()
 		d.client.UpdateOffer( // Update the resources offered in the master.
 			context.Background(),
 			&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 			&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
 			&types.Offer{
 				Amount: d.containersRunning,
-				Resources: types.Resources{
+				FreeResources: types.Resources{
 					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 					CPUs:     d.availableResources.CPUs(),
 					RAM:      d.availableResources.RAM(),
+				},
+				UsedResources: types.Resources{
+					CPUClass: types.CPUClass(usedResources.CPUClass()),
+					CPUs:     usedResources.CPUs(),
+					RAM:      usedResources.RAM(),
 				},
 			},
 		)
@@ -216,7 +241,9 @@ func (d *Discovery) CreateOffer(fromSupp *types.Node, _ *types.Node, offer *type
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
-		clusterNode := newNode(fromSupp.IP, *resources.NewResourcesCPUClass(int(offer.Resources.CPUClass), offer.Resources.CPUs, offer.Resources.RAM))
+		availableResources := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
+		usedResources := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.RAM)
+		clusterNode := newNode(fromSupp.IP, availableResources, usedResources)
 
 		d.clusterNodes = append(d.clusterNodes, clusterNode)
 		d.clusterNodesByGUID.Store(fromSupp.GUID, clusterNode)
@@ -231,7 +258,7 @@ func (d *Discovery) UpdateOffer(fromSupp, _ *types.Node, offer *types.Offer) {
 	if d.isMasterNode {
 		if nodeStored, exist := d.clusterNodesByGUID.Load(fromSupp.GUID); exist {
 			if nodePtr, ok := nodeStored.(*node); ok {
-				nodeUpdatedResources := *resources.NewResourcesCPUClass(int(offer.Resources.CPUClass), offer.Resources.CPUs, offer.Resources.RAM)
+				nodeUpdatedResources := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
 
 				nodePtr.mutex.Lock()
 				nodePtr.availableResources.SetTo(nodeUpdatedResources)

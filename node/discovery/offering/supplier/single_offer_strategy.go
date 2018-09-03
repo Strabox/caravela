@@ -35,7 +35,7 @@ func (s *singleOfferChordStrategy) FindOffers(ctx context.Context, targetResourc
 	return s.findOffersLowToHigher(ctx, targetResources)
 }
 
-func (s *singleOfferChordStrategy) UpdateOffers(availableResources resources.Resources) {
+func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResources resources.Resources) {
 	activeOffers := s.localSupplier.offers()
 
 	if len(activeOffers) == 1 {
@@ -55,10 +55,15 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources resources.Res
 					&types.Offer{
 						ID:     int64(offer.ID()),
 						Amount: 1,
-						Resources: types.Resources{
+						FreeResources: types.Resources{
 							CPUClass: types.CPUClass(availableResources.CPUClass()),
 							CPUs:     availableResources.CPUs(),
 							RAM:      availableResources.RAM(),
+						},
+						UsedResources: types.Resources{
+							CPUClass: types.CPUClass(usedResources.CPUClass()),
+							CPUs:     usedResources.CPUs(),
+							RAM:      usedResources.RAM(),
 						},
 					})
 			}
@@ -92,7 +97,7 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources resources.Res
 	log.Debugf(util.LogTag("SUPPLIER")+"CREATING offer... Offer: %d, Res: <%d;%d>",
 		int64(newOfferID), availableResources.CPUs(), availableResources.RAM())
 
-	offer, err := s.createAnOffer(int64(newOfferID), availableResources, availableResources)
+	offer, err := s.createAnOffer(int64(newOfferID), availableResources, availableResources, usedResources)
 	if err == nil {
 		s.localSupplier.addOffer(offer)
 	}

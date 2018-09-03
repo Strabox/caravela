@@ -10,7 +10,6 @@ import (
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
-	"sort"
 )
 
 // Scheduler is responsible for receiving local and remote requests for deploying containers
@@ -126,7 +125,13 @@ func (s *Scheduler) launchContainers(ctx context.Context, containersConfigs []ty
 	}
 
 	offers := s.discovery.FindOffers(ctx, resourcesNecessary)
-	sort.Sort(types.AvailableOffers(offers))
+	if s.config.SchedulingPolicy() == "spread" {
+		(&SpreadSchedulingPolicy{}).Sort(offers, resourcesNecessary)
+	} else if s.config.SchedulingPolicy() == "binpack" {
+		(&BinPackSchedulingPolicy{}).Sort(offers, resourcesNecessary)
+	} else {
+		panic("invalid scheduling policy")
+	}
 
 	if len(offers) == 0 {
 		log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")
@@ -135,7 +140,7 @@ func (s *Scheduler) launchContainers(ctx context.Context, containersConfigs []ty
 
 	for offerIndex, offer := range offers {
 		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER [#%d]... SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
-			offerIndex, offer.SupplierIP, offer.ID, offer.Amount, offer.Resources.CPUs, offer.Resources.RAM)
+			offerIndex, offer.SupplierIP, offer.ID, offer.Amount, offer.FreeResources.CPUs, offer.FreeResources.RAM)
 
 		containersStatus, err := s.client.LaunchContainer(
 			ctx,

@@ -2,7 +2,7 @@ package resources
 
 import "fmt"
 
-// Resources represent of the resources that a user can ask for a container to have available.
+// FreeResources represent of the resources that a user can ask for a container to have available.
 type Resources struct {
 	cpuClass int
 	cpus     int

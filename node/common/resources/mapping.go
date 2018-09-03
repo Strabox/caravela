@@ -77,24 +77,7 @@ func (m *Mapping) LowerPartitionsOffer(availableResources Resources) ([]Resource
 		return nil, err
 	}
 
-	currentCPUClassIndex, currentCoresIndex, currentRamIndex := 0, 0, 0
-ExitLoop:
-	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		if cpuClassPartition.Value == float64(fittestAvailableRes.CPUClass()) {
-			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-				if coresPartition.Value == float64(fittestAvailableRes.CPUs()) {
-					for ramIndex, ramPartition := range coresPartition.ramPartitions {
-						if ramPartition.Value == float64(fittestAvailableRes.RAM()) {
-							currentCPUClassIndex = cpuClassIndex
-							currentCoresIndex = coresIndex
-							currentRamIndex = ramIndex
-							break ExitLoop
-						}
-					}
-				}
-			}
-		}
-	}
+	currentCPUClassIndex, currentCoresIndex, currentRamIndex := m.indexesByResources(*fittestAvailableRes)
 
 	for cpuClassIndex := currentCPUClassIndex; cpuClassIndex >= 0; cpuClassIndex-- {
 		for coresIndex := currentCoresIndex; coresIndex >= 0; coresIndex-- {
@@ -124,9 +107,17 @@ ExitLoop:
 	return lowerPartitions, nil
 }
 
-// RandGUIDSearch returns a random GUID in the range of the respective "fittest" target resource combination.
-func (m *Mapping) RandGUIDSearch(targetResources Resources) (*guid.GUID, error) {
+// RandGUIDFittestSearch returns a random GUID in the range of the respective "fittest" target resource combination.
+func (m *Mapping) RandGUIDFittestSearch(targetResources Resources) (*guid.GUID, error) {
 	fittestRes, err := m.getFittestResourcesSearch(targetResources)
+	if err != nil {
+		return nil, err
+	}
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.RAM())].GenerateRandom()
+}
+
+func (m *Mapping) RandGUIDHighestSearch(targetResources Resources) (*guid.GUID, error) {
+	fittestRes, err := m.getHighestResourcesSearch(targetResources)
 	if err != nil {
 		return nil, err
 	}
@@ -180,25 +171,8 @@ func (m *Mapping) LowestResources() *Resources {
 // Lastly it will try the GUIDs that represent the MORE cpus and MORE ram.
 func (m *Mapping) HigherRandGUIDSearch(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
 	currentGuidResources := m.ResourcesByGUID(currentGUID)
-	currentCpuClassIndex, currentCoresIndex, currentRamIndex := 0, 0, 0
 
-ExitLoop:
-	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		if cpuClassPartition.Value == float64(currentGuidResources.CPUClass()) {
-			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-				if coresPartition.Value == float64(currentGuidResources.CPUs()) {
-					for ramIndex, ramPartition := range coresPartition.ramPartitions {
-						if ramPartition.Value == float64(currentGuidResources.RAM()) {
-							currentCpuClassIndex = cpuClassIndex
-							currentCoresIndex = coresIndex
-							currentRamIndex = ramIndex
-							break ExitLoop
-						}
-					}
-				}
-			}
-		}
-	}
+	currentCpuClassIndex, currentCoresIndex, currentRamIndex := m.indexesByResources(*currentGuidResources)
 
 	firstHit := true
 	for cpuClassIndex := currentCpuClassIndex; cpuClassIndex < len(m.partitions.cpuClassPartitions); cpuClassIndex++ {
@@ -223,6 +197,40 @@ ExitLoop:
 	return nil, errors.New("No more resources combinations")
 }
 
+func (m *Mapping) LowerRandGUIDSearch(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
+	currentGuidResources := m.ResourcesByGUID(currentGUID)
+
+	currentCPUClassIndex, currentCoresIndex, currentRamIndex := m.indexesByResources(*currentGuidResources)
+
+	firstHit := true
+	for cpuClassIndex := currentCPUClassIndex; cpuClassIndex >= 0; cpuClassIndex-- {
+		for coresIndex := currentCoresIndex; coresIndex >= 0; coresIndex-- {
+			for ramIndex := currentRamIndex; ramIndex >= 0; ramIndex-- {
+				currentCPUClass := m.partitions.cpuClassPartitions[cpuClassIndex].Value
+				currentCores := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].Value
+				currentRam := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
+				if currentCPUClass >= float64(targetResources.CPUClass()) && currentCores >= float64(targetResources.CPUs()) && currentRam >= float64(targetResources.RAM()) {
+					if firstHit {
+						firstHit = false
+						continue
+					}
+					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][ramIndex].GenerateRandom()
+				}
+			}
+			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {
+				tmpCoresIndex := len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions) - 1
+				currentRamIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions[tmpCoresIndex].ramPartitions) - 1
+			} else if (coresIndex - 1) >= 0 {
+				currentRamIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex-1].ramPartitions) - 1
+			}
+		}
+		if cpuClassIndex-1 >= 0 {
+			currentCoresIndex = len(m.partitions.cpuClassPartitions[cpuClassIndex-1].cpuCoresPartitions) - 1
+		}
+	}
+	return nil, errors.New("No more resources combinations")
+}
+
 // LowerRandGUIDOffer returns a random GUID in the previous range of resources.
 // First it tries the GUIDs that represent the SAME cpus and LESS ram.
 // Second it tries the GUIDs that represent the LESS cpus and SAME ram.
@@ -230,32 +238,16 @@ ExitLoop:
 func (m *Mapping) LowerRandGUIDOffer(currentGUID guid.GUID, targetResources Resources) (*guid.GUID, error) {
 	currentGuidResources := m.ResourcesByGUID(currentGUID)
 
-	currentCPUClassIndex, currentCoresIndex, currentRamIndex := 0, 0, 0
-ExitLoop:
-	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		if cpuClassPartition.Value == float64(currentGuidResources.CPUClass()) {
-			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-				if coresPartition.Value == float64(currentGuidResources.CPUs()) {
-					for ramIndex, ramPartition := range coresPartition.ramPartitions {
-						if ramPartition.Value == float64(currentGuidResources.RAM()) {
-							currentCPUClassIndex = cpuClassIndex
-							currentCoresIndex = coresIndex
-							currentRamIndex = ramIndex
-							break ExitLoop
-						}
-					}
-				}
-			}
-		}
-	}
+	currentCPUClassIndex, currentCoresIndex, currentRamIndex := m.indexesByResources(*currentGuidResources)
 
 	firstHit := true
 	for cpuClassIndex := currentCPUClassIndex; cpuClassIndex >= 0; cpuClassIndex-- {
 		for coresIndex := currentCoresIndex; coresIndex >= 0; coresIndex-- {
 			for ramIndex := currentRamIndex; ramIndex >= 0; ramIndex-- {
+				currentCPUClass := m.partitions.cpuClassPartitions[cpuClassIndex].Value
 				currentCores := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].Value
 				currentRam := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions[coresIndex].ramPartitions[ramIndex].Value
-				if currentCores <= float64(targetResources.CPUs()) && currentRam <= float64(targetResources.RAM()) {
+				if currentCPUClass <= float64(targetResources.CPUClass()) && currentCores <= float64(targetResources.CPUs()) && currentRam <= float64(targetResources.RAM()) {
 					if firstHit {
 						firstHit = false
 						continue
@@ -285,6 +277,28 @@ func (m *Mapping) resourcesByIndexes(cpuClassIndex, cpuCoresIndex, ramIndex int)
 	return NewResourcesCPUClass(cpuClass, cpuCores, ram)
 }
 
+func (m *Mapping) indexesByResources(fittestResources Resources) (int, int, int) {
+	currentCPUClassIndex, currentCoresIndex, currentRamIndex := 0, 0, 0
+ExitLoop:
+	for cpuClassIndex, cpuClassPartition := range m.partitions.cpuClassPartitions {
+		if cpuClassPartition.Value == float64(fittestResources.CPUClass()) {
+			for coresIndex, coresPartition := range cpuClassPartition.cpuCoresPartitions {
+				if coresPartition.Value == float64(fittestResources.CPUs()) {
+					for ramIndex, ramPartition := range coresPartition.ramPartitions {
+						if ramPartition.Value == float64(fittestResources.RAM()) {
+							currentCPUClassIndex = cpuClassIndex
+							currentCoresIndex = coresIndex
+							currentRamIndex = ramIndex
+							break ExitLoop
+						}
+					}
+				}
+			}
+		}
+	}
+	return currentCPUClassIndex, currentCoresIndex, currentRamIndex
+}
+
 func (m *Mapping) SamePartitionResourcesSearch(arg1 Resources, arg2 Resources) (bool, error) {
 	arg1PartitionRes, err := m.getFittestResourcesSearch(arg1)
 	if err != nil {
@@ -298,18 +312,19 @@ func (m *Mapping) SamePartitionResourcesSearch(arg1 Resources, arg2 Resources) (
 }
 
 // getFittestResourcesSearch returns the fittest resources combination that contains the resources given..
-func (m *Mapping) getFittestResourcesSearch(resources Resources) (*Resources, error) {
+// Return the lowest resource section that contains the targetResources.
+func (m *Mapping) getFittestResourcesSearch(targetResources Resources) (*Resources, error) {
 	fittestRes := NewResourcesCPUClass(0, 0, 0)
 
 ExitLoop:
 	for _, cpuClassPartition := range m.partitions.cpuClassPartitions {
-		if resources.CPUClass() <= int(cpuClassPartition.Value) {
-			fittestRes.SetCPUClass(int(cpuClassPartition.Value))
+		if targetResources.CPUClass() <= int(cpuClassPartition.Value) {
 			for _, coresPartition := range cpuClassPartition.cpuCoresPartitions {
-				if resources.CPUs() <= int(coresPartition.Value) {
-					fittestRes.SetCPUs(int(coresPartition.Value))
+				if targetResources.CPUs() <= int(coresPartition.Value) {
 					for _, ramPartition := range coresPartition.ramPartitions {
-						if resources.RAM() <= int(ramPartition.Value) {
+						if targetResources.RAM() <= int(ramPartition.Value) {
+							fittestRes.SetCPUClass(int(cpuClassPartition.Value))
+							fittestRes.SetCPUs(int(coresPartition.Value))
 							fittestRes.SetRAM(int(ramPartition.Value))
 							break ExitLoop
 						}
@@ -320,24 +335,55 @@ ExitLoop:
 	}
 
 	if fittestRes.IsZero() {
-		return nil, errors.New("no target resources available")
+		return nil, errors.New("no target targetResources available")
 	}
 	return fittestRes, nil
 }
 
+// Return the highest resource section that contains the targetResources.
+func (m *Mapping) getHighestResourcesSearch(targetResources Resources) (*Resources, error) {
+	highestRes := NewResourcesCPUClass(0, 0, 0)
+
+ExitLoop:
+	for cpuClassIndex := len(m.partitions.cpuClassPartitions) - 1; cpuClassIndex >= 0; cpuClassIndex-- {
+		if targetResources.CPUClass() <= int(m.partitions.cpuClassPartitions[cpuClassIndex].Value) {
+			cpuCoresPartitions := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions
+			for coresIndex := len(cpuCoresPartitions) - 1; coresIndex >= 0; coresIndex-- {
+				if targetResources.CPUs() <= int(cpuCoresPartitions[coresIndex].Value) {
+					ramPartitions := cpuCoresPartitions[coresIndex].ramPartitions
+					for ramIndex := len(ramPartitions) - 1; ramIndex >= 0; ramIndex-- {
+						if targetResources.RAM() <= int(ramPartitions[ramIndex].Value) {
+							highestRes.SetCPUClass(int(m.partitions.cpuClassPartitions[cpuClassIndex].Value))
+							highestRes.SetCPUs(int(cpuCoresPartitions[coresIndex].Value))
+							highestRes.SetRAM(int(ramPartitions[ramIndex].Value))
+							break ExitLoop
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if highestRes.IsZero() {
+		return nil, errors.New("no target targetResources available")
+	}
+	return highestRes, nil
+}
+
 // getFittestResourcesOffer returns the fittest resources combination that can be responsible by the resources.
-func (m *Mapping) getFittestResourcesOffer(resources Resources) (*Resources, error) {
+// Return the highest resource section that is contained by the offerResources.
+func (m *Mapping) getFittestResourcesOffer(offerResources Resources) (*Resources, error) {
 	fittestRes := NewResourcesCPUClass(0, 0, 0)
 
 ExitLoop:
 	for cpuClassIndex := len(m.partitions.cpuClassPartitions) - 1; cpuClassIndex >= 0; cpuClassIndex-- {
-		if resources.CPUClass() >= int(m.partitions.cpuClassPartitions[cpuClassIndex].Value) {
+		if offerResources.CPUClass() >= int(m.partitions.cpuClassPartitions[cpuClassIndex].Value) {
 			cpuCoresPartitions := m.partitions.cpuClassPartitions[cpuClassIndex].cpuCoresPartitions
 			for coresIndex := len(cpuCoresPartitions) - 1; coresIndex >= 0; coresIndex-- {
-				if resources.CPUs() >= int(cpuCoresPartitions[coresIndex].Value) {
+				if offerResources.CPUs() >= int(cpuCoresPartitions[coresIndex].Value) {
 					ramPartitions := cpuCoresPartitions[coresIndex].ramPartitions
 					for ramIndex := len(ramPartitions) - 1; ramIndex >= 0; ramIndex-- {
-						if resources.RAM() >= int(ramPartitions[ramIndex].Value) {
+						if offerResources.RAM() >= int(ramPartitions[ramIndex].Value) {
 							fittestRes.SetCPUClass(int(m.partitions.cpuClassPartitions[cpuClassIndex].Value))
 							fittestRes.SetCPUs(int(cpuCoresPartitions[coresIndex].Value))
 							fittestRes.SetRAM(int(ramPartitions[ramIndex].Value))
@@ -349,7 +395,7 @@ ExitLoop:
 		}
 	}
 	if fittestRes.IsZero() {
-		return nil, errors.New("no target resources that can handle available")
+		return nil, errors.New("no target offerResources that can handle available")
 	}
 	return fittestRes, nil
 }

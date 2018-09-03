@@ -21,9 +21,8 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	maximumResources resources.Resources //
-	nodeGUID         *guid.GUID          //
-
+	nodeGUID           *guid.GUID           //
+	maximumResources   *resources.Resources //
 	availableResources *resources.Resources //
 	resourcesMutex     sync.Mutex           //
 }
@@ -36,7 +35,7 @@ func NewRandomDiscovery(config *configuration.Configuration, overlay external.Ov
 		overlay: overlay,
 		client:  client,
 
-		maximumResources: maxResources,
+		maximumResources: maxResources.Copy(),
 		nodeGUID:         nil,
 
 		availableResources: maxResources.Copy(),
@@ -76,7 +75,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 			)
 			if err == nil && len(offers) != 0 {
 				for _, offer := range offers {
-					tempRes := resources.NewResourcesCPUClass(int(offer.Resources.CPUClass), offer.Resources.CPUs, offer.Resources.RAM)
+					tempRes := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
 					if tempRes.Contains(targetResources) {
 						resultOffers = append(resultOffers, offer)
 					}
@@ -137,16 +136,23 @@ func (d *Discovery) GetOffers(_ context.Context, _, _ *types.Node, _ bool) []typ
 	defer d.resourcesMutex.Unlock()
 
 	if d.availableResources.IsValid() {
+		usedResources := d.maximumResources.Copy()
+		usedResources.Sub(*d.availableResources)
 		return []types.AvailableOffer{
 			{
 				SupplierIP: d.config.HostIP(),
 				Offer: types.Offer{
 					ID:     0,
 					Amount: 1,
-					Resources: types.Resources{
+					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 						CPUs:     d.availableResources.CPUs(),
 						RAM:      d.availableResources.RAM(),
+					},
+					UsedResources: types.Resources{
+						CPUClass: types.CPUClass(usedResources.CPUClass()),
+						CPUs:     usedResources.CPUs(),
+						RAM:      usedResources.RAM(),
 					},
 				},
 			},

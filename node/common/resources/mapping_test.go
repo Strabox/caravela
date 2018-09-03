@@ -26,7 +26,7 @@ func TestRandGUIDSearch_1(t *testing.T) {
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
-		randGUID, err := resMap.RandGUIDSearch(*NewResourcesCPUClass(0, 1, 256))
+		randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(0, 1, 256))
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
@@ -40,7 +40,7 @@ func TestRandGUIDSearch_2(t *testing.T) {
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
-		randGUID, err := resMap.RandGUIDSearch(*NewResourcesCPUClass(0, 1, 257))
+		randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(0, 1, 257))
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
@@ -54,7 +54,7 @@ func TestRandGUIDSearch_3(t *testing.T) {
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
-		randGUID, err := resMap.RandGUIDSearch(*NewResourcesCPUClass(0, 1, 511))
+		randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(0, 1, 511))
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
@@ -68,7 +68,7 @@ func TestRandGUIDSearch_4(t *testing.T) {
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
-		randGUID, err := resMap.RandGUIDSearch(*NewResourcesCPUClass(0, 1, 750))
+		randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(0, 1, 750))
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
@@ -81,7 +81,7 @@ func TestRandGUIDSearch_5(t *testing.T) {
 	guid.Init(16) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
-	randGUID, err := resMap.RandGUIDSearch(*NewResourcesCPUClass(0, 1, 1512))
+	randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(0, 1, 1512))
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
@@ -93,7 +93,7 @@ func TestRandGUIDSearch_6(t *testing.T) {
 	guid.Init(16) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
-	randGUID, err := resMap.RandGUIDSearch(*NewResourcesCPUClass(1, 2, 1512))
+	randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(1, 2, 1512))
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
@@ -406,7 +406,7 @@ func TestLowerPartitionsOffer_1(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []Resources{*NewResourcesCPUClass(0, 1, 512), *NewResourcesCPUClass(0, 1, 256)}
-	assert.Equal(t, expected, res, "Resources partitions does not match")
+	assert.Equal(t, expected, res, "FreeResources partitions does not match")
 }
 
 func TestLowerPartitionsOffer_2(t *testing.T) {
@@ -417,7 +417,7 @@ func TestLowerPartitionsOffer_2(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []Resources{*NewResourcesCPUClass(0, 1, 512), *NewResourcesCPUClass(0, 1, 256)}
-	assert.Equal(t, expected, res, "Resources partitions does not match")
+	assert.Equal(t, expected, res, "FreeResources partitions does not match")
 }
 
 func TestLowerPartitionsOffer_3(t *testing.T) {
@@ -428,7 +428,7 @@ func TestLowerPartitionsOffer_3(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []Resources{*NewResourcesCPUClass(0, 1, 1024), *NewResourcesCPUClass(0, 1, 512), *NewResourcesCPUClass(0, 1, 256)}
-	assert.Equal(t, expected, res, "Resources partitions does not match")
+	assert.Equal(t, expected, res, "FreeResources partitions does not match")
 }
 
 func TestLowerPartitionsOffer_4(t *testing.T) {
@@ -439,7 +439,7 @@ func TestLowerPartitionsOffer_4(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []Resources{*NewResourcesCPUClass(0, 1, 1024), *NewResourcesCPUClass(0, 1, 512), *NewResourcesCPUClass(0, 1, 256)}
-	assert.Equal(t, expected, res, "Resources partitions does not match")
+	assert.Equal(t, expected, res, "FreeResources partitions does not match")
 }
 
 func TestLowerPartitionsOffer_5(t *testing.T) {
@@ -450,7 +450,7 @@ func TestLowerPartitionsOffer_5(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []Resources{*NewResourcesCPUClass(0, 2, 2048), *NewResourcesCPUClass(0, 1, 1024), *NewResourcesCPUClass(0, 1, 512), *NewResourcesCPUClass(0, 1, 256)}
-	assert.Equal(t, expected, res, "Resources partitions does not match")
+	assert.Equal(t, expected, res, "FreeResources partitions does not match")
 }
 
 func TestLowerPartitionsOffer_6(t *testing.T) {
@@ -469,7 +469,7 @@ func TestLowerPartitionsOffer_6(t *testing.T) {
 		*NewResourcesCPUClass(0, 1, 512),
 		*NewResourcesCPUClass(0, 1, 256)}
 
-	assert.Equal(t, expected, res, "Resources partitions does not match")
+	assert.Equal(t, expected, res, "FreeResources partitions does not match")
 }
 
 var (

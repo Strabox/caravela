@@ -50,7 +50,7 @@ type caravela struct {
 	CPUSlices        int                 `json:"CPUSlices"`        // Number of equal slices for a CPU/Core e.g. 2
 	CPUOvercommit    int                 `json:"CPUOvercommit"`    // CPU overcommit percentage e.g. 140%
 	RAMOvercommit    int                 `json:"RAMOvercommit"`    // RAM overcommit percentage e.g. 120%
-	Resources        ResourcesPartitions `json:"Resources"`        // Resources partitions
+	Resources        ResourcesPartitions `json:"FreeResources"`    // FreeResources partitions
 	SchedulingPolicy string              `json:"SchedulingPolicy"` // Scheduling policy used when several nodes are available.
 }
 
@@ -312,7 +312,7 @@ func (c *Configuration) Print() {
 	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
 	log.Printf("RAM Overcommit:              %d", c.RAMOvercommit())
 	log.Printf("Scheduling Policy:           %d", c.SchedulingPolicy())
-	log.Printf("Resources Partitions:")
+	log.Printf("FreeResources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUClasses {
 		log.Printf("  CPUClass: %d", powerPart.Value)
 		for _, corePart := range powerPart.CPUCores {
@@ -328,7 +328,7 @@ func (c *Configuration) Print() {
 	log.Printf("    Chord-Random:")
 	log.Printf("      Request Retries:             %d", c.RandBackendMaxRetries())
 	log.Printf("    Chord-Offers:")
-	log.Printf("      Supply Resources Interval:   %s", c.SupplyingInterval().String())
+	log.Printf("      Supply FreeResources Interval:   %s", c.SupplyingInterval().String())
 	log.Printf("      Spread Offers Interval:      %s", c.SpreadOffersInterval().String())
 	log.Printf("      Refreshes Check Interval:    %s", c.RefreshesCheckInterval().String())
 	log.Printf("      Refreshes Interval:          %s", c.RefreshingInterval().String())

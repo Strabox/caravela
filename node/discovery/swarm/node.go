@@ -8,15 +8,17 @@ import (
 type node struct {
 	ipAddress          string              //
 	availableResources resources.Resources //
-	containersRunning  int                 //
+	usedResources      resources.Resources
+	containersRunning  int //
 
 	mutex sync.RWMutex //
 }
 
-func newNode(ip string, availableResources resources.Resources) *node {
+func newNode(ip string, availableResources, usedResources resources.Resources) *node {
 	return &node{
 		ipAddress:          ip,
 		availableResources: availableResources,
+		usedResources:      usedResources,
 		containersRunning:  0,
 
 		mutex: sync.RWMutex{},
@@ -37,6 +39,13 @@ func (n *node) setAvailableResources(newAvailableResources resources.Resources) 
 	n.availableResources.SetTo(newAvailableResources)
 }
 
+func (n *node) setUsedResources(newUsedResources resources.Resources) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
+	n.usedResources.SetTo(newUsedResources)
+}
+
 func (n *node) ip() string {
 	return n.ipAddress
 }
@@ -46,6 +55,13 @@ func (n *node) totalAvailableResources() resources.Resources {
 	defer n.mutex.RUnlock()
 
 	return n.availableResources
+}
+
+func (n *node) totalUsedResources() resources.Resources {
+	n.mutex.RLock()
+	defer n.mutex.RUnlock()
+
+	return n.usedResources
 }
 
 func (n *node) totalContainersRunning() int {

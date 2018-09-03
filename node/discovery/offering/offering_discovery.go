@@ -25,7 +25,7 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	resourcesMap *resources.Mapping // GUID<->Resources mapping
+	resourcesMap *resources.Mapping // GUID<->FreeResources mapping
 	supplier     *supplier.Supplier // Supplier for managing the offers locally and remotely
 	traders      sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
 }

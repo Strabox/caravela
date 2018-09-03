@@ -214,7 +214,9 @@ func (s *Supplier) ReturnResources(releasedResources resources.Resources) {
 func (s *Supplier) updateOffers() {
 	s.checkResourcesInvariant() // Runtime resources assertion!!!
 	if s.availableResources.IsValid() {
-		s.offersStrategy.UpdateOffers(*s.availableResources)
+		usedResources := s.maxResources.Copy()
+		usedResources.Sub(*s.availableResources)
+		s.offersStrategy.UpdateOffers(*s.availableResources, *usedResources)
 	}
 }
 
