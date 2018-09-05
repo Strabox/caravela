@@ -56,7 +56,7 @@ already participating in a CARAVELA instance.
 
 #### Run
 
-`caravela run -cpus 2 -ram 256 <image>`
+`caravela run -cpus 2 -memory 256 <image>`
 
 #### Stop
 

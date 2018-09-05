@@ -32,7 +32,7 @@ func createOffer(w http.ResponseWriter, req *http.Request) (interface{}, error) 
 	}
 	log.Infof("<-- CREATE OFFER To: %s, ID: %d, Amt: %d, Res: <%d,%d>, From: %s",
 		createOfferMsg.ToNode.GUID[0:12], createOfferMsg.Offer.ID, createOfferMsg.Offer.Amount,
-		createOfferMsg.Offer.FreeResources.CPUs, createOfferMsg.Offer.FreeResources.RAM, createOfferMsg.FromNode.IP)
+		createOfferMsg.Offer.FreeResources.CPUs, createOfferMsg.Offer.FreeResources.Memory, createOfferMsg.FromNode.IP)
 
 	nodeDiscoveryAPI.CreateOffer(req.Context(), &createOfferMsg.FromNode, &createOfferMsg.ToNode, &createOfferMsg.Offer)
 	return nil, nil

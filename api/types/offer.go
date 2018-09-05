@@ -5,7 +5,7 @@ import "github.com/pkg/errors"
 type Resources struct {
 	CPUClass CPUClass `json:"CPUClass"`
 	CPUs     int      `json:"CPUs"`
-	RAM      int      `json:"RAM"`
+	Memory   int      `json:"Memory"`
 }
 
 type Offer struct {
@@ -26,11 +26,16 @@ type AvailableOffer struct {
 type CPUClass uint
 
 const (
+	LowCPUClassStr  = "low"
+	HighCPUClassStr = "high"
+)
+
+const (
 	LowCPUPClass CPUClass = iota
 	HighCPUClass
 )
 
-var cpuClasses = []string{"low", "high"}
+var cpuClasses = []string{LowCPUClassStr, HighCPUClassStr}
 
 func (cp CPUClass) name() string {
 	return cpuClasses[cp]

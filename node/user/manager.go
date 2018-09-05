@@ -44,8 +44,8 @@ func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types
 			containerConfigs[i].Resources.CPUClass = types.CPUClass(m.minRequestResources.CPUClass())
 		} else if contConfig.Resources.CPUs == 0 {
 			containerConfigs[i].Resources.CPUs = m.minRequestResources.CPUs()
-		} else if contConfig.Resources.RAM == 0 {
-			containerConfigs[i].Resources.RAM = m.minRequestResources.RAM()
+		} else if contConfig.Resources.Memory == 0 {
+			containerConfigs[i].Resources.Memory = m.minRequestResources.Memory()
 		}
 
 		// Containers with co-location group policies must have the same CPU Class specified.
@@ -66,7 +66,7 @@ func (m *Manager) SubmitContainers(ctx context.Context, containerConfigs []types
 	// Update internals.
 	for _, contStatus := range containersStatus {
 		container := newContainer(contStatus.Name, contStatus.ImageKey, contStatus.Args, contStatus.PortMappings,
-			*resources.NewResourcesCPUClass(int(contStatus.Resources.CPUClass), contStatus.Resources.CPUs, contStatus.Resources.RAM), contStatus.ContainerID,
+			*resources.NewResourcesCPUClass(int(contStatus.Resources.CPUClass), contStatus.Resources.CPUs, contStatus.Resources.Memory), contStatus.ContainerID,
 			contStatus.SupplierIP)
 
 		m.containers.Store(container.ShortID(), container)

@@ -100,7 +100,7 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 
 	for i, contConfig := range containersConfigs {
 		containerID := deployedContStatus[i].ContainerID
-		contResources := resources.NewResourcesCPUClass(int(contConfig.Resources.CPUClass), contConfig.Resources.CPUs, contConfig.Resources.RAM)
+		contResources := resources.NewResourcesCPUClass(int(contConfig.Resources.CPUClass), contConfig.Resources.CPUs, contConfig.Resources.Memory)
 		newContainer := newContainer(contConfig.Name, contConfig.ImageKey, contConfig.Args, contConfig.PortMappings,
 			*contResources, containerID, fromBuyer.IP)
 
@@ -116,7 +116,7 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 
 		log.Debugf(util.LogTag("CONTAINER")+"[%d] Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
 			i, containerID[0:12], contConfig.ImageKey, contConfig.Args, contResources.CPUs(),
-			contResources.RAM())
+			contResources.Memory())
 	}
 
 	return deployedContStatus, nil

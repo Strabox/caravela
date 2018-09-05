@@ -55,19 +55,19 @@ func TestCPUPowerPartitions_CPUCoresPartitions(t *testing.T) {
 	cpuPowerPartition.cpuCoresPartitions = []CPUCoresPartition{
 		{
 			ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 		{
 			ResourcePartition: ResourcePartition{Value: 2, Percentage: 20},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 		{
 			ResourcePartition: ResourcePartition{Value: 4, Percentage: 15},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 		{
 			ResourcePartition: ResourcePartition{Value: 8, Percentage: 15},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 	}
 
@@ -83,19 +83,19 @@ func TestCPUPowerPartitions_CPUCoresPercentages(t *testing.T) {
 	cpuPowerPartition.cpuCoresPartitions = []CPUCoresPartition{
 		{
 			ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 		{
 			ResourcePartition: ResourcePartition{Value: 2, Percentage: 20},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 		{
 			ResourcePartition: ResourcePartition{Value: 4, Percentage: 15},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 		{
 			ResourcePartition: ResourcePartition{Value: 8, Percentage: 15},
-			ramPartitions:     nil,
+			memoryPartitions:  nil,
 		},
 	}
 
@@ -105,32 +105,32 @@ func TestCPUPowerPartitions_CPUCoresPercentages(t *testing.T) {
 	assert.Equal(t, expectedPercentages, resPercentages, "")
 }
 
-func TestCPUCoresPartitions_RAMPartitions(t *testing.T) {
+func TestCPUCoresPartitions_MemoryPartitions(t *testing.T) {
 	cpuCoresPartition := CPUCoresPartition{}
-	cpuCoresPartition.ramPartitions = []RAMPartition{
+	cpuCoresPartition.memoryPartitions = []MemoryPartition{
 		{ResourcePartition: ResourcePartition{Value: 1, Percentage: 25}},
 		{ResourcePartition: ResourcePartition{Value: 2, Percentage: 25}},
 		{ResourcePartition: ResourcePartition{Value: 4, Percentage: 25}},
 		{ResourcePartition: ResourcePartition{Value: 8, Percentage: 25}},
 	}
 
-	resPartitions := cpuCoresPartition.RAMPartitions()
+	resPartitions := cpuCoresPartition.MemoryPartitions()
 
 	expectedPartitions := []ResourcePartition{{Value: 1, Percentage: 25}, {Value: 2, Percentage: 25},
 		{Value: 4, Percentage: 25}, {Value: 8, Percentage: 25}}
 	assert.Equal(t, expectedPartitions, resPartitions, "")
 }
 
-func TestCPUCoresPartitions_RAMPercentages(t *testing.T) {
+func TestCPUCoresPartitions_MemoryPercentages(t *testing.T) {
 	cpuCoresPartition := CPUCoresPartition{}
-	cpuCoresPartition.ramPartitions = []RAMPartition{
+	cpuCoresPartition.memoryPartitions = []MemoryPartition{
 		{ResourcePartition: ResourcePartition{Value: 1, Percentage: 25}},
 		{ResourcePartition: ResourcePartition{Value: 2, Percentage: 25}},
 		{ResourcePartition: ResourcePartition{Value: 4, Percentage: 25}},
 		{ResourcePartition: ResourcePartition{Value: 8, Percentage: 25}},
 	}
 
-	resPercentages := cpuCoresPartition.RAMPercentages()
+	resPercentages := cpuCoresPartition.MemoryPercentages()
 
 	expectedPercentages := []int{25, 25, 25, 25}
 	assert.Equal(t, expectedPercentages, resPercentages, "")

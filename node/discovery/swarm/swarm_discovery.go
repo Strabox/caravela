@@ -79,12 +79,12 @@ func (d *Discovery) start() {
 				FreeResources: types.Resources{
 					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 					CPUs:     d.availableResources.CPUs(),
-					RAM:      d.availableResources.RAM(),
+					Memory:   d.availableResources.Memory(),
 				},
 				UsedResources: types.Resources{
 					CPUClass: types.CPUClass(usedResources.CPUClass()),
 					CPUs:     usedResources.CPUs(),
-					RAM:      usedResources.RAM(),
+					Memory:   usedResources.Memory(),
 				},
 			},
 		)
@@ -158,12 +158,12 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(clusterNode.freeResources.CPUClass()),
 						CPUs:     clusterNode.freeResources.CPUs(),
-						RAM:      clusterNode.freeResources.RAM(),
+						Memory:   clusterNode.freeResources.Memory(),
 					},
 					UsedResources: types.Resources{
 						CPUClass: types.CPUClass(clusterNode.usedResources.CPUClass()),
 						CPUs:     clusterNode.usedResources.CPUs(),
-						RAM:      clusterNode.usedResources.RAM(),
+						Memory:   clusterNode.usedResources.Memory(),
 					},
 				},
 			})
@@ -195,12 +195,12 @@ func (d *Discovery) ObtainResources(_ int64, resourcesNecessary resources.Resour
 					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 						CPUs:     d.availableResources.CPUs(),
-						RAM:      d.availableResources.RAM(),
+						Memory:   d.availableResources.Memory(),
 					},
 					UsedResources: types.Resources{
 						CPUClass: types.CPUClass(usedResources.CPUClass()),
 						CPUs:     usedResources.CPUs(),
-						RAM:      usedResources.RAM(),
+						Memory:   usedResources.Memory(),
 					},
 				},
 			)
@@ -230,12 +230,12 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 				FreeResources: types.Resources{
 					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 					CPUs:     d.availableResources.CPUs(),
-					RAM:      d.availableResources.RAM(),
+					Memory:   d.availableResources.Memory(),
 				},
 				UsedResources: types.Resources{
 					CPUClass: types.CPUClass(usedResources.CPUClass()),
 					CPUs:     usedResources.CPUs(),
-					RAM:      usedResources.RAM(),
+					Memory:   usedResources.Memory(),
 				},
 			},
 		)
@@ -249,8 +249,8 @@ func (d *Discovery) CreateOffer(fromSupp *types.Node, _ *types.Node, offer *type
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
-		availableResources := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
-		usedResources := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.RAM)
+		availableResources := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
+		usedResources := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.Memory)
 		clusterNode := newNode(fromSupp.IP, availableResources, usedResources)
 
 		d.clusterNodes = append(d.clusterNodes, clusterNode)
@@ -266,8 +266,8 @@ func (d *Discovery) UpdateOffer(fromSupp, _ *types.Node, offer *types.Offer) {
 	if d.isMasterNode {
 		if nodeStored, exist := d.clusterNodesByGUID.Load(fromSupp.GUID); exist {
 			if nodePtr, ok := nodeStored.(*node); ok {
-				nodeFreeUpdatedRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
-				nodeUsedUpdatedRes := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.RAM)
+				nodeFreeUpdatedRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
+				nodeUsedUpdatedRes := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.Memory)
 
 				nodePtr.setFreeResources(nodeFreeUpdatedRes)
 				nodePtr.setUsedResources(nodeUsedUpdatedRes)
@@ -300,7 +300,7 @@ func (d *Discovery) AvailableResourcesSim() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 		CPUs:     d.availableResources.CPUs(),
-		RAM:      d.availableResources.RAM(),
+		Memory:   d.availableResources.Memory(),
 	}
 }
 
@@ -309,7 +309,7 @@ func (d *Discovery) MaximumResourcesSim() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(d.maximumResources.CPUClass()),
 		CPUs:     d.maximumResources.CPUs(),
-		RAM:      d.maximumResources.RAM(),
+		Memory:   d.maximumResources.Memory(),
 	}
 }
 

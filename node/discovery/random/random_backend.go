@@ -75,7 +75,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 			)
 			if err == nil && len(offers) != 0 {
 				for _, offer := range offers {
-					tempRes := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
+					tempRes := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 					if tempRes.Contains(targetResources) {
 						resultOffers = append(resultOffers, offer)
 					}
@@ -147,12 +147,12 @@ func (d *Discovery) GetOffers(_ context.Context, _, _ *types.Node, _ bool) []typ
 					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 						CPUs:     d.availableResources.CPUs(),
-						RAM:      d.availableResources.RAM(),
+						Memory:   d.availableResources.Memory(),
 					},
 					UsedResources: types.Resources{
 						CPUClass: types.CPUClass(usedResources.CPUClass()),
 						CPUs:     usedResources.CPUs(),
-						RAM:      usedResources.RAM(),
+						Memory:   usedResources.Memory(),
 					},
 				},
 			},
@@ -174,7 +174,7 @@ func (d *Discovery) AvailableResourcesSim() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 		CPUs:     d.availableResources.CPUs(),
-		RAM:      d.availableResources.RAM(),
+		Memory:   d.availableResources.Memory(),
 	}
 }
 
@@ -182,7 +182,7 @@ func (d *Discovery) MaximumResourcesSim() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 		CPUs:     d.maximumResources.CPUs(),
-		RAM:      d.maximumResources.RAM(),
+		Memory:   d.maximumResources.Memory(),
 	}
 }
 

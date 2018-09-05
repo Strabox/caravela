@@ -41,11 +41,11 @@ type Node struct {
 func NewNode(config *configuration.Configuration, overlay external.Overlay, caravelaCli external.Caravela,
 	dockerClient external.DockerClient, apiServer api.Server) *Node {
 
-	cpuClass, maxCPUs, maxRAM := dockerClient.GetDockerEngineTotalResources() // Obtain the maximum resources Docker Engine has available
-	maxCPUs = int((float64(maxCPUs) * float64(config.CPUOvercommit())) / 100) // Apply CPU Overcommit factor
-	maxRAM = int((float64(maxRAM) * float64(config.RAMOvercommit())) / 100)   // Apply RAM Overcommit factor
-	CPUSlices := maxCPUs * config.CPUSlices()                                 // Calculate the CPU slices
-	maxAvailableResources := resources.NewResourcesCPUClass(cpuClass, CPUSlices, maxRAM)
+	cpuClass, maxCPUs, maxMemory := dockerClient.GetDockerEngineTotalResources()     // Obtain the maximum resources Docker Engine has available
+	maxCPUs = int((float64(maxCPUs) * float64(config.CPUOvercommit())) / 100)        // Apply CPU Overcommit factor
+	maxMemory = int((float64(maxMemory) * float64(config.MemoryOvercommit())) / 100) // Apply Memory Overcommit factor
+	CPUSlices := maxCPUs * config.CPUSlices()                                        // Calculate the CPU slices
+	maxAvailableResources := resources.NewResourcesCPUClass(cpuClass, CPUSlices, maxMemory)
 
 	// Create FreeResources Mapping (based on the configurations)
 	resourcesMap := resources.NewResourcesMap(resources.ObtainConfiguredPartitions(config.ResourcesPartitions()))

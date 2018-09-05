@@ -52,8 +52,8 @@ func (s *Scheduler) Launch(ctx context.Context, fromBuyer *types.Node, offer *ty
 	totalResourcesNecessary := resources.NewResources(0, 0)
 	for i, contConfig := range containersConfigs {
 		log.Debugf(util.LogTag("SCHEDULE")+"Launching... [%d] Img: %s, Res: <%d,%d>", i, contConfig.ImageKey,
-			contConfig.Resources.CPUs, contConfig.Resources.RAM)
-		totalResourcesNecessary.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM))
+			contConfig.Resources.CPUs, contConfig.Resources.Memory)
+		totalResourcesNecessary.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.Memory))
 	}
 
 	containerStatus, err := s.containersManager.StartContainer(fromBuyer, offer, containersConfigs, *totalResourcesNecessary)
@@ -76,11 +76,11 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 
 	for i, contConfig := range contConfigs {
 		log.Debugf(util.LogTag("SCHEDULE")+"Deploying [#%d]... Img: %s , Res: <%d;%d>, GrpPolicy: %s", i, contConfig.ImageKey,
-			contConfig.Resources.CPUs, contConfig.Resources.RAM, contConfig.GroupPolicy)
+			contConfig.Resources.CPUs, contConfig.Resources.Memory, contConfig.GroupPolicy)
 
 		if contConfig.GroupPolicy == types.CoLocationGroupPolicy {
 			coLocateContainers = append(coLocateContainers, contConfig)
-			coLocateTotalResources.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.RAM))
+			coLocateTotalResources.Add(*resources.NewResources(contConfig.Resources.CPUs, contConfig.Resources.Memory))
 			coLocateTotalResources.SetCPUClass(int(contConfig.Resources.CPUClass))
 		} else if contConfig.GroupPolicy == types.SpreadGroupPolicy {
 			spreadContainers = append(spreadContainers, contConfig)
@@ -98,7 +98,7 @@ func (s *Scheduler) SubmitContainers(ctx context.Context, contConfigs []types.Co
 	// ================ Then launch the containers that can be spread ==============
 
 	for _, contConfig := range spreadContainers {
-		resourcesNecessary := resources.NewResourcesCPUClass(int(contConfig.Resources.CPUClass), contConfig.Resources.CPUs, contConfig.Resources.RAM)
+		resourcesNecessary := resources.NewResourcesCPUClass(int(contConfig.Resources.CPUClass), contConfig.Resources.CPUs, contConfig.Resources.Memory)
 
 		containersStatus, err := s.launchContainers(ctx, []types.ContainerConfig{contConfig}, *resourcesNecessary)
 		if err != nil {
@@ -134,7 +134,7 @@ func (s *Scheduler) launchContainers(ctx context.Context, containersConfigs []ty
 
 	for offerIndex, offer := range offers {
 		log.Debugf(util.LogTag("SCHEDULE")+"Trying OFFER [#%d]... SuppIP: %s, Offer: %d, Amount %d, Res: <%d;%d>",
-			offerIndex, offer.SupplierIP, offer.ID, offer.Amount, offer.FreeResources.CPUs, offer.FreeResources.RAM)
+			offerIndex, offer.SupplierIP, offer.ID, offer.Amount, offer.FreeResources.CPUs, offer.FreeResources.Memory)
 
 		containersStatus, err := s.client.LaunchContainer(
 			ctx,

@@ -33,7 +33,7 @@ func NewClient(apiPort int, requestTimeout time.Duration) *Client {
 func (client *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.Node, offer *types.Offer) error {
 	ctx = context.WithValue(context.Background(), types.PartitionsStateKey, partitions.GlobalState.PartitionsState())
 	log.Infof("--> CREATE OFFER From: %s, ID: %d, Amt: %d, Res: <%d;%d>, To: <%s;%s>",
-		fromNode.IP, offer.ID, offer.Amount, offer.FreeResources.CPUs, offer.FreeResources.RAM, toNode.IP, toNode.GUID[0:12])
+		fromNode.IP, offer.ID, offer.Amount, offer.FreeResources.CPUs, offer.FreeResources.Memory, toNode.IP, toNode.GUID[0:12])
 
 	createOfferMsg := util.CreateOfferMsg{
 		FromNode: *fromNode,
@@ -175,7 +175,7 @@ func (client *Client) LaunchContainer(ctx context.Context, fromBuyer, toSupplier
 	for i, contConfig := range containersConfigs {
 		log.Infof("--> LAUNCH [%d] From: %s, ID: %d, Img: %s, PortMaps: %v, Args: %v, Res: <%d;%d>, To: %s",
 			i, fromBuyer.IP, offer.ID, contConfig.ImageKey, contConfig.PortMappings, contConfig.Args,
-			contConfig.Resources.CPUs, contConfig.Resources.RAM, toSupplier.IP)
+			contConfig.Resources.CPUs, contConfig.Resources.Memory, toSupplier.IP)
 	}
 
 	launchContainerMsg := util.LaunchContainerMsg{

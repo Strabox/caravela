@@ -80,7 +80,7 @@ func (c *Client) isInit() {
 	}
 }
 
-// Get CPUs and RAM dedicated to Docker engine (Decided by the user in Docker configuration).
+// Get CPUs and Memory dedicated to Docker engine (Decided by the user in Docker configuration).
 func (c *Client) GetDockerEngineTotalResources() (int, int, int) {
 	c.isInit()
 
@@ -92,9 +92,9 @@ func (c *Client) GetDockerEngineTotalResources() (int, int, int) {
 
 	cpuClass := int(caravelaTypes.LowCPUPClass) // TODO: Dehardcode the value. Try calculate it based on CPU info or a benchmark IDK.
 	cpuCores := info.NCPU
-	ram := info.MemTotal / 1000000 // Return in MB (MegaBytes)
+	memory := info.MemTotal / 1000000 // Return in MB (MegaBytes)
 
-	return cpuClass, cpuCores, int(ram)
+	return cpuClass, cpuCores, int(memory)
 }
 
 // CheckContainerStatus checks the container status (running, stopped, etc)
@@ -148,7 +148,7 @@ func (c *Client) RunContainer(contConfig caravelaTypes.ContainerConfig) (*carave
 			Resources: container.Resources{
 				CPUPeriod: 100000,
 				CPUQuota:  int64(float64(100000) * (float64(contConfig.Resources.CPUs) / float64(c.configs.CPUSlices()))), // CPU maximum quota for the container using the Linux CFS scheduler.
-				Memory:    int64(contConfig.Resources.RAM) * 1000000,                                                      // Maximum memory available to the container.
+				Memory:    int64(contConfig.Resources.Memory) * 1000000,                                                   // Maximum memory available to the container.
 			},
 			PortBindings: hostPortMap, // Port mappings between container's port and host's port
 		}, nil, contConfig.Name)
@@ -165,7 +165,7 @@ func (c *Client) RunContainer(contConfig caravelaTypes.ContainerConfig) (*carave
 	}
 
 	log.Infof(util.LogTag("DOCKER")+"Container RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
-		contConfig.ImageKey, contConfig.Args, contConfig.Resources.CPUs, contConfig.Resources.RAM)
+		contConfig.ImageKey, contConfig.Args, contConfig.Resources.CPUs, contConfig.Resources.Memory)
 
 	// Update the container's information with Docker's engine generated information, e.g. random name, random port etc
 	contDockerInfo, _ := c.docker.ContainerInspect(context.Background(), resp.ID)

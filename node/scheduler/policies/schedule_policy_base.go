@@ -10,7 +10,7 @@ type BaseSchedulePolicy struct {
 
 func (b *BaseSchedulePolicy) Rank(availableOffers WeightedOffers, necessaryResources resources.Resources) {
 	for i, offer := range availableOffers {
-		offerResources := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
+		offerResources := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 		// Skip nodes that don't have sufficient available resources.
 		if !offerResources.Contains(necessaryResources) {
 			continue
@@ -18,7 +18,7 @@ func (b *BaseSchedulePolicy) Rank(availableOffers WeightedOffers, necessaryResou
 
 		var (
 			nodeCpus    = offer.UsedResources.CPUs + offer.FreeResources.CPUs
-			nodeMemory  = offer.UsedResources.RAM + offer.FreeResources.RAM
+			nodeMemory  = offer.UsedResources.Memory + offer.FreeResources.Memory
 			cpuScore    = 100
 			memoryScore = 100
 		)
@@ -26,8 +26,8 @@ func (b *BaseSchedulePolicy) Rank(availableOffers WeightedOffers, necessaryResou
 		if necessaryResources.CPUs() > 0 {
 			cpuScore = (offer.UsedResources.CPUs + necessaryResources.CPUs()) * 100 / nodeCpus
 		}
-		if necessaryResources.RAM() > 0 {
-			memoryScore = (offer.UsedResources.RAM + necessaryResources.RAM()) * 100 / nodeMemory
+		if necessaryResources.Memory() > 0 {
+			memoryScore = (offer.UsedResources.Memory + necessaryResources.Memory()) * 100 / nodeMemory
 		}
 
 		if cpuScore <= 100 && memoryScore <= 100 {

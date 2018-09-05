@@ -503,7 +503,7 @@ var (
 				cpuCoresPartitions: []CPUCoresPartition{
 					{
 						ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
-						ramPartitions: []RAMPartition{
+						memoryPartitions: []MemoryPartition{
 							{ResourcePartition: ResourcePartition{Value: 256, Percentage: 50}},
 							{ResourcePartition: ResourcePartition{Value: 512, Percentage: 25}},
 							{ResourcePartition: ResourcePartition{Value: 1024, Percentage: 25}},
@@ -511,7 +511,7 @@ var (
 					},
 					{
 						ResourcePartition: ResourcePartition{Value: 2, Percentage: 50},
-						ramPartitions: []RAMPartition{
+						memoryPartitions: []MemoryPartition{
 							{ResourcePartition: ResourcePartition{Value: 2048, Percentage: 100}},
 						},
 					},
@@ -522,14 +522,14 @@ var (
 				cpuCoresPartitions: []CPUCoresPartition{
 					{
 						ResourcePartition: ResourcePartition{Value: 1, Percentage: 50},
-						ramPartitions: []RAMPartition{
+						memoryPartitions: []MemoryPartition{
 							{ResourcePartition: ResourcePartition{Value: 1048, Percentage: 50}},
 							{ResourcePartition: ResourcePartition{Value: 2048, Percentage: 50}},
 						},
 					},
 					{
 						ResourcePartition: ResourcePartition{Value: 2, Percentage: 50},
-						ramPartitions: []RAMPartition{
+						memoryPartitions: []MemoryPartition{
 							{ResourcePartition: ResourcePartition{Value: 2048, Percentage: 50}},
 							{ResourcePartition: ResourcePartition{Value: 4048, Percentage: 50}},
 						},

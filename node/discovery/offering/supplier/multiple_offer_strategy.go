@@ -95,12 +95,12 @@ OfferLoop:
 							FreeResources: types.Resources{
 								CPUClass: types.CPUClass(availableResources.CPUClass()),
 								CPUs:     availableResources.CPUs(),
-								RAM:      availableResources.RAM(),
+								Memory:   availableResources.Memory(),
 							},
 							UsedResources: types.Resources{
 								CPUClass: types.CPUClass(usedResources.CPUClass()),
 								CPUs:     usedResources.CPUs(),
-								RAM:      usedResources.RAM(),
+								Memory:   usedResources.Memory(),
 							},
 						})
 				}

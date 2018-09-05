@@ -29,11 +29,16 @@ type PortMapping struct {
 type GroupPolicy uint
 
 const (
+	SpreadGroupPolicyStr     = "spread"
+	CoLocationGroupPolicyStr = "co-location"
+)
+
+const (
 	SpreadGroupPolicy GroupPolicy = iota
 	CoLocationGroupPolicy
 )
 
-var containerGroupPolicies = []string{"spread", "co-location"}
+var containerGroupPolicies = []string{SpreadGroupPolicyStr, CoLocationGroupPolicyStr}
 
 func (gp GroupPolicy) name() string {
 	return containerGroupPolicies[gp]

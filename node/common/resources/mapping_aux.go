@@ -49,25 +49,25 @@ func (c *CPUClassPartition) CPUCoresPercentages() []int {
 
 type CPUCoresPartition struct {
 	ResourcePartition
-	ramPartitions []RAMPartition
+	memoryPartitions []MemoryPartition
 }
 
-func (c *CPUCoresPartition) RAMPartitions() []ResourcePartition {
+func (c *CPUCoresPartition) MemoryPartitions() []ResourcePartition {
 	res := make([]ResourcePartition, 0)
-	for _, partition := range c.ramPartitions {
+	for _, partition := range c.memoryPartitions {
 		res = append(res, partition.ResourcePartition)
 	}
 	return res
 }
 
-func (c *CPUCoresPartition) RAMPercentages() []int {
+func (c *CPUCoresPartition) MemoryPercentages() []int {
 	res := make([]int, 0)
-	for _, partition := range c.ramPartitions {
+	for _, partition := range c.memoryPartitions {
 		res = append(res, partition.ResourcePartition.Percentage)
 	}
 	return res
 }
 
-type RAMPartition struct {
+type MemoryPartition struct {
 	ResourcePartition
 }

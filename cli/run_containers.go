@@ -61,7 +61,7 @@ func runContainers(c *cli.Context) {
 				Resources: types.Resources{
 					CPUClass: cpuClass,
 					CPUs:     service.CPUs,
-					RAM:      service.RAM,
+					Memory:   service.Memory,
 				},
 				GroupPolicy: groupPolicy,
 			}
@@ -83,7 +83,7 @@ func runContainers(c *cli.Context) {
 		}
 
 		var cpuClass types.CPUClass
-		err = cpuClass.ValueOf(c.String("cp"))
+		err = cpuClass.ValueOf(c.String("cpuClass"))
 		if err != nil {
 			fatalPrintln(err)
 		}
@@ -97,7 +97,7 @@ func runContainers(c *cli.Context) {
 			Resources: types.Resources{
 				CPUClass: cpuClass,
 				CPUs:     int(c.Uint("cpus")),
-				RAM:      int(c.Uint("ram")),
+				Memory:   int(c.Uint("memory")),
 			},
 		}
 	}
@@ -173,7 +173,7 @@ type containerRequest struct {
 	PortMappings []string `yaml:"ports"`
 	CPUPower     string   `yaml:"cpu_power"`
 	CPUs         int      `yaml:"cpus"`
-	RAM          int      `yaml:"ram"`
+	Memory       int      `yaml:"memory"`
 	GroupPolicy  string   `yaml:"group_policy"`
 }
 
@@ -182,9 +182,9 @@ func (s *containerRequest) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	defaultValues := rawContainerRequest{
 		Args:         defaultContainerArgs,
 		PortMappings: defaultPortMappingsArgs,
-		CPUPower:     defaultCPUPower,
+		CPUPower:     defaultCPUClass,
 		CPUs:         defaultCPUs,
-		RAM:          defaultRAM,
+		Memory:       defaultMemory,
 		GroupPolicy:  defaultContainerGroupPolicy,
 	} // Default values for a container configuration
 	if err := unmarshal(&defaultValues); err != nil {

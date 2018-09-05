@@ -49,7 +49,7 @@ type caravela struct {
 	APITimeout       duration            `json:"APITimeout"`       // Timeout for API REST requests
 	CPUSlices        int                 `json:"CPUSlices"`        // Number of equal slices for a CPU/Core e.g. 2
 	CPUOvercommit    int                 `json:"CPUOvercommit"`    // CPU overcommit percentage e.g. 140%
-	RAMOvercommit    int                 `json:"RAMOvercommit"`    // RAM overcommit percentage e.g. 120%
+	MemoryOvercommit int                 `json:"MemoryOvercommit"` // Memory overcommit percentage e.g. 120%
 	Resources        ResourcesPartitions `json:"FreeResources"`    // FreeResources partitions
 	SchedulingPolicy string              `json:"SchedulingPolicy"` // Scheduling policies used when several nodes are available.
 }
@@ -119,7 +119,7 @@ func Default(hostIP string) *Configuration {
 			APITimeout:       duration{Duration: 5 * time.Second},
 			CPUSlices:        1,
 			CPUOvercommit:    100,
-			RAMOvercommit:    100,
+			MemoryOvercommit: 100,
 			SchedulingPolicy: "binpack",
 			DiscoveryBackend: discoveryBackend{
 				Backend: "chord-single-offer",
@@ -146,7 +146,7 @@ func Default(hostIP string) *Configuration {
 						CPUCores: []CPUCoresPartition{
 							{
 								ResourcesPartition: ResourcesPartition{Value: 1, Percentage: 50},
-								RAMs: []RAMPartition{
+								Memory: []MemoryPartition{
 									{ResourcesPartition: ResourcesPartition{Value: 256, Percentage: 25}},
 									{ResourcesPartition: ResourcesPartition{Value: 512, Percentage: 50}},
 									{ResourcesPartition: ResourcesPartition{Value: 1024, Percentage: 25}},
@@ -154,7 +154,7 @@ func Default(hostIP string) *Configuration {
 							},
 							{
 								ResourcesPartition: ResourcesPartition{Value: 2, Percentage: 50},
-								RAMs: []RAMPartition{
+								Memory: []MemoryPartition{
 									{ResourcesPartition: ResourcesPartition{Value: 512, Percentage: 25}},
 									{ResourcesPartition: ResourcesPartition{Value: 1024, Percentage: 50}},
 									{ResourcesPartition: ResourcesPartition{Value: 2048, Percentage: 25}},
@@ -235,8 +235,8 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("CPUOvercommit: %d, CPU overcommit percentage must be >= 100", c.CPUOvercommit())
 	}
 
-	if c.RAMOvercommit() < 100 {
-		return fmt.Errorf("RAMOvercommit: %d, RAM overcommit percentage must be >= 100", c.RAMOvercommit())
+	if c.MemoryOvercommit() < 100 {
+		return fmt.Errorf("MemoryOvercommit: %d, Memory overcommit percentage must be >= 100", c.MemoryOvercommit())
 	}
 
 	powerPercentageAcc := 0
@@ -245,12 +245,12 @@ func (c *Configuration) validate() error {
 		currCoresPercentageAcc := 0
 		for _, corePart := range powerPart.CPUCores {
 			currCoresPercentageAcc += corePart.Percentage
-			currRamPercentageAcc := 0
-			for _, ramPart := range corePart.RAMs {
-				currRamPercentageAcc += ramPart.Percentage
+			currMemoryPercentageAcc := 0
+			for _, memoryPart := range corePart.Memory {
+				currMemoryPercentageAcc += memoryPart.Percentage
 			}
-			if currRamPercentageAcc != 100 {
-				return fmt.Errorf("ram partitions of <Power: %d, Cores: %d> percentages must sum 100", powerPart.Value, corePart.Value)
+			if currMemoryPercentageAcc != 100 {
+				return fmt.Errorf("memory partitions of <Power: %d, Cores: %d> percentages must sum 100", powerPart.Value, corePart.Value)
 			}
 		}
 		if currCoresPercentageAcc != 100 {
@@ -316,15 +316,15 @@ func (c *Configuration) Print() {
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
 	log.Printf("CPU Slices:                  %d", c.CPUSlices())
 	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
-	log.Printf("RAM Overcommit:              %d", c.RAMOvercommit())
+	log.Printf("Memory Overcommit:              %d", c.MemoryOvercommit())
 	log.Printf("Scheduling Policy:           %s", c.SchedulingPolicy())
 	log.Printf("FreeResources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUClasses {
 		log.Printf("  CPUClass:                  %d", powerPart.Value)
 		for _, corePart := range powerPart.CPUCores {
-			log.Printf("    CPUCores:                 %d", corePart.Value)
-			for _, ramPart := range corePart.RAMs {
-				log.Printf("      RAM:                   %d", ramPart.Value)
+			log.Printf("    CPUCores:                %d", corePart.Value)
+			for _, memoryPart := range corePart.Memory {
+				log.Printf("      Memory:                   %d", memoryPart.Value)
 			}
 		}
 	}
@@ -396,8 +396,8 @@ func (c *Configuration) CPUOvercommit() int {
 	return c.Caravela.CPUOvercommit
 }
 
-func (c *Configuration) RAMOvercommit() int {
-	return c.Caravela.RAMOvercommit
+func (c *Configuration) MemoryOvercommit() int {
+	return c.Caravela.MemoryOvercommit
 }
 
 func (c *Configuration) SchedulingPolicy() string {

@@ -3,7 +3,7 @@ APIPort = 8001
 APITimeout = "3s"
 CPUSlices = 1
 CPUOvercommit = 100
-RAMOvercommit = 100
+MemoryOvercommit = 100
 SchedulingPolicy = "binpack"
 [Caravela.DiscoveryBackend]
 Backend = "chord-single-offer"
@@ -19,36 +19,36 @@ Backend = "chord-single-offer"
     RandBackendMaxRetries = 3
 [Caravela.Resources]
     [[Caravela.Resources.CPUClasses]]
-    Value = 1
+    Value = 0
     Percentage = 100
         [[Caravela.Resources.CPUClasses.CPUCores]]
         Value = 1
         Percentage = 50
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 256
             Percentage = 50
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 512
             Percentage = 50
         [[Caravela.Resources.CPUClasses.CPUCores]]
         Value = 2
         Percentage = 30
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 512
             Percentage = 50
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 1024
             Percentage = 50
         [[Caravela.Resources.CPUClasses.CPUCores]]
         Value = 4
         Percentage = 20
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 1024
             Percentage = 25
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 2048
             Percentage = 50
-            [[Caravela.Resources.CPUClasses.CPUCores.RAMs]]
+            [[Caravela.Resources.CPUClasses.CPUCores.Memory]]
             Value = 4096
             Percentage = 25
 

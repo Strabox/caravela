@@ -11,7 +11,7 @@ func TestNewResources(t *testing.T) {
 
 	assert.Equal(t, 1, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestSetCPUClass(t *testing.T) {
@@ -21,7 +21,7 @@ func TestSetCPUClass(t *testing.T) {
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestSetCPU(t *testing.T) {
@@ -31,17 +31,17 @@ func TestSetCPU(t *testing.T) {
 
 	assert.Equal(t, 1, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 4, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256, resources.Memory(), "Invalid Memory value!")
 }
 
-func TestSetRAM(t *testing.T) {
+func TestSetMemory(t *testing.T) {
 	resources := NewResourcesCPUClass(1, 2, 256)
 
-	resources.SetRAM(1024)
+	resources.SetMemory(1024)
 
 	assert.Equal(t, 1, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 1024, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 1024, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestAddCPU(t *testing.T) {
@@ -51,17 +51,17 @@ func TestAddCPU(t *testing.T) {
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2+1, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256, resources.Memory(), "Invalid Memory value!")
 }
 
-func TestAddRAM(t *testing.T) {
+func TestAddMemory(t *testing.T) {
 	resources := NewResourcesCPUClass(2, 2, 256)
 
-	resources.AddRAM(1024)
+	resources.AddMemory(1024)
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 1024+256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 1024+256, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestAdd(t *testing.T) {
@@ -72,7 +72,7 @@ func TestAdd(t *testing.T) {
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2+2, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256+256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256+256, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestSub_Equals(t *testing.T) {
@@ -83,7 +83,7 @@ func TestSub_Equals(t *testing.T) {
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2-2, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256-256, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256-256, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestSub_Different(t *testing.T) {
@@ -94,7 +94,7 @@ func TestSub_Different(t *testing.T) {
 
 	assert.Equal(t, 1, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 2-1, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 256-128, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 256-128, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestSetZero(t *testing.T) {
@@ -104,7 +104,7 @@ func TestSetZero(t *testing.T) {
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 0, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 0, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 0, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestSetTo(t *testing.T) {
@@ -115,7 +115,7 @@ func TestSetTo(t *testing.T) {
 
 	assert.Equal(t, 2, resources.CPUClass(), "Invalid CPU Class value!")
 	assert.Equal(t, 1, resources.CPUs(), "Invalid CPUs value!")
-	assert.Equal(t, 2046, resources.RAM(), "Invalid RAM value!")
+	assert.Equal(t, 2046, resources.Memory(), "Invalid Memory value!")
 }
 
 func TestIsValid_True(t *testing.T) {
@@ -193,7 +193,7 @@ func TestContainsTrue_MoreCPUs(t *testing.T) {
 	assert.True(t, res, "It should have returned true!")
 }
 
-func TestContainsTrue_MoreRam(t *testing.T) {
+func TestContainsTrue_MoreMemory(t *testing.T) {
 	resources := NewResourcesCPUClass(2, 2, 256)
 	containedResources := NewResourcesCPUClass(2, 2, 128)
 
@@ -220,7 +220,7 @@ func TestContainsFalse_CPUGreater(t *testing.T) {
 	assert.False(t, res, "It should have returned false!")
 }
 
-func TestContainsFalse_RAMGreater(t *testing.T) {
+func TestContainsFalse_MemoryGreater(t *testing.T) {
 	resources := NewResourcesCPUClass(2, 2, 256)
 	containedResources := NewResourcesCPUClass(2, 2, 512)
 
@@ -247,7 +247,7 @@ func TestEqualsFalse_DifferentCPUs(t *testing.T) {
 	assert.Equal(t, false, res, "It should have returned false!")
 }
 
-func TestEqualsFalse_DifferentRAM(t *testing.T) {
+func TestEqualsFalse_DifferentMemory(t *testing.T) {
 	resources := NewResourcesCPUClass(3, 2, 256)
 	resources2 := NewResourcesCPUClass(3, 2, 257)
 
@@ -272,7 +272,7 @@ func TestCopy(t *testing.T) {
 
 	assert.Equal(t, resources.CPUClass(), res.CPUClass(), "CPUClass mismatch!")
 	assert.Equal(t, resources.CPUs(), res.CPUs(), "CPUs mismatch!")
-	assert.Equal(t, resources.RAM(), res.RAM(), "RAM mismatch!")
+	assert.Equal(t, resources.Memory(), res.Memory(), "Memory mismatch!")
 }
 
 func TestString(t *testing.T) {
@@ -280,5 +280,5 @@ func TestString(t *testing.T) {
 
 	resourcesString := resources.String()
 
-	assert.Equal(t, fmt.Sprintf("<<%d;%d>;%d>", resources.CPUClass(), resources.CPUs(), resources.RAM()), resourcesString, "String mismatch!")
+	assert.Equal(t, fmt.Sprintf("<<%d;%d>;%d>", resources.CPUClass(), resources.CPUs(), resources.Memory()), resourcesString, "String mismatch!")
 }

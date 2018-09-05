@@ -125,7 +125,7 @@ func (t *Trader) start() {
 
 // Receives a resource offer from other node (supplier) of the system
 func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
-	resourcesOffered := resources.NewResourcesCPUClass(int(newOffer.FreeResources.CPUClass), newOffer.FreeResources.CPUs, newOffer.FreeResources.RAM)
+	resourcesOffered := resources.NewResourcesCPUClass(int(newOffer.FreeResources.CPUClass), newOffer.FreeResources.CPUs, newOffer.FreeResources.Memory)
 
 	// Verify if the offer contains the resources of trader.
 	// Basically verify if the offer is bigger than the handled resources of the trader.
@@ -140,7 +140,7 @@ func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
 
 		t.offers[offerKey] = offer
 		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
-			t.guid.Short(), newOffer.Amount, newOffer.FreeResources.CPUs, newOffer.FreeResources.RAM,
+			t.guid.Short(), newOffer.Amount, newOffer.FreeResources.CPUs, newOffer.FreeResources.Memory,
 			fromSupp.IP, newOffer.ID)
 
 		t.offersMutex.Unlock()
@@ -162,7 +162,7 @@ func (t *Trader) UpdateOffer(fromSupp *types.Node, offer *types.Offer) {
 	defer t.offersMutex.Unlock()
 
 	if traderOffer, exist := t.offers[offerKey{id: common.OfferID(offer.ID), supplierIP: fromSupp.IP}]; exist {
-		newOfferRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.RAM)
+		newOfferRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 		traderOffer.UpdateResources(newOfferRes, offer.Amount)
 	}
 }
@@ -183,7 +183,7 @@ func (t *Trader) GetOffers(ctx context.Context, _ *types.Node, relay bool) []typ
 			allOffers[index].FreeResources = types.Resources{
 				CPUClass: types.CPUClass(traderOffer.Resources().CPUClass()),
 				CPUs:     traderOffer.Resources().CPUs(),
-				RAM:      traderOffer.Resources().RAM(),
+				Memory:   traderOffer.Resources().Memory(),
 			}
 			index++
 		}

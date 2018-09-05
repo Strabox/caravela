@@ -3,7 +3,7 @@ service1:
   image: yeasy/simple-web:latest
   #cpu_power: "low"
   cpus: 1
-  ram: 128
+  memory: 128
   ports:
   - "9001:80"
 service2:
@@ -11,6 +11,6 @@ service2:
   image: yeasy/simple-web:latest
   #cpu_power: "medium"
   cpus: 1
-  ram: 256
+  memory: 256
   ports:
   - "9002:80"

@@ -16,9 +16,9 @@ type CPUClassPartition struct {
 
 type CPUCoresPartition struct {
 	ResourcesPartition `json:"ResourcesPartition"`
-	RAMs               []RAMPartition `json:"RAMPartitions"`
+	Memory             []MemoryPartition `json:"MemoryPartitions"`
 }
 
-type RAMPartition struct {
+type MemoryPartition struct {
 	ResourcesPartition `json:"ResourcesPartition"`
 }

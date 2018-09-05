@@ -177,12 +177,12 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 			FreeResources: types.Resources{
 				CPUClass: types.CPUClass(realAvailableRes.CPUClass()),
 				CPUs:     realAvailableRes.CPUs(),
-				RAM:      realAvailableRes.RAM(),
+				Memory:   realAvailableRes.Memory(),
 			},
 			UsedResources: types.Resources{
 				CPUClass: types.CPUClass(usedResources.CPUClass()),
 				CPUs:     usedResources.CPUs(),
-				RAM:      usedResources.RAM(),
+				Memory:   usedResources.Memory(),
 			},
 		})
 	if err == nil {

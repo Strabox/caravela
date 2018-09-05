@@ -197,7 +197,7 @@ func (s *Supplier) ReturnResources(releasedResources resources.Resources) {
 	s.offersMutex.Lock()
 	defer s.offersMutex.Unlock()
 
-	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.RAM())
+	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.Memory())
 	s.availableResources.Add(releasedResources)
 
 	if s.config.Simulation() {
@@ -247,11 +247,11 @@ func (s *Supplier) offers() []supplierOffer {
 func (s *Supplier) checkResourcesInvariant() {
 	if s.availableResources.IsNegative() {
 		panic(fmt.Errorf("more resources being used than maximum, available: <%d,%d>, max: <%d,%d>",
-			s.availableResources.CPUs(), s.availableResources.RAM(), s.maxResources.CPUs(), s.maxResources.RAM()))
+			s.availableResources.CPUs(), s.availableResources.Memory(), s.maxResources.CPUs(), s.maxResources.Memory()))
 	}
 	if !s.maxResources.Contains(*s.availableResources) {
 		panic(fmt.Errorf("there are more resources than the maximum, available: <%d,%d>, max: <%d,%d>",
-			s.availableResources.CPUs(), s.availableResources.RAM(), s.maxResources.CPUs(), s.maxResources.RAM()))
+			s.availableResources.CPUs(), s.availableResources.Memory(), s.maxResources.CPUs(), s.maxResources.Memory()))
 	}
 }
 
@@ -270,7 +270,7 @@ func (s *Supplier) AvailableResources() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(s.availableResources.CPUClass()),
 		CPUs:     s.availableResources.CPUs(),
-		RAM:      s.availableResources.RAM(),
+		Memory:   s.availableResources.Memory(),
 	}
 }
 
@@ -279,7 +279,7 @@ func (s *Supplier) MaximumResources() types.Resources {
 	return types.Resources{
 		CPUClass: types.CPUClass(s.availableResources.CPUClass()),
 		CPUs:     s.maxResources.CPUs(),
-		RAM:      s.maxResources.RAM(),
+		Memory:   s.maxResources.Memory(),
 	}
 }
 

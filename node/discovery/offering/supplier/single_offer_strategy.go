@@ -65,12 +65,12 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResource
 						FreeResources: types.Resources{
 							CPUClass: types.CPUClass(availableResources.CPUClass()),
 							CPUs:     availableResources.CPUs(),
-							RAM:      availableResources.RAM(),
+							Memory:   availableResources.Memory(),
 						},
 						UsedResources: types.Resources{
 							CPUClass: types.CPUClass(usedResources.CPUClass()),
 							CPUs:     usedResources.CPUs(),
-							RAM:      usedResources.RAM(),
+							Memory:   usedResources.Memory(),
 						},
 					})
 			}
@@ -102,7 +102,7 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResource
 
 	newOfferID := s.localSupplier.newOfferID()
 	log.Debugf(util.LogTag("SUPPLIER")+"CREATING offer... Offer: %d, Res: <%d;%d>",
-		int64(newOfferID), availableResources.CPUs(), availableResources.RAM())
+		int64(newOfferID), availableResources.CPUs(), availableResources.Memory())
 
 	offer, err := s.createAnOffer(int64(newOfferID), availableResources, availableResources, usedResources)
 	if err == nil {

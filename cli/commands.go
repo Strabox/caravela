@@ -60,7 +60,7 @@ var (
 				cli.StringFlag{
 					Name:  "cpuClass, cc",
 					Usage: "Class of the CPU necessary for the container",
-					Value: defaultCPUPower,
+					Value: defaultCPUClass,
 				},
 				cli.UintFlag{
 					Name:  "cpus, c",
@@ -68,9 +68,9 @@ var (
 					Value: defaultCPUs,
 				},
 				cli.UintFlag{
-					Name:  "ram, r",
-					Usage: "Maximum amount of RAM (in Megabytes) that container can use",
-					Value: defaultRAM,
+					Name:  "memory, m",
+					Usage: "Maximum amount of Memory (in Megabytes) that container can use",
+					Value: defaultMemory,
 				},
 			},
 		},

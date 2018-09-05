@@ -11,7 +11,7 @@ import (
 type DockerClient interface {
 	Start() <-chan *events.Event
 
-	// Obtains the Docker engine max CPU cores and RAM.
+	// Obtains the Docker engine max CPU cores and Memory.
 	GetDockerEngineTotalResources() (int, int, int)
 
 	// Checks the status of a container in the  Docker engine.

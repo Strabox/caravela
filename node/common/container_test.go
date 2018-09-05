@@ -12,12 +12,12 @@ const imageKeyTest = ""
 const containerIDTest = "ASDFAASDJKLASDOIAHDAKJSBDABSMDASDJASDJBASJBDKASDJBASD123ASDNB"
 const cpuClass = 1
 const cpusTest = 4
-const ramTest = 1024
+const memoryTest = 1024
 
 func TestNewContainer(t *testing.T) {
 	args := make([]string, 0)
 	portMaps := make([]types.PortMapping, 0)
-	contResources := *resources.NewResourcesCPUClass(cpuClass, cpusTest, ramTest)
+	contResources := *resources.NewResourcesCPUClass(cpuClass, cpusTest, memoryTest)
 	container := NewContainer(containerNameTest, imageKeyTest, args, portMaps, contResources, containerIDTest)
 
 	assert.Equal(t, containerNameTest, container.Name(), "Container's name is incorrect!")
