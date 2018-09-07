@@ -109,7 +109,7 @@ func scaleWindow() *big.Int {
 	maxGUID := MaximumGUID()
 
 	tempBigInt := big.NewInt(0)
-	tempBigInt.Div(maxGUID.id, big.NewInt(50000))
+	tempBigInt.Div(maxGUID.id, big.NewInt(10000))
 	tempBigInt.Mul(tempBigInt, big.NewInt(5))
 
 	return tempBigInt
