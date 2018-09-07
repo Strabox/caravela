@@ -105,6 +105,33 @@ func newGUIDBigInt(bytesID *big.Int) *GUID {
 	return guid
 }
 
+func scaleWindow() *big.Int {
+	maxGUID := MaximumGUID()
+
+	tempBigInt := big.NewInt(0)
+	tempBigInt.Div(maxGUID.id, big.NewInt(50000))
+	tempBigInt.Mul(tempBigInt, big.NewInt(5))
+
+	return tempBigInt
+}
+
+// GenerateInnerRandomGUIDV2 ...
+func (g *GUID) GenerateInnerRandomGUIDV2(topGUID GUID) (*GUID, error) {
+	dif := big.NewInt(0)
+
+	dif.Sub(topGUID.id, g.id)
+
+	dif.Div(dif, scaleWindow())
+
+	dif.Rand(randomGenerator, dif)
+
+	dif.Mul(dif, scaleWindow())
+
+	dif.Add(g.id, dif)
+
+	return NewGUIDString(dif.String()), nil
+}
+
 // GenerateInnerRandomGUID generates a random GUID that belongs to the interval [this, topGUID).
 func (g *GUID) GenerateInnerRandomGUID(topGUID GUID) (*GUID, error) {
 	dif := big.NewInt(0)

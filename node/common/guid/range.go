@@ -4,10 +4,10 @@ import (
 	"fmt"
 )
 
-// Range represents a range of GUIDs i.e. [lowerGUID, higherGUID).
+// Range represents a range of GUIDs (Global Unique Identifiers), i.e. [lowerGUID, higherGUID).
 type Range struct {
-	lowerGUID  *GUID // Included in range
-	higherGUID *GUID // Excluded from the range
+	lowerGUID  *GUID // Lower GUID of the range, included in the range.
+	higherGUID *GUID // Higher GUID of the range, excluded from the range.
 }
 
 // NewGUIDRange creates a new GUID range given a lower GUID and higher GUID.
@@ -20,7 +20,7 @@ func NewGUIDRange(lowerGUID GUID, higherGUID GUID) *Range {
 
 // GenerateRandom generate random GUID inside the range.
 func (r *Range) GenerateRandom() (*GUID, error) {
-	return r.lowerGUID.GenerateInnerRandomGUID(*r.higherGUID)
+	return r.lowerGUID.GenerateInnerRandomGUIDV2(*r.higherGUID)
 }
 
 // CreatePartitions returns partitions, set of ranges, of the receiver range.

@@ -324,7 +324,7 @@ func (c *Configuration) Print() {
 		for _, corePart := range powerPart.CPUCores {
 			log.Printf("    CPUCores:                %d", corePart.Value)
 			for _, memoryPart := range corePart.Memory {
-				log.Printf("      Memory:                   %d", memoryPart.Value)
+				log.Printf("      Memory:                %d", memoryPart.Value)
 			}
 		}
 	}
