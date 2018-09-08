@@ -18,16 +18,27 @@ var isGUIDInitialized = false
 // 160-bits default (To maintain compatibility with used chord overlay implementation)
 var guidSizeBits = 160
 
+// ...
+var scaleGUIDStep *big.Int = nil
+
 // GUID represents a Global Unique Identifier (GUID) for a system's node
 type GUID struct {
 	id *big.Int
 }
 
 // Init initializes the GUID package with the size of the GUID.
-func Init(guidBitsSize int) {
+func Init(guidBitsSize int, estimatedGUIDs, scaleFactor int64) {
 	if !isGUIDInitialized {
+		// Initialize the GUID size.
 		guidSizeBits = guidBitsSize
 		isGUIDInitialized = true
+
+		// Initialize the GUID scale step.
+		maxGUID := MaximumGUID()
+		tempBigInt := big.NewInt(0)
+		tempBigInt.Div(maxGUID.id, big.NewInt(estimatedGUIDs))
+		tempBigInt.Mul(tempBigInt, big.NewInt(scaleFactor))
+		scaleGUIDStep = tempBigInt
 	}
 }
 
@@ -105,27 +116,19 @@ func newGUIDBigInt(bytesID *big.Int) *GUID {
 	return guid
 }
 
-func scaleWindow() *big.Int {
-	maxGUID := MaximumGUID()
-
-	tempBigInt := big.NewInt(0)
-	tempBigInt.Div(maxGUID.id, big.NewInt(10000))
-	tempBigInt.Mul(tempBigInt, big.NewInt(5))
-
-	return tempBigInt
-}
-
-// GenerateInnerRandomGUIDV2 ...
-func (g *GUID) GenerateInnerRandomGUIDV2(topGUID GUID) (*GUID, error) {
+// GenerateInnerRandomGUIDScaled generates a random GUID that belongs to the interval [this, topGUID).
+// But it returns one of a specific set of GUIDs from the interval. This set is small than the total GUIDs of
+// the interval.
+func (g *GUID) GenerateInnerRandomGUIDScaled(topGUID GUID) (*GUID, error) {
 	dif := big.NewInt(0)
 
 	dif.Sub(topGUID.id, g.id)
 
-	dif.Div(dif, scaleWindow())
+	dif.Div(dif, scaleGUIDStep)
 
 	dif.Rand(randomGenerator, dif)
 
-	dif.Mul(dif, scaleWindow())
+	dif.Mul(dif, scaleGUIDStep)
 
 	dif.Add(g.id, dif)
 

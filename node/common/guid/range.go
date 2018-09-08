@@ -20,7 +20,7 @@ func NewGUIDRange(lowerGUID GUID, higherGUID GUID) *Range {
 
 // GenerateRandom generate random GUID inside the range.
 func (r *Range) GenerateRandom() (*GUID, error) {
-	return r.lowerGUID.GenerateInnerRandomGUIDV2(*r.higherGUID)
+	return r.lowerGUID.GenerateInnerRandomGUIDScaled(*r.higherGUID)
 }
 
 // CreatePartitions returns partitions, set of ranges, of the receiver range.

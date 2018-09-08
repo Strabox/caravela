@@ -10,11 +10,11 @@ Backend = "chord-single-offer"
     [Caravela.DiscoveryBackend.OfferingChordBackend]
     SupplyingInterval = "1m"
     SpreadOffersInterval = "1m"
-    RefreshesCheckInterval = "1m30s"
-    RefreshingInterval = "1m"
+    RefreshingInterval = "5m"
+    RefreshesCheckInterval = "5m30s"
+    RefreshMissedTimeout = "1m"
     MaxRefreshesFailed = 3
     MaxRefreshesMissed = 2
-    RefreshMissedTimeout = "1m30s"
     [Caravela.DiscoveryBackend.RandomChordBackend]
     RandBackendMaxRetries = 3
 [Caravela.Resources]

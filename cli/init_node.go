@@ -44,8 +44,9 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	// Print/log the systemConfigurations values
 	systemConfigurations.Print()
 
-	// Global GUID size initialization
-	guid.Init(systemConfigurations.ChordHashSizeBits())
+	// GUID package custom initialization.
+	guid.Init(systemConfigurations.ChordHashSizeBits(), int64(systemConfigurations.GUIDEstimatedNetworkSize()),
+		int64(systemConfigurations.GUIDScaleFactor()))
 
 	// Create Overlay Component
 	overlayConfigured := overlay.Create(systemConfigurations)
@@ -59,7 +60,7 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	// Create the API server
 	apiServer := rest.NewServer(systemConfigurations.APIPort())
 
-	// Create a CARAVELA Node passing all the external components and start it functions
+	// Create a Caravela's Node passing all the external components and start its functions.
 	thisNode := node.NewNode(systemConfigurations, overlayConfigured, caravelaCli, dockerClient, apiServer)
 
 	err = thisNode.Start(join, joinIP)

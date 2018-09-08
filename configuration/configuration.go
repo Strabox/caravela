@@ -69,8 +69,10 @@ type offeringChordDiscBackend struct {
 	MaxRefreshesFailed     int      `json:"MaxRefreshesFailed"`     // Maximum amount of refreshes that a supplier failed to reply
 	MaxRefreshesMissed     int      `json:"MaxRefreshesMissed"`     // Maximum amount of refreshes a trader failed to send to the supplier
 	// Debug performance flags
-	SpreadOffers          bool `json:"SpreadOffers"`          // Used to tell if the spread offers mechanism is used or not.
-	SpreadPartitionsState bool `json:"SpreadPartitionsState"` // Used to tell if the spread partitions state is used or not.
+	SpreadOffers             bool `json:"SpreadOffers"`             // Used to tell if the spread offers mechanism is used or not.
+	SpreadPartitionsState    bool `json:"SpreadPartitionsState"`    // Used to tell if the spread partitions state is used or not.
+	GUIDEstimatedNetworkSize int  `json:"GUIDEstimatedNetworkSize"` // Estimated network size to tune the GUID scale.
+	GUIDScaleFactor          int  `json:"GUIDScaleFactor"`          // GUID scale's factor.
 }
 
 type randomChordDiscBackend struct {
@@ -132,8 +134,10 @@ func Default(hostIP string) *Configuration {
 					MaxRefreshesMissed:     2,
 					RefreshMissedTimeout:   duration{Duration: refreshingInterval.Duration + (5 * time.Second)},
 					// Debug performance flags
-					SpreadOffers:          true,
-					SpreadPartitionsState: true,
+					SpreadOffers:             true,
+					SpreadPartitionsState:    true,
+					GUIDEstimatedNetworkSize: 50000,
+					GUIDScaleFactor:          5,
 				},
 				RandomChordBackend: randomChordDiscBackend{
 					RandBackendMaxRetries: 6,
@@ -271,6 +275,14 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("maximum number of missed refreshes must be a positive integer")
 	}
 
+	if c.GUIDEstimatedNetworkSize() <= 0 {
+		return fmt.Errorf("estimated network size must a positive integer")
+	}
+
+	if c.GUIDScaleFactor() <= 0 {
+		return fmt.Errorf("GUID scale factor must a positive integer")
+	}
+
 	// ======================= Random Chord Discovery Backend specific ==========================
 
 	if c.RandBackendMaxRetries() <= 0 {
@@ -316,7 +328,7 @@ func (c *Configuration) Print() {
 	log.Printf("Messages Timeout:            %s", c.APITimeout().String())
 	log.Printf("CPU Slices:                  %d", c.CPUSlices())
 	log.Printf("CPU Overcommit:              %d", c.CPUOvercommit())
-	log.Printf("Memory Overcommit:              %d", c.MemoryOvercommit())
+	log.Printf("Memory Overcommit:           %d", c.MemoryOvercommit())
 	log.Printf("Scheduling Policy:           %s", c.SchedulingPolicy())
 	log.Printf("FreeResources Partitions:")
 	for _, powerPart := range c.Caravela.Resources.CPUClasses {
@@ -341,8 +353,11 @@ func (c *Configuration) Print() {
 	log.Printf("      Refresh missed timeout:        %s", c.RefreshMissedTimeout().String())
 	log.Printf("      Max num of refreshes failed:   %d", c.MaxRefreshesFailed())
 	log.Printf("      Max num of refreshes missed:   %d", c.MaxRefreshesMissed())
+	// Debug performance flags.
 	log.Printf("      Spread Offers:                 %t", c.SpreadOffers())
 	log.Printf("      Spread Partitions State:       %t", c.SpreadPartitionsState())
+	log.Printf("      GUID Estimated Network Size:   %d", c.GUIDEstimatedNetworkSize())
+	log.Printf("      GUID Scale Factor:             %d", c.GUIDScaleFactor())
 
 	log.Printf("$$$$$$$$$$$$$$$$$$$$$$$ IMAGES STORAGE $$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	log.Printf("Active Storage Backend:              %s", c.ImagesStorageBackend())
@@ -440,12 +455,24 @@ func (c *Configuration) RefreshMissedTimeout() time.Duration {
 	return c.Caravela.DiscoveryBackend.OfferingChordBackend.RefreshMissedTimeout.Duration
 }
 
+// Debug performance flag.
 func (c *Configuration) SpreadOffers() bool {
 	return c.Caravela.DiscoveryBackend.OfferingChordBackend.SpreadOffers
 }
 
+// Debug performance flag.
 func (c *Configuration) SpreadPartitionsState() bool {
 	return c.Caravela.DiscoveryBackend.OfferingChordBackend.SpreadPartitionsState
+}
+
+// Debug performance flag.
+func (c *Configuration) GUIDEstimatedNetworkSize() int {
+	return c.Caravela.DiscoveryBackend.OfferingChordBackend.GUIDEstimatedNetworkSize
+}
+
+// Debug performance flag.
+func (c *Configuration) GUIDScaleFactor() int {
+	return c.Caravela.DiscoveryBackend.OfferingChordBackend.GUIDScaleFactor
 }
 
 // =================== Random Chord Discovery Backend specific ==============
