@@ -27,13 +27,13 @@ type Discovery struct {
 	overlay      external.Overlay             // Overlay component.
 	client       external.Caravela            // Remote caravela's client.
 	nodeGUID     *guid.GUID                   // Node's own GUID.
-	isMasterNode bool                         // True: if the node is the master, False: if it is a regular peer.
+	isMasterNode bool                         // True: if the clusterNode is the master, False: if it is a regular peer.
 
-	// Master node fields
-	clusterNodesByGUID sync.Map // Map the node's IP with the node's structure.
-	clusterNodes       []*node  // One node's structure per node in the cluster.
+	// Master clusterNode fields
+	clusterNodesByGUID sync.Map       // Map the clusterNode's IP with the clusterNode's structure.
+	clusterNodes       []*clusterNode // One clusterNode's structure per clusterNode in the cluster.
 
-	// Peer node fields
+	// Peer clusterNode fields
 	refreshTicker      <-chan time.Time     //
 	containersRunning  int                  //
 	maximumResources   *resources.Resources //
@@ -53,7 +53,7 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 		isMasterNode: false,
 
 		clusterNodesByGUID: sync.Map{},
-		clusterNodes:       make([]*node, 0),
+		clusterNodes:       make([]*clusterNode, 0),
 
 		refreshTicker:      time.NewTicker(config.RefreshingInterval()).C,
 		containersRunning:  0,
@@ -63,7 +63,7 @@ func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay ext
 	}, nil
 }
 
-// start starts the discovery backend in the node.
+// start starts the discovery backend in the clusterNode.
 func (d *Discovery) start() {
 	if !d.isMasterNode {
 		d.resourcesMutex.Lock()
@@ -109,18 +109,18 @@ func (d *Discovery) start() {
 	}
 }
 
-// usedResources returns the amount of used resources in this node (if it is not the master).
+// usedResources returns the amount of used resources in this clusterNode (if it is not the master).
 func (d *Discovery) usedResources() *resources.Resources {
 	usedResources := d.maximumResources.Copy()
 	usedResources.Sub(*d.availableResources)
 	return usedResources
 }
 
-// getMasterNodeIDs returns the IP and GUID of the master node.
+// getMasterNodeIDs returns the IP and GUID of the master clusterNode.
 func (d *Discovery) getMasterNodeIDs() (string, string) {
 	nodes, _ := d.overlay.Lookup(
 		context.Background(),
-		guid.NewGUIDInteger(mastersNodeGUID).Bytes(), // Master's node has GUID 0 (in simulator).
+		guid.NewGUIDInteger(mastersNodeGUID).Bytes(), // Master's clusterNode has GUID 0 (in simulator).
 	)
 
 	masterNode := nodes[0]
@@ -139,20 +139,22 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
-		resultOffers := make([]types.AvailableOffer, 0)
+		resultOffers := make([]types.AvailableOffer, len(d.clusterNodes))
 
 		// If the resource combination is not valid we will refuse the request.
 		if !targetResources.IsValid() {
 			return resultOffers
 		}
 
+		resultOffersIndex := 0
 		for _, clusterNode := range d.clusterNodes {
 			// Skip nodes that are smaller than the requested resources.
 			if !clusterNode.freeResources.Contains(targetResources) {
+				resultOffers = resultOffers[:len(resultOffers)-1]
 				continue
 			}
 
-			resultOffers = append(resultOffers, types.AvailableOffer{
+			resultOffers[resultOffersIndex] = types.AvailableOffer{
 				SupplierIP: clusterNode.ip(),
 				Offer: types.Offer{
 					FreeResources: types.Resources{
@@ -166,7 +168,8 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 						Memory:   clusterNode.usedResources.Memory(),
 					},
 				},
-			})
+			}
+			resultOffersIndex++
 		}
 
 		return resultOffers
@@ -251,7 +254,7 @@ func (d *Discovery) CreateOffer(fromSupp *types.Node, _ *types.Node, offer *type
 
 		availableResources := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 		usedResources := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.Memory)
-		clusterNode := newNode(fromSupp.IP, availableResources, usedResources)
+		clusterNode := newClusterNode(fromSupp.IP, availableResources, usedResources)
 
 		d.clusterNodes = append(d.clusterNodes, clusterNode)
 		d.clusterNodesByGUID.Store(fromSupp.GUID, clusterNode)
@@ -265,7 +268,7 @@ func (d *Discovery) RefreshOffer(_ *types.Node, _ *types.Offer) bool {
 func (d *Discovery) UpdateOffer(fromSupp, _ *types.Node, offer *types.Offer) {
 	if d.isMasterNode {
 		if nodeStored, exist := d.clusterNodesByGUID.Load(fromSupp.GUID); exist {
-			if nodePtr, ok := nodeStored.(*node); ok {
+			if nodePtr, ok := nodeStored.(*clusterNode); ok {
 				nodeFreeUpdatedRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 				nodeUsedUpdatedRes := *resources.NewResourcesCPUClass(int(offer.UsedResources.CPUClass), offer.UsedResources.CPUs, offer.UsedResources.Memory)
 
