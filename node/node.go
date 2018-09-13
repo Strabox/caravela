@@ -58,7 +58,7 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 	// Create all the internal components
 	node := &Node{}
 
-	caravelaCli = remote.NewClient(caravelaCli)
+	caravelaCli = remote.NewClient(caravelaCli, node)
 
 	discoveryComp := discovery.CreateDiscoveryBackend(node, config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)

@@ -13,10 +13,10 @@ type Client struct {
 	clientNode common.Node
 }
 
-func NewClient(specificClient external.Caravela) *Client {
+func NewClient(specificClient external.Caravela, clientNode common.Node) *Client {
 	return &Client{
 		httpClient: specificClient,
-		clientNode: nil,
+		clientNode: clientNode,
 	}
 }
 
@@ -26,10 +26,6 @@ func (h *Client) getRequestContext(ctx context.Context) context.Context {
 	} else {
 		return context.Background()
 	}
-}
-
-func (h *Client) Init(clientNode common.Node) {
-	h.clientNode = clientNode
 }
 
 func (h *Client) CreateOffer(ctx context.Context, fromNode, toNode *types.Node, offer *types.Offer) error {
