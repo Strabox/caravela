@@ -15,8 +15,6 @@ Backend = "chord-single-offer"
     RefreshMissedTimeout = "1m"
     MaxRefreshesFailed = 3
     MaxRefreshesMissed = 2
-    [Caravela.DiscoveryBackend.RandomChordBackend]
-    RandBackendMaxRetries = 3
 [Caravela.Resources]
     [[Caravela.Resources.CPUClasses]]
     Value = 0

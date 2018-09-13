@@ -6,11 +6,15 @@ import (
 	"sync"
 )
 
-var GlobalState = NewSystemResourcePartitions(12)
+var GlobalState *SystemResourcePartitions = nil
 
 type SystemResourcePartitions struct {
 	partitionsState sync.Map
 	totalStats      int
+}
+
+func Init(totalStats int) {
+	GlobalState = NewSystemResourcePartitions(totalStats)
 }
 
 func NewSystemResourcePartitions(totalStats int) *SystemResourcePartitions {

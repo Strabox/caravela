@@ -9,6 +9,7 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
+	"github.com/strabox/caravela/node/discovery/offering/partitions"
 	"github.com/strabox/caravela/node/discovery/offering/supplier"
 	"github.com/strabox/caravela/node/discovery/offering/trader"
 	"github.com/strabox/caravela/node/external"
@@ -32,6 +33,8 @@ type Discovery struct {
 
 func NewOfferingDiscovery(config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
+
+	partitions.Init(config.PartitionsStateBufferSize())
 
 	return &Discovery{
 		config:  config,
