@@ -10,6 +10,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/strabox/caravela/api"
+	"github.com/strabox/caravela/api/remote"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common/guid"
@@ -57,7 +58,7 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 	// Create all the internal components
 	node := &Node{}
 
-	caravelaCli.Init(node)
+	caravelaCli = remote.NewClient(caravelaCli)
 
 	discoveryComp := discovery.CreateDiscoveryBackend(node, config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)

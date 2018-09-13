@@ -21,7 +21,7 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	// Create configuration structures from the configuration file (if it exists)
 	if join {
 		defaultConfigs := configuration.Default(hostIP)
-		caravelaClient := remote.NewClient(defaultConfigs.APIPort(), defaultConfigs.APITimeout())
+		caravelaClient := remote.NewHttpClient(defaultConfigs.APIPort(), defaultConfigs.APITimeout())
 
 		systemConfigurations, err = caravelaClient.ObtainConfiguration(context.Background(), &types.Node{IP: joinIP})
 		if err != nil {
@@ -51,8 +51,8 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 	// Create Overlay Component
 	overlayConfigured := overlay.Create(systemConfigurations)
 
-	// Create CARAVELA's Remote Client
-	caravelaCli := remote.NewClient(systemConfigurations.APIPort(), systemConfigurations.APITimeout())
+	// Create CARAVELA's Remote httpClient
+	caravelaCli := remote.NewHttpClient(systemConfigurations.APIPort(), systemConfigurations.APITimeout())
 
 	// Create Docker client
 	dockerClient := docker.NewDockerClient(systemConfigurations)
