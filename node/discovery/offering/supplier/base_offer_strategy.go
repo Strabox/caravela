@@ -6,10 +6,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
+	nodeCommon "github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
-	"github.com/strabox/caravela/node/discovery/offering/partitions"
 	"github.com/strabox/caravela/node/external"
 	overlayTypes "github.com/strabox/caravela/overlay/types"
 	"github.com/strabox/caravela/util"
@@ -27,6 +27,7 @@ type baseOfferStrategy struct {
 	resourcesMapping *resources.Mapping
 	overlay          external.Overlay
 	remoteClient     external.Caravela
+	node             nodeCommon.Node
 	configs          *configuration.Configuration
 }
 
@@ -52,7 +53,7 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 		targetResPartition := *b.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: %s", targetResPartition)
 
-		if partitions.GlobalState.Try(targetResPartition) || !b.configs.SpreadPartitionsState() {
+		if b.node.GetSystemPartitionsState().Try(targetResPartition) || !b.configs.SpreadPartitionsState() {
 			overlayNodes, _ := b.overlay.Lookup(ctx, destinationGUID.Bytes())
 			overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
@@ -64,10 +65,10 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 					true)
 				if err == nil && len(offers) != 0 {
 					availableOffers = append(availableOffers, offers...)
-					partitions.GlobalState.Hit(targetResPartition)
+					b.node.GetSystemPartitionsState().Hit(targetResPartition)
 					break
 				} else if err == nil && len(offers) == 0 {
-					partitions.GlobalState.Miss(targetResPartition)
+					b.node.GetSystemPartitionsState().Miss(targetResPartition)
 				}
 			}
 
@@ -102,7 +103,7 @@ func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetRes
 		targetResPartition := *b.resourcesMapping.ResourcesByGUID(*destinationGUID)
 		log.Debugf(util.LogTag("SUPPLIER")+"FINDING OFFERS for RES: %s", targetResPartition)
 
-		if partitions.GlobalState.Try(targetResPartition) || !b.configs.SpreadPartitionsState() {
+		if b.node.GetSystemPartitionsState().Try(targetResPartition) || !b.configs.SpreadPartitionsState() {
 			overlayNodes, _ := b.overlay.Lookup(ctx, destinationGUID.Bytes())
 			overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
@@ -114,10 +115,10 @@ func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetRes
 					true)
 				if err == nil && len(offers) != 0 {
 					availableOffers = append(availableOffers, offers...)
-					partitions.GlobalState.Hit(targetResPartition)
+					b.node.GetSystemPartitionsState().Hit(targetResPartition)
 					break
 				} else if err == nil && len(offers) == 0 {
-					partitions.GlobalState.Miss(targetResPartition)
+					b.node.GetSystemPartitionsState().Miss(targetResPartition)
 				}
 			}
 

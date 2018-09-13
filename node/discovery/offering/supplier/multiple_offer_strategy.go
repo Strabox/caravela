@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
 )
@@ -13,11 +14,12 @@ type multipleOfferStrategy struct {
 	updateOffers bool
 }
 
-func newMultipleOfferStrategy(config *configuration.Configuration) (OfferingStrategy, error) {
+func newMultipleOfferStrategy(node common.Node, config *configuration.Configuration) (OfferingStrategy, error) {
 	return &multipleOfferStrategy{
 		updateOffers: config.DiscoveryBackend() == "chord-multiple-offer-updates",
 		baseOfferStrategy: baseOfferStrategy{
 			configs: config,
+			node:    node,
 		},
 	}, nil
 }

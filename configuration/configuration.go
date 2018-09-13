@@ -359,7 +359,7 @@ func (c *Configuration) Print() {
 	log.Printf("      Refresh missed timeout:        %s", c.RefreshMissedTimeout().String())
 	log.Printf("      Max num of refreshes failed:   %d", c.MaxRefreshesFailed())
 	log.Printf("      Max num of refreshes missed:   %d", c.MaxRefreshesMissed())
-	log.Printf("      Partitions State Buffer Size:   d", c.PartitionsStateBufferSize())
+	log.Printf("      Partitions State Buffer Size:  %d", c.PartitionsStateBufferSize())
 	// Debug performance flags.
 	log.Printf("      Spread Offers:                 %t", c.SpreadOffers())
 	log.Printf("      Spread Partitions State:       %t", c.SpreadPartitionsState())

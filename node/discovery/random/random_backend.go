@@ -27,7 +27,7 @@ type Discovery struct {
 	resourcesMutex     sync.Mutex           //
 }
 
-func NewRandomDiscovery(config *configuration.Configuration, overlay external.Overlay,
+func NewRandomDiscovery(_ common.Node, config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{

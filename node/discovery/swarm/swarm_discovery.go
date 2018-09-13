@@ -42,7 +42,7 @@ type Discovery struct {
 }
 
 // NewSwarmResourcesDiscovery creates a resource discovery backend based on the Docker Swarm.
-func NewSwarmResourcesDiscovery(config *configuration.Configuration, overlay external.Overlay,
+func NewSwarmResourcesDiscovery(_ common.Node, config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{

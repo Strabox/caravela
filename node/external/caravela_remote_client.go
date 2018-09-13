@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common"
 )
 
 // Caravela is the complete API/Interface for the remote client of a node.
 type Caravela interface {
+	Init(clientNode common.Node)
 	// =============================== Discovery ===============================
 
 	// Sends a create offer message to a trader from a supplier that wants to offer its resources.

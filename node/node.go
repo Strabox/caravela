@@ -22,6 +22,8 @@ import (
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/node/user"
 	"github.com/strabox/caravela/util"
+	"math/rand"
+	"time"
 )
 
 // Node is the top level entry structure, facade, for all the functionality of a CARAVELA's node.
@@ -35,42 +37,43 @@ type Node struct {
 
 	config   *configuration.Configuration // System's configurations.
 	stopChan chan bool                    // Channel to stop the node functions.
+
+	systemPartitionsState *partitions.SystemResourcePartitions
 }
 
 // NewNode creates a Node object that contains all the functionality of a CARAVELA's node.
 func NewNode(config *configuration.Configuration, overlay external.Overlay, caravelaCli external.Caravela,
 	dockerClient external.DockerClient, apiServer api.Server) *Node {
 
-	cpuClass, maxCPUs, maxMemory := dockerClient.GetDockerEngineTotalResources()     // Obtain the maximum resources Docker Engine has available
-	maxCPUs = int((float64(maxCPUs) * float64(config.CPUOvercommit())) / 100)        // Apply CPU Overcommit factor
-	maxMemory = int((float64(maxMemory) * float64(config.MemoryOvercommit())) / 100) // Apply Memory Overcommit factor
-	CPUSlices := maxCPUs * config.CPUSlices()                                        // Calculate the CPU slices
+	cpuClass, maxCPUs, maxMemory := dockerClient.GetDockerEngineTotalResources()     // Obtain the maximum resources Docker Engine has available.
+	maxCPUs = int((float64(maxCPUs) * float64(config.CPUOvercommit())) / 100)        // Apply CPU Overcommit factor.
+	maxMemory = int((float64(maxMemory) * float64(config.MemoryOvercommit())) / 100) // Apply Memory Overcommit factor.
+	CPUSlices := maxCPUs * config.CPUSlices()                                        // Calculate the CPU slices.
 	maxAvailableResources := resources.NewResourcesCPUClass(cpuClass, CPUSlices, maxMemory)
 
 	// Create FreeResources Mapping (based on the configurations)
 	resourcesMap := resources.NewResourcesMap(resources.ObtainConfiguredPartitions(config.ResourcesPartitions()))
 
 	// Create all the internal components
+	node := &Node{}
 
-	discoveryComp := discovery.CreateDiscoveryBackend(config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
+	caravelaCli.Init(node)
 
+	discoveryComp := discovery.CreateDiscoveryBackend(node, config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)
-
 	schedulerComp := scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli)
-
 	userManagerComp := user.NewManager(config, schedulerComp, caravelaCli, *resourcesMap.LowestResources())
 
-	return &Node{
-		apiServerComp:         apiServer,
-		discoveryComp:         discoveryComp,
-		schedulerComp:         schedulerComp,
-		containersManagerComp: containersManagerComp,
-		userManagerComp:       userManagerComp,
-		overlayComp:           overlay,
-
-		config:   config,
-		stopChan: make(chan bool),
-	}
+	node.apiServerComp = apiServer
+	node.discoveryComp = discoveryComp
+	node.schedulerComp = schedulerComp
+	node.containersManagerComp = containersManagerComp
+	node.userManagerComp = userManagerComp
+	node.overlayComp = overlay
+	node.config = config
+	node.stopChan = make(chan bool)
+	node.systemPartitionsState = partitions.NewSystemResourcePartitions(config.PartitionsStateBufferSize(), rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix()))))
+	return node
 }
 
 // Start the node's functions. If the node is joining an instance of CARAVELA's it is called with join
@@ -136,6 +139,10 @@ func (n *Node) Configuration(c context.Context) *configuration.Configuration {
 	return n.config
 }
 
+func (n *Node) GetSystemPartitionsState() *partitions.SystemResourcePartitions {
+	return n.systemPartitionsState
+}
+
 // ##############################################################################################
 // #									     CLIENT API											#
 // ##############################################################################################
@@ -169,42 +176,42 @@ func (n *Node) AddTrader(guidBytes []byte) {
 
 func (n *Node) CreateOffer(ctx context.Context, fromNode *types.Node, toNode *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.CreateOffer(fromNode, toNode, offer)
 }
 
 func (n *Node) UpdateOffer(ctx context.Context, fromSupplier, toTrader *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.UpdateOffer(fromSupplier, toTrader, offer)
 }
 
 func (n *Node) RefreshOffer(ctx context.Context, fromTrader *types.Node, offer *types.Offer) bool {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	return n.discoveryComp.RefreshOffer(fromTrader, offer)
 }
 
 func (n *Node) RemoveOffer(ctx context.Context, fromSupp *types.Node, toTrader *types.Node, offer *types.Offer) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.RemoveOffer(fromSupp, toTrader, offer)
 }
 
 func (n *Node) GetOffers(ctx context.Context, fromNode, toTrader *types.Node, relay bool) []types.AvailableOffer {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	return n.discoveryComp.GetOffers(ctx, fromNode, toTrader, relay)
 }
 
 func (n *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighborTrader, traderOffering *types.Node) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	n.discoveryComp.AdvertiseNeighborOffers(fromTrader, toNeighborTrader, traderOffering)
 }
@@ -214,7 +221,7 @@ func (n *Node) AdvertiseOffersNeighbor(ctx context.Context, fromTrader, toNeighb
 func (n *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offer *types.Offer,
 	containersConfigs []types.ContainerConfig) ([]types.ContainerStatus, error) {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	return n.schedulerComp.Launch(ctx, fromBuyer, offer, containersConfigs)
 }
@@ -223,7 +230,7 @@ func (n *Node) LaunchContainers(ctx context.Context, fromBuyer *types.Node, offe
 
 func (n *Node) StopLocalContainer(ctx context.Context, containerID string) error {
 	if partitionsState := types.SysPartitionsState(ctx); partitionsState != nil && n.config.SpreadPartitionsState() {
-		partitions.GlobalState.MergePartitionsState(partitionsState)
+		n.systemPartitionsState.MergePartitionsState(partitionsState)
 	}
 	return n.containersManagerComp.StopContainer(containerID)
 }

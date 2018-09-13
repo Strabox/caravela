@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/discovery/offering"
@@ -15,7 +16,7 @@ import (
 )
 
 // DiscoveryBackendFactory represents a method that creates a new discovery backend.
-type BackendFactory func(config *configuration.Configuration, overlay external.Overlay,
+type BackendFactory func(node common.Node, config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error)
 
 // discoveryBackends holds all the registered discovery backends available.
@@ -43,7 +44,7 @@ func RegisterDiscoveryBackend(discBackendName string, factory BackendFactory) {
 }
 
 // CreateDiscoveryBackend is used to obtain a discovery backend based on the configurations.
-func CreateDiscoveryBackend(config *configuration.Configuration, overlay external.Overlay,
+func CreateDiscoveryBackend(node common.Node, config *configuration.Configuration, overlay external.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) backend.Discovery {
 	configuredDiscoveryBackend := config.DiscoveryBackend()
 
@@ -58,7 +59,7 @@ func CreateDiscoveryBackend(config *configuration.Configuration, overlay externa
 		log.Panic(err)
 	}
 
-	discoveryBackends, err := discoveryFactory(config, overlay, client, resourcesMap, maxResources)
+	discoveryBackends, err := discoveryFactory(node, config, overlay, client, resourcesMap, maxResources)
 	if err != nil {
 		log.Panic(err)
 	}

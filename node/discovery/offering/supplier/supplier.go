@@ -40,12 +40,12 @@ type Supplier struct {
 }
 
 // NewSupplier creates a new supplier component, that manages the local resources.
-func NewSupplier(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
+func NewSupplier(node nodeCommon.Node, config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
 	resourcesMap *resources.Mapping, maxResources resources.Resources) *Supplier {
 
 	s := &Supplier{
 		config:         config,
-		offersStrategy: CreateOffersStrategy(config),
+		offersStrategy: CreateOffersStrategy(node, config),
 		client:         client,
 
 		nodeGUID: nil,

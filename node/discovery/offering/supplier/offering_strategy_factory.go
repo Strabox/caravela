@@ -5,11 +5,12 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common"
 	"strings"
 )
 
 // ManageOffersFactory represents a method that creates a new offers manager.
-type ManageOffersFactory func(config *configuration.Configuration) (OfferingStrategy, error)
+type ManageOffersFactory func(node common.Node, config *configuration.Configuration) (OfferingStrategy, error)
 
 // manageOffers holds all the registered offer managers available.
 var manageOffers = make(map[string]ManageOffersFactory)
@@ -34,7 +35,7 @@ func RegisterOffersStrategy(strategyName string, factory ManageOffersFactory) {
 }
 
 // CreateOffersStrategy is used to obtain an offers manager based on the configurations.
-func CreateOffersStrategy(config *configuration.Configuration) OfferingStrategy {
+func CreateOffersStrategy(node common.Node, config *configuration.Configuration) OfferingStrategy {
 	configuredStrategy := config.DiscoveryBackend()
 
 	strategyFactory, exist := manageOffers[configuredStrategy]
@@ -48,7 +49,7 @@ func CreateOffersStrategy(config *configuration.Configuration) OfferingStrategy 
 		log.Panic(err)
 	}
 
-	offersStrategy, err := strategyFactory(config)
+	offersStrategy, err := strategyFactory(node, config)
 	if err != nil {
 		log.Panic(err)
 	}

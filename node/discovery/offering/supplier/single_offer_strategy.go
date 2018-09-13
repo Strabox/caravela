@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
@@ -16,10 +17,11 @@ type singleOfferChordStrategy struct {
 	baseOfferStrategy
 }
 
-func newSingleOfferChordManager(config *configuration.Configuration) (OfferingStrategy, error) {
+func newSingleOfferChordManager(node common.Node, config *configuration.Configuration) (OfferingStrategy, error) {
 	return &singleOfferChordStrategy{
 		baseOfferStrategy: baseOfferStrategy{
 			configs: config,
+			node:    node,
 		},
 	}, nil
 }

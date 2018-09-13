@@ -3,24 +3,21 @@ package partitions
 import (
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/node/common/resources"
+	"math/rand"
 	"sync"
 )
-
-var GlobalState *SystemResourcePartitions = nil
 
 type SystemResourcePartitions struct {
 	partitionsState sync.Map
 	totalStats      int
+	randGenerator   *rand.Rand
 }
 
-func Init(totalStats int) {
-	GlobalState = NewSystemResourcePartitions(totalStats)
-}
-
-func NewSystemResourcePartitions(totalStats int) *SystemResourcePartitions {
+func NewSystemResourcePartitions(totalStats int, randGenerator *rand.Rand) *SystemResourcePartitions {
 	return &SystemResourcePartitions{
 		partitionsState: sync.Map{},
 		totalStats:      totalStats,
+		randGenerator:   randGenerator,
 	}
 }
 
@@ -30,7 +27,7 @@ func (s *SystemResourcePartitions) Try(targetResPartition resources.Resources) b
 			return partitionState.Try()
 		}
 	} else {
-		newPartitionState := NewResourcePartitionState(s.totalStats)
+		newPartitionState := NewResourcePartitionState(s.totalStats, s.randGenerator)
 		s.partitionsState.Store(targetResPartition, newPartitionState)
 		return newPartitionState.Try()
 	}
@@ -81,7 +78,7 @@ func (s *SystemResourcePartitions) MergePartitionsState(newPartitionsState []typ
 				partitionState.Merge(newPartitionState.Hits)
 			}
 		} else {
-			unknownPartitionState := NewResourcePartitionState(s.totalStats)
+			unknownPartitionState := NewResourcePartitionState(s.totalStats, s.randGenerator)
 			unknownPartitionState.hits = newPartitionState.Hits
 			s.partitionsState.Store(*partRes, unknownPartitionState)
 		}

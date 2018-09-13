@@ -1,66 +1,64 @@
 package partitions
 
 import (
-	"github.com/strabox/caravela/util"
 	"math"
 	"math/rand"
 	"sync"
-	"time"
 )
 
-var randomGenerator = rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix())))
-
 type ResourcePartitionState struct {
-	totalTries int
-	hits       int
-	mutex      sync.RWMutex
+	totalTries      int
+	hits            int
+	mutex           sync.RWMutex
+	randomGenerator *rand.Rand
 }
 
-func NewResourcePartitionState(totalStat int) *ResourcePartitionState {
+func NewResourcePartitionState(totalStat int, randGenerator *rand.Rand) *ResourcePartitionState {
 	return &ResourcePartitionState{
-		totalTries: totalStat,
-		hits:       totalStat,
-		mutex:      sync.RWMutex{},
+		totalTries:      totalStat,
+		hits:            totalStat,
+		mutex:           sync.RWMutex{},
+		randomGenerator: randGenerator,
 	}
 }
 
-func (rps *ResourcePartitionState) Try() bool {
-	rps.mutex.RLock()
-	defer rps.mutex.RUnlock()
+func (r *ResourcePartitionState) Try() bool {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
 
-	hitProbability := int((float64(rps.hits) / float64(rps.totalTries)) * 100)
-	randTry := randomGenerator.Intn(100)
+	hitProbability := int((float64(r.hits) / float64(r.totalTries)) * 100)
+	randTry := r.randomGenerator.Intn(100)
 	if randTry <= hitProbability {
 		return true
 	}
-	lastChance := randomGenerator.Intn(100)
-	if lastChance <= 10 {
+	lastChance := r.randomGenerator.Intn(100)
+	if lastChance <= 9 {
 		return true
 	}
 	return false
 }
 
-func (rps *ResourcePartitionState) Hit() {
-	rps.mutex.Lock()
-	defer rps.mutex.Unlock()
+func (r *ResourcePartitionState) Hit() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
-	if rps.hits < rps.totalTries {
-		rps.hits++
+	if r.hits < r.totalTries {
+		r.hits++
 	}
 }
 
-func (rps *ResourcePartitionState) Miss() {
-	rps.mutex.Lock()
-	defer rps.mutex.Unlock()
+func (r *ResourcePartitionState) Miss() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
-	if rps.hits > 0 {
-		rps.hits--
+	if r.hits > 0 {
+		r.hits--
 	}
 }
 
-func (rps *ResourcePartitionState) Merge(newHits int) {
-	rps.mutex.Lock()
-	defer rps.mutex.Unlock()
+func (r *ResourcePartitionState) Merge(newHits int) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
-	rps.hits = int(math.Floor((float64(newHits) + float64(rps.hits)) / 2))
+	r.hits = int(math.Floor((float64(newHits) + float64(r.hits)) / 2))
 }
