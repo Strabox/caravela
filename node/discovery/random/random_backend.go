@@ -21,10 +21,10 @@ type Discovery struct {
 	overlay external.Overlay             // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
-	nodeGUID           *guid.GUID           //
-	maximumResources   *resources.Resources //
-	availableResources *resources.Resources //
-	resourcesMutex     sync.Mutex           //
+	nodeGUID         *guid.GUID           //
+	maximumResources *resources.Resources //
+	freeResources    *resources.Resources //
+	resourcesMutex   sync.Mutex           //
 }
 
 func NewRandomDiscovery(_ common.Node, config *configuration.Configuration, overlay external.Overlay,
@@ -38,8 +38,8 @@ func NewRandomDiscovery(_ common.Node, config *configuration.Configuration, over
 		maximumResources: maxResources.Copy(),
 		nodeGUID:         nil,
 
-		availableResources: maxResources.Copy(),
-		resourcesMutex:     sync.Mutex{},
+		freeResources:  maxResources.Copy(),
+		resourcesMutex: sync.Mutex{},
 	}, nil
 }
 
@@ -97,8 +97,8 @@ func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
-	if d.availableResources.Contains(resourcesNecessary) {
-		d.availableResources.Sub(resourcesNecessary)
+	if d.freeResources.Contains(resourcesNecessary) {
+		d.freeResources.Sub(resourcesNecessary)
 		return true
 	}
 
@@ -109,7 +109,7 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
-	d.availableResources.Add(releasedResources)
+	d.freeResources.Add(releasedResources)
 }
 
 // ======================= External/Remote Services =========================
@@ -135,9 +135,9 @@ func (d *Discovery) GetOffers(_ context.Context, _, _ *types.Node, _ bool) []typ
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
-	if d.availableResources.IsValid() {
+	if d.freeResources.IsValid() {
 		usedResources := d.maximumResources.Copy()
-		usedResources.Sub(*d.availableResources)
+		usedResources.Sub(*d.freeResources)
 		return []types.AvailableOffer{
 			{
 				SupplierIP: d.config.HostIP(),
@@ -145,9 +145,9 @@ func (d *Discovery) GetOffers(_ context.Context, _, _ *types.Node, _ bool) []typ
 					ID:     0,
 					Amount: 1,
 					FreeResources: types.Resources{
-						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
-						CPUs:     d.availableResources.CPUs(),
-						Memory:   d.availableResources.Memory(),
+						CPUClass: types.CPUClass(d.freeResources.CPUClass()),
+						CPUs:     d.freeResources.CPUs(),
+						Memory:   d.freeResources.Memory(),
 					},
 					UsedResources: types.Resources{
 						CPUClass: types.CPUClass(usedResources.CPUClass()),
@@ -172,15 +172,15 @@ func (d *Discovery) AvailableResourcesSim() types.Resources {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 	return types.Resources{
-		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
-		CPUs:     d.availableResources.CPUs(),
-		Memory:   d.availableResources.Memory(),
+		CPUClass: types.CPUClass(d.freeResources.CPUClass()),
+		CPUs:     d.freeResources.CPUs(),
+		Memory:   d.freeResources.Memory(),
 	}
 }
 
 func (d *Discovery) MaximumResourcesSim() types.Resources {
 	return types.Resources{
-		CPUClass: types.CPUClass(d.availableResources.CPUClass()),
+		CPUClass: types.CPUClass(d.freeResources.CPUClass()),
 		CPUs:     d.maximumResources.CPUs(),
 		Memory:   d.maximumResources.Memory(),
 	}

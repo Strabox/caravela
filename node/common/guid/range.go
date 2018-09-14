@@ -18,9 +18,13 @@ func NewGUIDRange(lowerGUID GUID, higherGUID GUID) *Range {
 	}
 }
 
-// GenerateRandom generate random GUID inside the range.
-func (r *Range) GenerateRandom() (*GUID, error) {
+// GenerateRandomSuperPeer generate random GUID inside the range.
+func (r *Range) GenerateRandomSuperPeer() (*GUID, error) {
 	return r.lowerGUID.GenerateInnerRandomGUIDScaled(*r.higherGUID)
+}
+
+func (r *Range) GenerateRandom() (*GUID, error) {
+	return r.lowerGUID.GenerateInnerRandomGUID(*r.higherGUID)
 }
 
 // CreatePartitions returns partitions, set of ranges, of the receiver range.

@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewMapping(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := range resMap.resourcesGUIDMap {
@@ -22,7 +22,7 @@ func TestNewMapping(t *testing.T) {
 }
 
 func TestRandGUIDSearch_1(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
@@ -36,7 +36,7 @@ func TestRandGUIDSearch_1(t *testing.T) {
 }
 
 func TestRandGUIDSearch_2(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
@@ -50,7 +50,7 @@ func TestRandGUIDSearch_2(t *testing.T) {
 }
 
 func TestRandGUIDSearch_3(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
@@ -64,7 +64,7 @@ func TestRandGUIDSearch_3(t *testing.T) {
 }
 
 func TestRandGUIDSearch_4(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	for i := 0; i < 100000; i++ {
@@ -78,7 +78,7 @@ func TestRandGUIDSearch_4(t *testing.T) {
 }
 
 func TestRandGUIDSearch_5(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(0, 1, 1512))
@@ -90,7 +90,7 @@ func TestRandGUIDSearch_5(t *testing.T) {
 }
 
 func TestRandGUIDSearch_6(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.RandGUIDFittestSearch(*NewResourcesCPUClass(1, 2, 1512))
@@ -102,7 +102,7 @@ func TestRandGUIDSearch_6(t *testing.T) {
 }
 
 func TestFirstGUIDOffer(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	targetResources := []Resources{
@@ -130,7 +130,7 @@ func TestFirstGUIDOffer(t *testing.T) {
 }
 
 func TestLowestResources(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	lowestResources := *resMap.LowestResources()
@@ -139,7 +139,7 @@ func TestLowestResources(t *testing.T) {
 }
 
 func TestHigherRandomGUIDSearch_1(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.HigherRandGUIDSearch(*guid.NewGUIDInteger(5000), *NewResourcesCPUClass(0, 1, 256))
@@ -196,7 +196,7 @@ func TestHigherRandomGUIDSearch_1(t *testing.T) {
 }
 
 func TestHigherRandomGUIDSearch_2(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	_, err := resMap.HigherRandGUIDSearch(*guid.NewGUIDInteger(64000), *NewResourcesCPUClass(0, 1, 256))
@@ -204,7 +204,7 @@ func TestHigherRandomGUIDSearch_2(t *testing.T) {
 }
 
 func TestHigherRandomGUIDSearch_3(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.HigherRandGUIDSearch(*guid.NewGUIDInteger(12287), *NewResourcesCPUClass(0, 1, 550))
@@ -247,7 +247,7 @@ func TestHigherRandomGUIDSearch_3(t *testing.T) {
 }
 
 func TestLowerRandomGUID_1(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.LowerRandGUIDOffer(*guid.NewGUIDInteger(12287), *NewResourcesCPUClass(0, 1, 1024))
@@ -269,7 +269,7 @@ func TestLowerRandomGUID_1(t *testing.T) {
 }
 
 func TestLowerRandomGUIDOffer_2(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.LowerRandGUIDOffer(*guid.NewGUIDInteger(20000), *NewResourcesCPUClass(0, 2, 2500))
@@ -298,7 +298,7 @@ func TestLowerRandomGUIDOffer_2(t *testing.T) {
 }
 
 func TestLowerRandomGUIDOffer_3(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.LowerRandGUIDOffer(*guid.NewGUIDInteger(15000), *NewResourcesCPUClass(0, 2, 1512))
@@ -320,7 +320,7 @@ func TestLowerRandomGUIDOffer_3(t *testing.T) {
 }
 
 func TestLowerRandomGUIDOffer_4(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.LowerRandGUIDOffer(*guid.NewGUIDInteger(35000), *NewResourcesCPUClass(1, 1, 1512))
@@ -349,7 +349,7 @@ func TestLowerRandomGUIDOffer_4(t *testing.T) {
 }
 
 func TestLowerRandomGUIDOffer_5(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	randGUID, err := resMap.LowerRandGUIDOffer(*guid.NewGUIDInteger(50000), *NewResourcesCPUClass(1, 2, 2049))
@@ -399,7 +399,7 @@ func TestLowerRandomGUIDOffer_5(t *testing.T) {
 }
 
 func TestLowerPartitionsOffer_1(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	res, err := resMap.LowerPartitionsOffer(*NewResourcesCPUClass(0, 1, 512))
@@ -410,7 +410,7 @@ func TestLowerPartitionsOffer_1(t *testing.T) {
 }
 
 func TestLowerPartitionsOffer_2(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	res, err := resMap.LowerPartitionsOffer(*NewResourcesCPUClass(0, 1, 750))
@@ -421,7 +421,7 @@ func TestLowerPartitionsOffer_2(t *testing.T) {
 }
 
 func TestLowerPartitionsOffer_3(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	res, err := resMap.LowerPartitionsOffer(*NewResourcesCPUClass(0, 1, 1550))
@@ -432,7 +432,7 @@ func TestLowerPartitionsOffer_3(t *testing.T) {
 }
 
 func TestLowerPartitionsOffer_4(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	res, err := resMap.LowerPartitionsOffer(*NewResourcesCPUClass(0, 2, 1550))
@@ -443,7 +443,7 @@ func TestLowerPartitionsOffer_4(t *testing.T) {
 }
 
 func TestLowerPartitionsOffer_5(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	res, err := resMap.LowerPartitionsOffer(*NewResourcesCPUClass(0, 2, 2049))
@@ -454,7 +454,7 @@ func TestLowerPartitionsOffer_5(t *testing.T) {
 }
 
 func TestLowerPartitionsOffer_6(t *testing.T) {
-	guid.Init(16) // Use 16-bit GUID to be easily tested
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
 
 	res, err := resMap.LowerPartitionsOffer(*NewResourcesCPUClass(1, 2, 2049))

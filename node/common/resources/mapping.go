@@ -113,7 +113,7 @@ func (m *Mapping) RandGUIDFittestSearch(targetResources Resources) (*guid.GUID, 
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandom()
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandomSuperPeer()
 }
 
 func (m *Mapping) RandGUIDHighestSearch(targetResources Resources) (*guid.GUID, error) {
@@ -121,7 +121,7 @@ func (m *Mapping) RandGUIDHighestSearch(targetResources Resources) (*guid.GUID, 
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandom()
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandomSuperPeer()
 }
 
 // RandGUIDOffer returns a random GUID in the range of the respective "fittest" target resource combination.
@@ -130,7 +130,7 @@ func (m *Mapping) RandGUIDOffer(targetResources Resources) (*guid.GUID, error) {
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandom()
+	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandomSuperPeer()
 }
 
 // FirstGUIDOffer returns the first GUID that represents the given resources.
@@ -186,7 +186,7 @@ func (m *Mapping) HigherRandGUIDSearch(currentGUID guid.GUID, targetResources Re
 						firstHit = false
 						continue
 					}
-					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandom()
+					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandomSuperPeer()
 				}
 			}
 			currentMemoryIndex = 0
@@ -214,7 +214,7 @@ func (m *Mapping) LowerRandGUIDSearch(currentGUID guid.GUID, targetResources Res
 						firstHit = false
 						continue
 					}
-					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandom()
+					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandomSuperPeer()
 				}
 			}
 			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {
@@ -252,7 +252,7 @@ func (m *Mapping) LowerRandGUIDOffer(currentGUID guid.GUID, targetResources Reso
 						firstHit = false
 						continue
 					}
-					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandom()
+					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandomSuperPeer()
 				}
 			}
 			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {

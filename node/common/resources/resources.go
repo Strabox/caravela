@@ -21,8 +21,9 @@ func NewResourcesCPUClass(cpuClass int, cpus int, memory int) *Resources {
 //
 func NewResources(cpus int, memory int) *Resources {
 	return &Resources{
-		cpus:   cpus,
-		memory: memory,
+		cpuClass: 0,
+		cpus:     cpus,
+		memory:   memory,
 	}
 }
 

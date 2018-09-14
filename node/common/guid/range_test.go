@@ -30,7 +30,7 @@ func TestRange_GenerateRandomInside(t *testing.T) {
 	}
 	// Hack: Generate several randoms to check in order to improve our statistical success :)
 	for i := 0; i < 100; i++ {
-		randGUID, _ := guidRange.GenerateRandom()
+		randGUID, _ := guidRange.GenerateRandomSuperPeer()
 
 		_, exist := acceptableOutputs[randGUID.Int64()]
 		assert.True(t, exist, "Random GUID is not in acceptable range")
