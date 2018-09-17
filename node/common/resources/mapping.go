@@ -117,11 +117,11 @@ func (m *Mapping) RandGUIDFittestSearch(targetResources Resources) (*guid.GUID, 
 }
 
 func (m *Mapping) RandGUIDHighestSearch(targetResources Resources) (*guid.GUID, error) {
-	fittestRes, err := m.getHighestResourcesSearch(targetResources)
+	highestRes, err := m.getHighestResourcesSearch(targetResources)
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandomSuperPeer()
+	return m.resourcesRangeMap[float64(highestRes.CPUClass())][float64(highestRes.CPUs())][float64(highestRes.Memory())].GenerateRandomSuperPeer()
 }
 
 // RandGUIDOffer returns a random GUID in the range of the respective "fittest" target resource combination.

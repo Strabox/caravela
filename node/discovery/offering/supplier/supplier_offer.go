@@ -51,6 +51,10 @@ func (offer *supplierOffer) VerifyRefreshes(refreshTimeout time.Duration) {
 	}
 }
 
+func (offer *supplierOffer) UnreachableTrader() {
+	offer.refreshesMissed++
+}
+
 func (offer *supplierOffer) RefreshesMissed() int {
 	return offer.refreshesMissed
 }

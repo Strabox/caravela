@@ -87,9 +87,9 @@ OfferLoop:
 		for _, offer := range activeOffers {
 			if !offer.Resources().Equals(availableResources) {
 				updateOffer := func(suppOffer supplierOffer) {
-					m.remoteClient.UpdateOffer(
+					err := m.remoteClient.UpdateOffer(
 						context.Background(),
-						&types.Node{IP: m.configs.HostIP(), GUID: ""},
+						&types.Node{IP: m.configs.HostIP()},
 						&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
 						&types.Offer{
 							ID:     int64(suppOffer.ID()),
@@ -105,6 +105,7 @@ OfferLoop:
 								Memory:   usedResources.Memory(),
 							},
 						})
+					m.localSupplier.forceOfferRefresh(offer.ID(), err == nil)
 				}
 
 				if m.configs.Simulation() {

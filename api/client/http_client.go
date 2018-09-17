@@ -63,7 +63,6 @@ func (c *Client) SubmitContainers(ctx context.Context, containersConfigs []types
 
 // StopContainers stops and removes all the containers given by the containersIDs slice.
 func (c *Client) StopContainers(ctx context.Context, containersIDs []string) *Error {
-
 	url := util.BuildHttpURL(false, c.config.CaravelaInstanceIP(), c.config.CaravelaInstancePort(),
 		user.ContainerBaseEndpoint)
 

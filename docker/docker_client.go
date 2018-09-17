@@ -90,7 +90,7 @@ func (c *Client) GetDockerEngineTotalResources() (int, int, int) {
 		log.Errorf(util.LogTag("DOCKER")+"Get Docker Info error: %s", err)
 	}
 
-	cpuClass := int(caravelaTypes.LowCPUPClass) // TODO: Dehardcode the value. Try calculate it based on CPU info or a benchmark IDK.
+	cpuClass := util.GetCpuClass()
 	cpuCores := info.NCPU
 	memory := info.MemTotal / 1000000 // Return in MB (MegaBytes)
 

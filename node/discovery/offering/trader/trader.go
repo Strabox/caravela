@@ -164,6 +164,7 @@ func (t *Trader) UpdateOffer(fromSupp *types.Node, offer *types.Offer) {
 	if traderOffer, exist := t.offers[offerKey{id: common.OfferID(offer.ID), supplierIP: fromSupp.IP}]; exist {
 		newOfferRes := *resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 		traderOffer.UpdateResources(newOfferRes, offer.Amount)
+		traderOffer.RefreshSucceeded() // Refresh the offer at the same time of update too.
 	}
 }
 

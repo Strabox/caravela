@@ -220,6 +220,16 @@ func (s *Supplier) updateOffers() {
 	}
 }
 
+func (s *Supplier) forceOfferRefresh(offerID common.OfferID, success bool) {
+	if offer, exist := s.activeOffers[offerID]; exist {
+		if success {
+			offer.Refresh()
+		} else {
+			offer.UnreachableTrader()
+		}
+	}
+}
+
 func (s *Supplier) newOfferID() common.OfferID {
 	res := s.offersIDGen
 	s.offersIDGen++

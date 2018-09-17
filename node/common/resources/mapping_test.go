@@ -246,6 +246,63 @@ func TestHigherRandomGUIDSearch_3(t *testing.T) {
 	assert.Error(t, err, "")
 }
 
+func TestLowerRandomGUIDSearch_1(t *testing.T) {
+	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
+	resMap := NewResourcesMap(testPartitions)
+
+	randGUID, err := resMap.RandGUIDHighestSearch(*NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+	assert.True(t, randGUID.Int64() >= int64(57343), "")
+	assert.True(t, randGUID.Int64() < int64(65535), "")
+
+	randGUID, err = resMap.LowerRandGUIDSearch(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+	assert.True(t, randGUID.Int64() >= int64(49151), "")
+	assert.True(t, randGUID.Int64() < int64(57343), "")
+
+	randGUID, err = resMap.LowerRandGUIDSearch(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error(), "")
+	}
+	assert.True(t, randGUID.Int64() >= int64(40959), "")
+	assert.True(t, randGUID.Int64() < int64(49151), "")
+
+	randGUID, err = resMap.LowerRandGUIDSearch(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error(), "")
+	}
+	assert.True(t, randGUID.Int64() >= int64(32767), "")
+	assert.True(t, randGUID.Int64() < int64(40959), "")
+
+	randGUID, err = resMap.LowerRandGUIDSearch(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error(), "")
+	}
+	assert.True(t, randGUID.Int64() >= int64(16383), "")
+	assert.True(t, randGUID.Int64() < int64(32767), "")
+
+	randGUID, err = resMap.LowerRandGUIDSearch(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error(), "")
+	}
+	assert.True(t, randGUID.Int64() >= int64(12286), "")
+	assert.True(t, randGUID.Int64() < int64(16383), "")
+
+	randGUID, err = resMap.LowerRandGUIDSearch(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	if err != nil {
+		assert.Fail(t, err.Error(), "")
+	}
+	assert.True(t, randGUID.Int64() >= int64(8191), "")
+	assert.True(t, randGUID.Int64() < int64(12286), "")
+
+	randGUID, err = resMap.LowerRandGUIDOffer(*randGUID, *NewResourcesCPUClass(0, 1, 450))
+	assert.Error(t, err, "")
+}
+
 func TestLowerRandomGUID_1(t *testing.T) {
 	guid.Init(16, 1, 1) // Use 16-bit GUID to be easily tested
 	resMap := NewResourcesMap(testPartitions)
