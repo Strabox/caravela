@@ -23,6 +23,7 @@ func (r *Range) GenerateRandomSuperPeer() (*GUID, error) {
 	return r.lowerGUID.GenerateInnerRandomGUIDScaled(*r.higherGUID)
 }
 
+// GenerateRandom ...
 func (r *Range) GenerateRandom() (*GUID, error) {
 	return r.lowerGUID.GenerateInnerRandomGUID(*r.higherGUID)
 }

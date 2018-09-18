@@ -56,7 +56,7 @@ type caravela struct {
 
 type discoveryBackend struct {
 	Backend              string                   `json:"StorageBackend"`       // Selected discovery backend.
-	OfferingChordBackend offeringChordDiscBackend `json:"OfferingChordBackend"` // SmartChord discovery backend configs.
+	OfferingChordBackend offeringChordDiscBackend `json:"OfferingChordBackend"` // OfferingChord discovery backend configs.
 	RandomChordBackend   randomChordDiscBackend   `json:"RandomChordBackend"`   // RandomChord discovery backend configs.
 }
 
@@ -70,8 +70,9 @@ type offeringChordDiscBackend struct {
 	MaxRefreshesMissed        int      `json:"MaxRefreshesMissed"`     // Maximum amount of refreshes a trader failed to send to the supplier
 	PartitionsStateBufferSize int      `json:"PartitionsStateBufferSize"`
 	// Debug performance flags
-	SpreadOffers             bool `json:"SpreadOffers"`             // Used to tell if the spread offers mechanism is used or not.
-	SpreadPartitionsState    bool `json:"SpreadPartitionsState"`    // Used to tell if the spread partitions state is used or not.
+	SpreadOffers             bool `json:"SpreadOffers"`          // Used to tell if the spread offers mechanism is used or not.
+	SpreadPartitionsState    bool `json:"SpreadPartitionsState"` // Used to tell if the spread partitions state is used or not.
+	PseudoSuperPeers         bool `json:"PseudoSuperPeers"`
 	GUIDEstimatedNetworkSize int  `json:"GUIDEstimatedNetworkSize"` // Estimated network size to tune the GUID scale.
 	GUIDScaleFactor          int  `json:"GUIDScaleFactor"`          // GUID scale's factor.
 }
@@ -138,11 +139,12 @@ func Default(hostIP string) *Configuration {
 					// Debug performance flags
 					SpreadOffers:             true,
 					SpreadPartitionsState:    true,
+					PseudoSuperPeers:         false,
 					GUIDEstimatedNetworkSize: 50000,
 					GUIDScaleFactor:          5,
 				},
 				RandomChordBackend: randomChordDiscBackend{
-					RandBackendMaxRetries: 6,
+					RandBackendMaxRetries: 3,
 				},
 			},
 			Resources: ResourcesPartitions{
@@ -363,6 +365,7 @@ func (c *Configuration) Print() {
 	// Debug performance flags.
 	log.Printf("      Spread Offers:                 %t", c.SpreadOffers())
 	log.Printf("      Spread Partitions State:       %t", c.SpreadPartitionsState())
+	log.Printf("      Pseudo Super Peers:            %t", c.PseudoSuperPeers())
 	log.Printf("      GUID Estimated Network Size:   %d", c.GUIDEstimatedNetworkSize())
 	log.Printf("      GUID Scale Factor:             %d", c.GUIDScaleFactor())
 
@@ -407,23 +410,23 @@ func (c *Configuration) APITimeout() time.Duration {
 }
 
 func (c *Configuration) ResourcesPartitions() ResourcesPartitions {
-	copy := ResourcesPartitions{}
-	copy.CPUClasses = make([]CPUClassPartition, len(c.Caravela.Resources.CPUClasses))
+	copyResources := ResourcesPartitions{}
+	copyResources.CPUClasses = make([]CPUClassPartition, len(c.Caravela.Resources.CPUClasses))
 	for cp, class := range c.Caravela.Resources.CPUClasses {
-		copy.CPUClasses[cp].Value = class.Value
-		copy.CPUClasses[cp].Percentage = class.Percentage
-		copy.CPUClasses[cp].CPUCores = make([]CPUCoresPartition, len(class.CPUCores))
+		copyResources.CPUClasses[cp].Value = class.Value
+		copyResources.CPUClasses[cp].Percentage = class.Percentage
+		copyResources.CPUClasses[cp].CPUCores = make([]CPUCoresPartition, len(class.CPUCores))
 		for cc, cores := range class.CPUCores {
-			copy.CPUClasses[cp].CPUCores[cc].Value = cores.Value
-			copy.CPUClasses[cp].CPUCores[cc].Percentage = cores.Percentage
-			copy.CPUClasses[cp].CPUCores[cc].Memory = make([]MemoryPartition, len(cores.Memory))
+			copyResources.CPUClasses[cp].CPUCores[cc].Value = cores.Value
+			copyResources.CPUClasses[cp].CPUCores[cc].Percentage = cores.Percentage
+			copyResources.CPUClasses[cp].CPUCores[cc].Memory = make([]MemoryPartition, len(cores.Memory))
 			for r, memory := range cores.Memory {
-				copy.CPUClasses[cp].CPUCores[cc].Memory[r].Value = memory.Value
-				copy.CPUClasses[cp].CPUCores[cc].Memory[r].Percentage = memory.Percentage
+				copyResources.CPUClasses[cp].CPUCores[cc].Memory[r].Value = memory.Value
+				copyResources.CPUClasses[cp].CPUCores[cc].Memory[r].Percentage = memory.Percentage
 			}
 		}
 	}
-	return copy
+	return copyResources
 }
 
 func (c *Configuration) CPUSlices() int {
@@ -490,6 +493,11 @@ func (c *Configuration) SpreadOffers() bool {
 // Debug performance flag.
 func (c *Configuration) SpreadPartitionsState() bool {
 	return c.Caravela.DiscoveryBackend.OfferingChordBackend.SpreadPartitionsState
+}
+
+// Debug performance flag.
+func (c *Configuration) PseudoSuperPeers() bool {
+	return c.Caravela.DiscoveryBackend.OfferingChordBackend.PseudoSuperPeers
 }
 
 // Debug performance flag.

@@ -12,10 +12,11 @@ type Mapping struct {
 	partitions        *ResourcePartitions //
 	resourcesGUIDMap  [][][]*guid.Range   // Matrix of GUID ranges for each resource combination
 	resourcesRangeMap map[float64]map[float64]map[float64]*guid.Range
+	pseudoSuperPeer   bool
 }
 
 // NewResourcesMap creates a new resource map given the CPUs and Memory partitions and the respective GUID distributions.
-func NewResourcesMap(partitions *ResourcePartitions) *Mapping {
+func NewResourcesMap(partitions *ResourcePartitions, pseudoSuperPeer bool) *Mapping {
 	cpuClassPartitions := make([][][]*guid.Range, len(partitions.cpuClassPartitions))
 
 	cpuClassPercentages := partitions.CPUClassPercentages()
@@ -46,6 +47,7 @@ func NewResourcesMap(partitions *ResourcePartitions) *Mapping {
 		partitions:        partitions,
 		resourcesGUIDMap:  cpuClassPartitions,
 		resourcesRangeMap: resourcesRangeMap,
+		pseudoSuperPeer:   pseudoSuperPeer,
 	}
 }
 
@@ -113,7 +115,7 @@ func (m *Mapping) RandGUIDFittestSearch(targetResources Resources) (*guid.GUID, 
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandomSuperPeer()
+	return m.generateRandomGUIDByResources(float64(fittestRes.CPUClass()), float64(fittestRes.CPUs()), float64(fittestRes.Memory()))
 }
 
 func (m *Mapping) RandGUIDHighestSearch(targetResources Resources) (*guid.GUID, error) {
@@ -121,7 +123,7 @@ func (m *Mapping) RandGUIDHighestSearch(targetResources Resources) (*guid.GUID, 
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(highestRes.CPUClass())][float64(highestRes.CPUs())][float64(highestRes.Memory())].GenerateRandomSuperPeer()
+	return m.generateRandomGUIDByResources(float64(highestRes.CPUClass()), float64(highestRes.CPUs()), float64(highestRes.Memory()))
 }
 
 // RandGUIDOffer returns a random GUID in the range of the respective "fittest" target resource combination.
@@ -130,7 +132,7 @@ func (m *Mapping) RandGUIDOffer(targetResources Resources) (*guid.GUID, error) {
 	if err != nil {
 		return nil, err
 	}
-	return m.resourcesRangeMap[float64(fittestRes.CPUClass())][float64(fittestRes.CPUs())][float64(fittestRes.Memory())].GenerateRandomSuperPeer()
+	return m.generateRandomGUIDByResources(float64(fittestRes.CPUClass()), float64(fittestRes.CPUs()), float64(fittestRes.Memory()))
 }
 
 // FirstGUIDOffer returns the first GUID that represents the given resources.
@@ -186,7 +188,7 @@ func (m *Mapping) HigherRandGUIDSearch(currentGUID guid.GUID, targetResources Re
 						firstHit = false
 						continue
 					}
-					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandomSuperPeer()
+					return m.generateRandomGUIDByIndexes(cpuClassIndex, coresIndex, memoryIndex)
 				}
 			}
 			currentMemoryIndex = 0
@@ -214,7 +216,7 @@ func (m *Mapping) LowerRandGUIDSearch(currentGUID guid.GUID, targetResources Res
 						firstHit = false
 						continue
 					}
-					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandomSuperPeer()
+					return m.generateRandomGUIDByIndexes(cpuClassIndex, coresIndex, memoryIndex)
 				}
 			}
 			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {
@@ -252,7 +254,7 @@ func (m *Mapping) LowerRandGUIDOffer(currentGUID guid.GUID, targetResources Reso
 						firstHit = false
 						continue
 					}
-					return m.resourcesGUIDMap[cpuClassIndex][coresIndex][memoryIndex].GenerateRandomSuperPeer()
+					return m.generateRandomGUIDByIndexes(cpuClassIndex, coresIndex, memoryIndex)
 				}
 			}
 			if coresIndex == 0 && (cpuClassIndex-1) >= 0 {
@@ -398,4 +400,21 @@ ExitLoop:
 		return nil, errors.New("no target offerResources that can handle available")
 	}
 	return fittestRes, nil
+}
+
+// TODO
+func (m *Mapping) generateRandomGUIDByIndexes(cpuClassIndex, cpuCoresIndex, memoryIndex int) (*guid.GUID, error) {
+	if m.pseudoSuperPeer {
+		return m.resourcesGUIDMap[cpuClassIndex][cpuCoresIndex][memoryIndex].GenerateRandomSuperPeer()
+	} else {
+		return m.resourcesGUIDMap[cpuClassIndex][cpuCoresIndex][memoryIndex].GenerateRandom()
+	}
+}
+
+func (m *Mapping) generateRandomGUIDByResources(cpuClass, cpuCores, memory float64) (*guid.GUID, error) {
+	if m.pseudoSuperPeer {
+		return m.resourcesRangeMap[cpuClass][cpuCores][memory].GenerateRandomSuperPeer()
+	} else {
+		return m.resourcesRangeMap[cpuClass][cpuCores][memory].GenerateRandom()
+	}
 }
