@@ -5,6 +5,7 @@ import (
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
+	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
 )
@@ -33,7 +34,35 @@ func (m *multipleOfferStrategy) Init(supp *Supplier, resourcesMapping *resources
 }
 
 func (m *multipleOfferStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	return m.findOffersLowToHigher(ctx, targetResources)
+	availableOffers := make([]types.AvailableOffer, 0)
+
+	for r := 0; r < 2; r++ {
+		destinationGUID, err := m.resourcesMapping.RandGUIDFittestSearch(targetResources)
+		if err != nil { // System can't handle that many resources
+			return availableOffers
+		}
+
+		overlayNodes, _ := m.overlay.Lookup(ctx, destinationGUID.Bytes())
+		overlayNodes = m.removeNonTargetNodes(overlayNodes, *destinationGUID)
+
+		for _, node := range overlayNodes {
+			offers, err := m.remoteClient.GetOffers(
+				ctx,
+				&types.Node{}, //TODO: Remove this crap!
+				&types.Node{IP: node.IP(), GUID: guid.NewGUIDBytes(node.GUID()).String()},
+				true)
+			if err == nil && len(offers) != 0 {
+				availableOffers = append(availableOffers, offers...)
+				break
+			}
+		}
+
+		if len(availableOffers) > 0 {
+			return availableOffers
+		}
+	}
+
+	return availableOffers
 }
 
 func (m *multipleOfferStrategy) UpdateOffers(availableResources, usedResources resources.Resources) {
