@@ -33,13 +33,7 @@ func (m *multipleOfferStrategy) Init(supp *Supplier, resourcesMapping *resources
 }
 
 func (m *multipleOfferStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
-	if m.configs.SchedulingPolicy() == "binpack" {
-		return m.findOffersLowToHigher(ctx, targetResources)
-	} else if m.configs.SchedulingPolicy() == "spread" {
-		return m.findOffersHigherToLow(ctx, targetResources)
-	} else {
-		panic("invalid scheduling policies")
-	}
+	return m.findOffersLowToHigher(ctx, targetResources)
 }
 
 func (m *multipleOfferStrategy) UpdateOffers(availableResources, usedResources resources.Resources) {
