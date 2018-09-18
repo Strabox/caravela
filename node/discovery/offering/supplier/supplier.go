@@ -287,7 +287,7 @@ func (s *Supplier) AvailableResources() types.Resources {
 // Simulation
 func (s *Supplier) MaximumResources() types.Resources {
 	return types.Resources{
-		CPUClass: types.CPUClass(s.availableResources.CPUClass()),
+		CPUClass: types.CPUClass(s.maxResources.CPUClass()),
 		CPUs:     s.maxResources.CPUs(),
 		Memory:   s.maxResources.Memory(),
 	}

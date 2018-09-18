@@ -407,7 +407,23 @@ func (c *Configuration) APITimeout() time.Duration {
 }
 
 func (c *Configuration) ResourcesPartitions() ResourcesPartitions {
-	return c.Caravela.Resources
+	copy := ResourcesPartitions{}
+	copy.CPUClasses = make([]CPUClassPartition, len(c.Caravela.Resources.CPUClasses))
+	for cp, class := range c.Caravela.Resources.CPUClasses {
+		copy.CPUClasses[cp].Value = class.Value
+		copy.CPUClasses[cp].Percentage = class.Percentage
+		copy.CPUClasses[cp].CPUCores = make([]CPUCoresPartition, len(class.CPUCores))
+		for cc, cores := range class.CPUCores {
+			copy.CPUClasses[cp].CPUCores[cc].Value = cores.Value
+			copy.CPUClasses[cp].CPUCores[cc].Percentage = cores.Percentage
+			copy.CPUClasses[cp].CPUCores[cc].Memory = make([]MemoryPartition, len(cores.Memory))
+			for r, memory := range cores.Memory {
+				copy.CPUClasses[cp].CPUCores[cc].Memory[r].Value = memory.Value
+				copy.CPUClasses[cp].CPUCores[cc].Memory[r].Percentage = memory.Percentage
+			}
+		}
+	}
+	return copy
 }
 
 func (c *Configuration) CPUSlices() int {
