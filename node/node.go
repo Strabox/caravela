@@ -53,7 +53,7 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 	maxAvailableResources := resources.NewResourcesCPUClass(cpuClass, CPUSlices, maxMemory)
 
 	// Create FreeResources Mapping (based on the configurations)
-	resourcesMap := resources.NewResourcesMap(resources.ObtainConfiguredPartitions(config.ResourcesPartitions()), true)
+	resourcesMap := resources.NewResourcesMap(resources.ObtainConfiguredPartitions(config.ResourcesPartitions()), config.PseudoSuperPeers())
 
 	// Create all the internal components
 	node := &Node{}
