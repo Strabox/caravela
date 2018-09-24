@@ -153,12 +153,13 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 				} else if err == nil && len(offers) == 0 {
 					b.node.GetSystemPartitionsState().Miss(targetResPartition)
 				}
-				tries++
 			}
 
 			if len(availableOffers) > 0 {
 				return availableOffers
 			}
+
+			tries++
 		}
 
 		if tries == 2 {
