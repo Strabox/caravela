@@ -121,13 +121,16 @@ func (d *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, trader
 // ======================= External Services (Consumed during simulation ONLY) =========================
 
 // Simulation
-func (d *Discovery) AvailableResourcesSim() types.Resources {
-	return d.supplier.AvailableResources()
-}
-
-// Simulation
-func (d *Discovery) MaximumResourcesSim() types.Resources {
-	return d.supplier.MaximumResources()
+func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int) {
+	numActiveOffers := 0
+	d.traders.Range(func(_, value interface{}) bool {
+		currentTrader, ok := value.(*trader.Trader)
+		if ok {
+			numActiveOffers = currentTrader.NumActiveOffers()
+		}
+		return true
+	})
+	return d.supplier.AvailableResources(), d.supplier.MaximumResources(), numActiveOffers
 }
 
 // Simulation

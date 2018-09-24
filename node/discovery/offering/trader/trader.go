@@ -352,6 +352,13 @@ func (t *Trader) RefreshOffersSim() {
 }
 
 //Simulation
+func (t *Trader) NumActiveOffers() int {
+	t.offersMutex.Lock()
+	defer t.offersMutex.Unlock()
+	return len(t.offers)
+}
+
+//Simulation
 func (t *Trader) SpreadOffersSim() {
 	// Advertise offers (if any) into the neighbors traders.
 	// Necessary only to overcame the problems of unnoticed death of a neighbor.

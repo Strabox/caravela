@@ -242,22 +242,13 @@ func (n *Node) StopLocalContainer(ctx context.Context, containerID string) error
 
 // =========================== APIs exclusively used in Simulation ==============================
 
-// AvailableResourcesSim returns the current available resources of the node.
+// NodeInformationSim returns the available resources, maximum available resources and number of offers in the node.
 // Note: Only available when the node is running in simulation mode.
-func (n *Node) AvailableResourcesSim() types.Resources {
+func (n *Node) NodeInformationSim() (types.Resources, types.Resources, int) {
 	if !n.config.Simulation() {
-		panic(errors.New("AvailableResourcesSim request can only be used in Simulation Mode"))
+		panic(errors.New("NodeInformationSim request can only be used in Simulation Mode"))
 	}
-	return n.discoveryComp.AvailableResourcesSim()
-}
-
-// MaximumResourcesSim returns the maximum available resources of the node.
-// Note: Only available when the node is running in simulation mode.
-func (n *Node) MaximumResourcesSim() types.Resources {
-	if !n.config.Simulation() {
-		panic(errors.New("MaximumResourcesSim request can only be used in Simulation Mode"))
-	}
-	return n.discoveryComp.MaximumResourcesSim()
+	return n.discoveryComp.NodeInformationSim()
 }
 
 // RefreshOffersSim triggers the inner actions to refresh all the offers that the node is handling.

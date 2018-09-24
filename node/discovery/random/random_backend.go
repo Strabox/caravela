@@ -168,22 +168,20 @@ func (d *Discovery) AdvertiseNeighborOffers(_, _, _ *types.Node) {
 
 // ============== External/Remote Services (Only Simulation) ================
 
-func (d *Discovery) AvailableResourcesSim() types.Resources {
+func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int) {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 	return types.Resources{
-		CPUClass: types.CPUClass(d.freeResources.CPUClass()),
-		CPUs:     d.freeResources.CPUs(),
-		Memory:   d.freeResources.Memory(),
-	}
-}
-
-func (d *Discovery) MaximumResourcesSim() types.Resources {
-	return types.Resources{
-		CPUClass: types.CPUClass(d.freeResources.CPUClass()),
-		CPUs:     d.maximumResources.CPUs(),
-		Memory:   d.maximumResources.Memory(),
-	}
+			CPUClass: types.CPUClass(d.freeResources.CPUClass()),
+			CPUs:     d.freeResources.CPUs(),
+			Memory:   d.freeResources.Memory(),
+		},
+		types.Resources{
+			CPUClass: types.CPUClass(d.freeResources.CPUClass()),
+			CPUs:     d.maximumResources.CPUs(),
+			Memory:   d.maximumResources.Memory(),
+		},
+		0
 }
 
 func (d *Discovery) RefreshOffersSim() {

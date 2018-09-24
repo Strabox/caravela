@@ -43,9 +43,7 @@ type Discovery interface {
 
 	// ========================== External/Remote Services (Only Simulation) =======================
 	//
-	AvailableResourcesSim() types.Resources
-	//
-	MaximumResourcesSim() types.Resources
+	NodeInformationSim() (types.Resources, types.Resources, int)
 	//
 	RefreshOffersSim()
 	//
