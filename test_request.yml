@@ -1,16 +1,15 @@
-service1:
-  group_policy: "spread"
-  image: yeasy/simple-web:latest
-  #cpu_power: "low"
+database:
+  group_policy: "co-location"
+  image: "redis:alpine"
   cpus: 1
-  memory: 128
+  memory: 1024
   ports:
-  - "9001:80"
-service2:
-  group_policy: "spread"
-  image: yeasy/simple-web:latest
-  #cpu_power: "medium"
-  cpus: 1
-  memory: 256
+  - "9000:6000"
+web:
+  group_policy: "co-location"
+  image: "webserver"
+  cpus: 2
+  memory: 512
   ports:
-  - "9002:80"
+  - "8080:80"
+
