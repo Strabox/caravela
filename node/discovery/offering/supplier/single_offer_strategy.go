@@ -172,7 +172,7 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 
 func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
 	var destinationGUID *guid.GUID = nil
-	findPhase := 0
+	findPhase, tries := 0, 0
 	availableOffers := make([]types.AvailableOffer, 0)
 	for {
 		var err error = nil
@@ -214,6 +214,12 @@ func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetRes
 			if len(availableOffers) > 0 {
 				return availableOffers
 			}
+
+			tries++
+		}
+
+		if tries == 2 {
+			return availableOffers
 		}
 
 		findPhase++
