@@ -69,6 +69,7 @@ type offeringChordDiscBackend struct {
 	MaxRefreshesFailed        int      `json:"MaxRefreshesFailed"`     // Maximum amount of refreshes that a supplier failed to reply
 	MaxRefreshesMissed        int      `json:"MaxRefreshesMissed"`     // Maximum amount of refreshes a trader failed to send to the supplier
 	PartitionsStateBufferSize int      `json:"PartitionsStateBufferSize"`
+	MaxPartitionsSearch       int      `json:"MaxPartitionsSearch"`
 	// Debug performance flags
 	SpreadOffers             bool `json:"SpreadOffers"`          // Used to tell if the spread offers mechanism is used or not.
 	SpreadPartitionsState    bool `json:"SpreadPartitionsState"` // Used to tell if the spread partitions state is used or not.
@@ -136,6 +137,7 @@ func Default(hostIP string) *Configuration {
 					MaxRefreshesFailed:        2,
 					MaxRefreshesMissed:        2,
 					PartitionsStateBufferSize: 15,
+					MaxPartitionsSearch:       3,
 					// Debug performance flags
 					SpreadOffers:             true,
 					SpreadPartitionsState:    true,
@@ -283,6 +285,10 @@ func (c *Configuration) validate() error {
 		return fmt.Errorf("the partitions state buffer size must be > 0")
 	}
 
+	if c.MaxPartitionsSearch() <= 0 {
+		return fmt.Errorf("the max partitions search must be > 0")
+	}
+
 	if c.GUIDEstimatedNetworkSize() <= 0 {
 		return fmt.Errorf("estimated network size must a positive integer")
 	}
@@ -362,6 +368,7 @@ func (c *Configuration) Print() {
 	log.Printf("      Max num of refreshes failed:   %d", c.MaxRefreshesFailed())
 	log.Printf("      Max num of refreshes missed:   %d", c.MaxRefreshesMissed())
 	log.Printf("      Partitions State Buffer Size:  %d", c.PartitionsStateBufferSize())
+	log.Printf("      Max Partitions Search:         %d", c.MaxPartitionsSearch())
 	// Debug performance flags.
 	log.Printf("      Spread Offers:                 %t", c.SpreadOffers())
 	log.Printf("      Spread Partitions State:       %t", c.SpreadPartitionsState())
@@ -483,6 +490,10 @@ func (c *Configuration) RefreshMissedTimeout() time.Duration {
 
 func (c *Configuration) PartitionsStateBufferSize() int {
 	return c.Caravela.DiscoveryBackend.OfferingChordBackend.PartitionsStateBufferSize
+}
+
+func (c *Configuration) MaxPartitionsSearch() int {
+	return c.Caravela.DiscoveryBackend.OfferingChordBackend.MaxPartitionsSearch
 }
 
 // Debug performance flag.

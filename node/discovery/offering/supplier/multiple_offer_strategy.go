@@ -36,7 +36,7 @@ func (m *multipleOfferStrategy) Init(supp *Supplier, resourcesMapping *resources
 func (m *multipleOfferStrategy) FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer {
 	availableOffers := make([]types.AvailableOffer, 0)
 
-	for r := 0; r < 1; r++ {
+	for r := 0; r < m.configs.MaxPartitionsSearch(); r++ {
 		destinationGUID, err := m.resourcesMapping.RandGUIDFittestSearch(targetResources)
 		if err != nil { // System can't handle that many resources
 			return availableOffers

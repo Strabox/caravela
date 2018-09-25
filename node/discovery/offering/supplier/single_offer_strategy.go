@@ -162,7 +162,7 @@ func (b *baseOfferStrategy) findOffersLowToHigher(ctx context.Context, targetRes
 			tries++
 		}
 
-		if tries == 2 {
+		if tries == (b.configs.MaxPartitionsSearch() - 1) {
 			return availableOffers
 		}
 
@@ -218,7 +218,7 @@ func (b *baseOfferStrategy) findOffersHigherToLow(ctx context.Context, targetRes
 			tries++
 		}
 
-		if tries == 2 {
+		if tries == (b.configs.MaxPartitionsSearch() - 1) {
 			return availableOffers
 		}
 
