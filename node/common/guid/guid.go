@@ -236,5 +236,8 @@ func (g *GUID) String() string {
 
 // Short returns the first digits of the GUID in a string representation.
 func (g *GUID) Short() string {
-	return g.id.String()[0:guidShortStringSize]
+	if len(g.id.String()) < guidShortStringSize {
+		return g.id.String()[:len(g.id.String())]
+	}
+	return g.id.String()[:guidShortStringSize]
 }
