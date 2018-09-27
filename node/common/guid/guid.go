@@ -67,6 +67,13 @@ func NewZero() *GUID {
 	}
 }
 
+// NewGUIDBigInteger ....
+func NewGUIDBigInteger(bigInt *big.Int) *GUID {
+	return &GUID{
+		id: bigInt,
+	}
+}
+
 // NewGUIDRandom creates a random GUID in the range [0,MaxGUID).
 func NewGUIDRandom() *GUID {
 	guid := &GUID{}
@@ -208,6 +215,11 @@ func (g *GUID) Bytes() []byte {
 // Int64 returns an int64 that represents the GUID.
 func (g *GUID) Int64() int64 {
 	return g.id.Int64()
+}
+
+// BigInt...
+func (g *GUID) BigInt() *big.Int {
+	return g.id
 }
 
 // Copy creates a copy of the GUID object.
