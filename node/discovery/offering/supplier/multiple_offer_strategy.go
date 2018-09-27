@@ -65,7 +65,7 @@ func (m *multipleOfferStrategy) FindOffers(ctx context.Context, targetResources 
 	return availableOffers
 }
 
-func (m *multipleOfferStrategy) UpdateOffers(availableResources, usedResources resources.Resources) {
+func (m *multipleOfferStrategy) UpdateOffers(ctx context.Context, availableResources, usedResources resources.Resources) {
 	lowerPartitions, _ := m.resourcesMapping.LowerPartitionsOffer(availableResources)
 	offersToRemove := make([]supplierOffer, 0)
 
@@ -83,7 +83,7 @@ OfferLoop:
 	}
 
 	for _, resourcePartitionTarget := range lowerPartitions {
-		offer, err := m.createAnOffer(int64(m.localSupplier.newOfferID()), resourcePartitionTarget, availableResources, usedResources)
+		offer, err := m.createAnOffer(ctx, int64(m.localSupplier.newOfferID()), resourcePartitionTarget, availableResources, usedResources)
 		if err == nil {
 			m.localSupplier.addOffer(offer)
 		}
@@ -92,7 +92,7 @@ OfferLoop:
 	for _, offerToRemove := range offersToRemove {
 		removeOffer := func(suppOffer supplierOffer) {
 			m.remoteClient.RemoveOffer(
-				context.Background(),
+				ctx,
 				&types.Node{IP: m.configs.HostIP()},
 				&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(suppOffer.ID())})
@@ -111,7 +111,7 @@ OfferLoop:
 			if !offer.Resources().Equals(availableResources) {
 				updateOffer := func(suppOffer supplierOffer) {
 					err := m.remoteClient.UpdateOffer(
-						context.Background(),
+						ctx,
 						&types.Node{IP: m.configs.HostIP()},
 						&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
 						&types.Offer{

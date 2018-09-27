@@ -216,7 +216,13 @@ func (s *Supplier) updateOffers() {
 	if s.availableResources.IsValid() {
 		usedResources := s.maxResources.Copy()
 		usedResources.Sub(*s.availableResources)
-		s.offersStrategy.UpdateOffers(*s.availableResources, *usedResources)
+
+		ctx := context.Background()
+		if s.nodeGUID != nil {
+			ctx = context.WithValue(ctx, types.NodeGUIDKey, s.nodeGUID.String())
+		}
+
+		s.offersStrategy.UpdateOffers(ctx, *s.availableResources, *usedResources)
 	}
 }
 

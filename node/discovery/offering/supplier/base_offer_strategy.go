@@ -32,7 +32,7 @@ type baseOfferStrategy struct {
 	configs          *configuration.Configuration
 }
 
-func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, realAvailableRes, usedResources resources.Resources) (*supplierOffer, error) {
+func (b *baseOfferStrategy) createAnOffer(ctx context.Context, newOfferID int64, targetResources, realAvailableRes, usedResources resources.Resources) (*supplierOffer, error) {
 	var err error
 	var overlayNodes []*overlayTypes.OverlayNode = nil
 
@@ -40,7 +40,7 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 	if err != nil {
 		return nil, errors.New("no nodes capable of handle this offer resources")
 	}
-	overlayNodes, _ = b.overlay.Lookup(context.Background(), destinationGUID.Bytes())
+	overlayNodes, _ = b.overlay.Lookup(ctx, destinationGUID.Bytes())
 	overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 
 	// .. try search nodes in the beginning of the original target resource range region
@@ -49,7 +49,7 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 		if err != nil {
 			return nil, err
 		}
-		overlayNodes, _ = b.overlay.Lookup(context.Background(), destinationGUID.Bytes())
+		overlayNodes, _ = b.overlay.Lookup(ctx, destinationGUID.Bytes())
 		overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 	}
 
@@ -61,7 +61,7 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 				targetResources.String(), err)
 			return nil, errors.New("no nodes available to accept offer") // Wait fot the next tick to try supply resources
 		}
-		overlayNodes, _ = b.overlay.Lookup(context.Background(), destinationGUID.Bytes())
+		overlayNodes, _ = b.overlay.Lookup(ctx, destinationGUID.Bytes())
 		overlayNodes = b.removeNonTargetNodes(overlayNodes, *destinationGUID)
 	}
 
@@ -70,7 +70,7 @@ func (b *baseOfferStrategy) createAnOffer(newOfferID int64, targetResources, rea
 	chosenNodeGUID := guid.NewGUIDBytes(chosenNode.GUID())
 
 	err = b.remoteClient.CreateOffer(
-		context.Background(),
+		ctx,
 		&types.Node{IP: b.configs.HostIP()},
 		&types.Node{IP: chosenNode.IP(), GUID: chosenNodeGUID.String()},
 		&types.Offer{

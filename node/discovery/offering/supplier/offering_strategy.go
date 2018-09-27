@@ -20,5 +20,5 @@ type OfferingStrategy interface {
 	FindOffers(ctx context.Context, targetResources resources.Resources) []types.AvailableOffer
 
 	// CreateOffer creates a new offer in the system given the current local's available resources.
-	UpdateOffers(availableResources, usedResources resources.Resources)
+	UpdateOffers(ctx context.Context, availableResources, usedResources resources.Resources)
 }

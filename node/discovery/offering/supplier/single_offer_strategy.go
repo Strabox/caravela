@@ -45,7 +45,7 @@ func (s *singleOfferChordStrategy) FindOffers(ctx context.Context, targetResourc
 	}
 }
 
-func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResources resources.Resources) {
+func (s *singleOfferChordStrategy) UpdateOffers(ctx context.Context, availableResources, usedResources resources.Resources) {
 	activeOffers := s.localSupplier.offers()
 
 	if len(activeOffers) == 1 {
@@ -59,7 +59,7 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResource
 		if samePartition { // if the new available resources fit in the same resource partition update the offer and exit.
 			updateOffer := func(offer supplierOffer) {
 				err := s.remoteClient.UpdateOffer(
-					context.Background(),
+					ctx,
 					&types.Node{IP: s.configs.HostIP()},
 					&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
 					&types.Offer{
@@ -88,7 +88,7 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResource
 
 		removeOffer := func(offer supplierOffer) {
 			s.remoteClient.RemoveOffer(
-				context.Background(),
+				ctx,
 				&types.Node{IP: s.configs.HostIP()},
 				&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
 				&types.Offer{ID: int64(offer.ID())},
@@ -108,7 +108,7 @@ func (s *singleOfferChordStrategy) UpdateOffers(availableResources, usedResource
 	log.Debugf(util.LogTag("SUPPLIER")+"CREATING offer... Offer: %d, Res: <%d;%d>",
 		int64(newOfferID), availableResources.CPUs(), availableResources.Memory())
 
-	offer, err := s.createAnOffer(int64(newOfferID), availableResources, availableResources, usedResources)
+	offer, err := s.createAnOffer(ctx, int64(newOfferID), availableResources, availableResources, usedResources)
 	if err == nil {
 		s.localSupplier.addOffer(offer)
 	}

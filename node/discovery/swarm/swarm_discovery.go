@@ -118,10 +118,9 @@ func (d *Discovery) usedResources() *resources.Resources {
 
 // getMasterNodeIDs returns the IP and GUID of the master clusterNode.
 func (d *Discovery) getMasterNodeIDs() (string, string) {
-	nodes, _ := d.overlay.Lookup(
-		context.Background(),
-		guid.NewGUIDInteger(mastersNodeGUID).Bytes(), // Master's clusterNode has GUID 0 (in simulator).
-	)
+	ctx := context.WithValue(context.Background(), types.NodeGUIDKey, d.nodeGUID.String())
+	// Master's clusterNode has GUID 0 (in simulator).
+	nodes, _ := d.overlay.Lookup(ctx, guid.NewGUIDInteger(mastersNodeGUID).Bytes())
 
 	masterNode := nodes[0]
 	return masterNode.IP(), guid.NewGUIDBytes(masterNode.GUID()).String()
