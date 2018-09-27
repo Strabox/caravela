@@ -67,10 +67,12 @@ func NewZero() *GUID {
 	}
 }
 
-// NewGUIDBigInteger ....
-func NewGUIDBigInteger(bigInt *big.Int) *GUID {
+// NewGUIDBigInt...
+func NewGUIDBigInt(guidBigInt *big.Int) *GUID {
+	tempID := big.NewInt(0)
+	tempID.Set(guidBigInt)
 	return &GUID{
-		id: bigInt,
+		id: tempID,
 	}
 }
 
