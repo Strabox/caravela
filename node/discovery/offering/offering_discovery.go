@@ -2,7 +2,6 @@ package offering
 
 import (
 	"context"
-	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/api/types"
 	"github.com/strabox/caravela/configuration"
 	"github.com/strabox/caravela/node/common"
@@ -12,7 +11,6 @@ import (
 	"github.com/strabox/caravela/node/discovery/offering/supplier"
 	"github.com/strabox/caravela/node/discovery/offering/trader"
 	"github.com/strabox/caravela/node/external"
-	"github.com/strabox/caravela/util"
 	"sync"
 )
 
@@ -54,8 +52,8 @@ func (d *Discovery) AddTrader(traderGUID guid.GUID) {
 	d.traders.Store(traderGUID.String(), newTrader)
 
 	newTrader.Start() // Start the node's trader module.
-	newTraderResources := d.resourcesMap.ResourcesByGUID(traderGUID)
-	log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s", traderGUID.Short(), newTraderResources.String())
+	//newTraderResources := d.resourcesMap.ResourcesByGUID(traderGUID)
+	//log.Debugf(util.LogTag("DISCOVERY")+"NEW TRADER GUID: %s, Res: %s", traderGUID.Short(), newTraderResources.String())
 }
 
 func (d *Discovery) FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer {
