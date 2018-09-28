@@ -176,14 +176,14 @@ func (d *Discovery) FindOffers(_ context.Context, targetResources resources.Reso
 	return make([]types.AvailableOffer, 0)
 }
 
-func (d *Discovery) ObtainResources(_ int64, resourcesNecessary resources.Resources) bool {
+func (d *Discovery) ObtainResources(_ int64, resourcesNecessary resources.Resources, numContainersToRun int) bool {
 	if !d.isMasterNode {
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
 		if d.availableResources.Contains(resourcesNecessary) {
 			d.availableResources.Sub(resourcesNecessary)
-			d.containersRunning++
+			d.containersRunning += numContainersToRun
 
 			masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
 			usedResources := d.usedResources()
@@ -193,7 +193,8 @@ func (d *Discovery) ObtainResources(_ int64, resourcesNecessary resources.Resour
 				&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 				&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
 				&types.Offer{
-					Amount: d.containersRunning,
+					Amount:            1,
+					ContainersRunning: d.containersRunning,
 					FreeResources: types.Resources{
 						CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 						CPUs:     d.availableResources.CPUs(),
@@ -213,13 +214,13 @@ func (d *Discovery) ObtainResources(_ int64, resourcesNecessary resources.Resour
 	return false
 }
 
-func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
+func (d *Discovery) ReturnResources(releasedResources resources.Resources, numContainersStopped int) {
 	if !d.isMasterNode {
 		d.resourcesMutex.Lock()
 		defer d.resourcesMutex.Unlock()
 
 		d.availableResources.Add(releasedResources)
-		d.containersRunning--
+		d.containersRunning -= numContainersStopped
 
 		masterNodeIP, masterNodeGUID := d.getMasterNodeIDs()
 		usedResources := d.usedResources()
@@ -228,7 +229,8 @@ func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
 			&types.Node{IP: d.config.HostIP(), GUID: d.nodeGUID.String()},
 			&types.Node{IP: masterNodeIP, GUID: masterNodeGUID},
 			&types.Offer{
-				Amount: d.containersRunning,
+				Amount:            1,
+				ContainersRunning: d.containersRunning,
 				FreeResources: types.Resources{
 					CPUClass: types.CPUClass(d.availableResources.CPUClass()),
 					CPUs:     d.availableResources.CPUs(),
@@ -273,7 +275,7 @@ func (d *Discovery) UpdateOffer(fromSupp, _ *types.Node, offer *types.Offer) {
 
 				nodePtr.setFreeResources(nodeFreeUpdatedRes)
 				nodePtr.setUsedResources(nodeUsedUpdatedRes)
-				nodePtr.setContainerRunning(offer.Amount) // HACK: Careful if we use stack deployments!
+				nodePtr.setContainerRunning(offer.ContainersRunning) // HACK: Careful if we use stack deployments!
 			}
 		}
 	}

@@ -20,6 +20,7 @@ type localSupplier interface {
 	addOffer(offer *supplierOffer)
 	removeOffer(offerID common.OfferID)
 	offers() []supplierOffer
+	numContainersRunning() int
 	forceOfferRefresh(offerID common.OfferID, success bool)
 }
 

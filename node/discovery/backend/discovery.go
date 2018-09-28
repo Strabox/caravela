@@ -23,9 +23,9 @@ type Discovery interface {
 	//
 	FindOffers(ctx context.Context, resources resources.Resources) []types.AvailableOffer
 	//
-	ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool
+	ObtainResources(offerID int64, resourcesNecessary resources.Resources, numContainersToRun int) bool
 	//
-	ReturnResources(resources resources.Resources)
+	ReturnResources(resources resources.Resources, numContainerStopped int)
 
 	// ================================== External/Remote Services ================================
 	//

@@ -20,9 +20,8 @@ func (ao WeightedOffers) Less(i, j int) bool {
 		jp = ao[j]
 	)
 
-	// TODO: If the nodes have the same weight sort them out by number of containers.
 	if ip.Weight == jp.Weight {
-		return true
+		return ip.ContainersRunning < jp.ContainersRunning
 	}
 	return ip.Weight < jp.Weight
 }

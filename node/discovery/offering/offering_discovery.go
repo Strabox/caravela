@@ -62,12 +62,12 @@ func (d *Discovery) FindOffers(ctx context.Context, resources resources.Resource
 	return d.supplier.FindOffers(ctx, resources)
 }
 
-func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
-	return d.supplier.ObtainResources(offerID, resourcesNecessary)
+func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources, numContainersToRun int) bool {
+	return d.supplier.ObtainResources(offerID, resourcesNecessary, numContainersToRun)
 }
 
-func (d *Discovery) ReturnResources(resources resources.Resources) {
-	d.supplier.ReturnResources(resources)
+func (d *Discovery) ReturnResources(resources resources.Resources, numContainersStopped int) {
+	d.supplier.ReturnResources(resources, numContainersStopped)
 }
 
 // ======================= External Services (Consumed by other Nodes) ==============================

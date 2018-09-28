@@ -74,7 +74,7 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 
 	// =================== Obtain the resources from the offer ==================
 
-	obtained := man.supplier.ObtainResources(offer.ID, totalResourcesNecessary)
+	obtained := man.supplier.ObtainResources(offer.ID, totalResourcesNecessary, len(containersConfigs))
 	if !obtained {
 		log.Debugf(util.LogTag("CONTAINER")+"Container NOT RUNNING, invalid offer: %d", offer.ID)
 		return nil, fmt.Errorf("can't start container, invalid offer: %d", offer.ID)
@@ -87,7 +87,7 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 	for _, contConfig := range containersConfigs {
 		containerStatus, err := man.dockerClient.RunContainer(contConfig)
 		if err != nil { // If can't deploy a container remove all the other containers.
-			man.supplier.ReturnResources(totalResourcesNecessary)
+			man.supplier.ReturnResources(totalResourcesNecessary, len(containersConfigs))
 			for _, contStatus := range deployedContStatus {
 				man.StopContainer(contStatus.ContainerID)
 			}
@@ -131,7 +131,7 @@ func (man *Manager) StopContainer(containerIDToStop string) error {
 		for containerID, container := range containersMap {
 			if containerID == containerIDToStop {
 				man.dockerClient.RemoveContainer(containerIDToStop)
-				man.supplier.ReturnResources(container.Resources())
+				man.supplier.ReturnResources(container.Resources(), 1)
 				delete(containersMap, containerID)
 				return nil
 			}

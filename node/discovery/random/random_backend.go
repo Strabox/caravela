@@ -93,7 +93,7 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 	return resultOffers
 }
 
-func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
+func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.Resources, _ int) bool {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
@@ -105,7 +105,7 @@ func (d *Discovery) ObtainResources(offerID int64, resourcesNecessary resources.
 	return false
 }
 
-func (d *Discovery) ReturnResources(releasedResources resources.Resources) {
+func (d *Discovery) ReturnResources(releasedResources resources.Resources, _ int) {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 

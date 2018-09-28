@@ -63,8 +63,9 @@ func (s *singleOfferChordStrategy) UpdateOffers(ctx context.Context, availableRe
 					&types.Node{IP: s.configs.HostIP()},
 					&types.Node{IP: offer.ResponsibleTraderIP(), GUID: offer.ResponsibleTraderGUID().String()},
 					&types.Offer{
-						ID:     int64(offer.ID()),
-						Amount: 1,
+						ID:                int64(offer.ID()),
+						Amount:            1,
+						ContainersRunning: s.localSupplier.numContainersRunning(),
 						FreeResources: types.Resources{
 							CPUClass: types.CPUClass(availableResources.CPUClass()),
 							CPUs:     availableResources.CPUs(),

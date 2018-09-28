@@ -18,11 +18,11 @@ type supplierOffer struct {
 	refreshesMissed   int       // Number of times the responsible trader did not send a refresh
 }
 
-func newSupplierOffer(id common.OfferID, amount int, res resources.Resources,
+func newSupplierOffer(id common.OfferID, amount int, freeResources resources.Resources,
 	responsibleTraderIP string, responsibleTraderGUID guid.GUID) *supplierOffer {
 
 	return &supplierOffer{
-		Offer: common.NewOffer(id, amount, res),
+		Offer: common.NewOffer(id, amount, freeResources),
 
 		responsibleTraderGUID: &responsibleTraderGUID,
 		responsibleTraderIP:   responsibleTraderIP,

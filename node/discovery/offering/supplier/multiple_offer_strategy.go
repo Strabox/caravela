@@ -90,6 +90,7 @@ OfferLoop:
 	}
 
 	for _, offerToRemove := range offersToRemove {
+		tmpOfferToRemove := offerToRemove
 		removeOffer := func(suppOffer supplierOffer) {
 			m.remoteClient.RemoveOffer(
 				ctx,
@@ -98,11 +99,11 @@ OfferLoop:
 				&types.Offer{ID: int64(suppOffer.ID())})
 		}
 		if m.configs.Simulation() {
-			removeOffer(offerToRemove)
+			removeOffer(tmpOfferToRemove)
 		} else {
-			go removeOffer(offerToRemove)
+			go removeOffer(tmpOfferToRemove)
 		}
-		m.localSupplier.removeOffer(offerToRemove.ID())
+		m.localSupplier.removeOffer(tmpOfferToRemove.ID())
 	}
 
 	if m.updateOffers {
@@ -115,8 +116,9 @@ OfferLoop:
 						&types.Node{IP: m.configs.HostIP()},
 						&types.Node{IP: suppOffer.ResponsibleTraderIP(), GUID: suppOffer.ResponsibleTraderGUID().String()},
 						&types.Offer{
-							ID:     int64(suppOffer.ID()),
-							Amount: 1,
+							ID:                int64(suppOffer.ID()),
+							Amount:            1,
+							ContainersRunning: m.localSupplier.numContainersRunning(),
 							FreeResources: types.Resources{
 								CPUClass: types.CPUClass(availableResources.CPUClass()),
 								CPUs:     availableResources.CPUs(),

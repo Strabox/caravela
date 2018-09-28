@@ -9,10 +9,11 @@ type Resources struct {
 }
 
 type Offer struct {
-	ID            int64     `json:"ID"`
-	Amount        int       `json:"Amount"`
-	FreeResources Resources `json:"FreeResources"`
-	UsedResources Resources `json:"UsedResources"`
+	ID                int64     `json:"ID"`
+	Amount            int       `json:"Amount"`
+	FreeResources     Resources `json:"FreeResources"`
+	UsedResources     Resources `json:"UsedResources"`
+	ContainersRunning int       `json:"ContainersRunning"`
 }
 
 type AvailableOffer struct {

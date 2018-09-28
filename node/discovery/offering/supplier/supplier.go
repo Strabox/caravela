@@ -33,6 +33,7 @@ type Supplier struct {
 	resourcesMap       *resources.Mapping                // The resources<->GUID mapping
 	maxResources       *resources.Resources              // The maximum resources that the Docker engine has available (Static value)
 	availableResources *resources.Resources              // CURRENT Available resources to offer
+	containersRunning  int                               // Number of containers running in the node.
 
 	quitChan             chan bool        // Channel to alert that the node is stopping
 	supplyingTicker      <-chan time.Time // Timer to supply available resources
@@ -56,6 +57,7 @@ func NewSupplier(node nodeCommon.Node, config *configuration.Configuration, over
 		offersIDGen:        0,
 		activeOffers:       make(map[common.OfferID]*supplierOffer),
 		offersMutex:        sync.Mutex{},
+		containersRunning:  0,
 
 		quitChan:             make(chan bool),
 		supplyingTicker:      time.NewTicker(config.SupplyingInterval()).C,
@@ -148,7 +150,7 @@ func (s *Supplier) RefreshOffer(fromTrader *types.Node, refreshOffer *types.Offe
 
 // Tries to obtain a subset of the resources represented by the given offer in order to deploy  a container.
 // It updates the respective trader that manages the offer.
-func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources) bool {
+func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.Resources, numContainersToRun int) bool {
 	if !s.IsWorking() {
 		panic(errors.New("can't obtain resources, supplier not working"))
 	}
@@ -161,6 +163,7 @@ func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.R
 		return false
 	} else {
 		s.availableResources.Sub(resourcesNecessary)
+		s.containersRunning += numContainersToRun
 
 		delete(s.activeOffers, common.OfferID(offerID))
 
@@ -189,7 +192,7 @@ func (s *Supplier) ObtainResources(offerID int64, resourcesNecessary resources.R
 }
 
 // Release resources of an used offer into the supplier again in order to offer them again into the system.
-func (s *Supplier) ReturnResources(releasedResources resources.Resources) {
+func (s *Supplier) ReturnResources(releasedResources resources.Resources, numContainersStopped int) {
 	if !s.IsWorking() {
 		panic(errors.New("can't return resources, supplier not working"))
 	}
@@ -199,6 +202,7 @@ func (s *Supplier) ReturnResources(releasedResources resources.Resources) {
 
 	log.Debugf(util.LogTag("SUPPLIER")+"RESOURCES RELEASED Res: <%d;%d>", releasedResources.CPUs(), releasedResources.Memory())
 	s.availableResources.Add(releasedResources)
+	s.containersRunning -= numContainersStopped
 
 	if s.config.Simulation() {
 		s.updateOffers() // Update its own offers sequential
@@ -248,6 +252,10 @@ func (s *Supplier) addOffer(offer *supplierOffer) {
 
 func (s *Supplier) removeOffer(offerID common.OfferID) {
 	delete(s.activeOffers, offerID)
+}
+
+func (s *Supplier) numContainersRunning() int {
+	return s.containersRunning
 }
 
 func (s *Supplier) offers() []supplierOffer {
