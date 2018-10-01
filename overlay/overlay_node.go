@@ -1,4 +1,4 @@
-package types
+package overlay
 
 // Represents a generic overlay node.
 type OverlayNode struct {

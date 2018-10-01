@@ -12,9 +12,12 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 // Supplier handles all the logic of managing the node own resources, advertising them into the system.
@@ -24,8 +27,6 @@ type Supplier struct {
 	config         *configuration.Configuration // System's configurations.
 	offersStrategy OfferingStrategy             // Encapsulates the strategies to manage the offers in the system.
 	client         external.Caravela            // Client to collaborate with other CARAVELA's nodes
-
-	nodeGUID *guid.GUID
 
 	activeOffers       map[common.OfferID]*supplierOffer // Map with the current activeOffers (that are being managed by traders)
 	offersIDGen        common.OfferID                    // Monotonic counter to generate offer's local unique IDs
@@ -41,15 +42,13 @@ type Supplier struct {
 }
 
 // NewSupplier creates a new supplier component, that manages the local resources.
-func NewSupplier(node nodeCommon.Node, config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
+func NewSupplier(node nodeCommon.Node, config *configuration.Configuration, overlay overlay.Overlay, client external.Caravela,
 	resourcesMap *resources.Mapping, maxResources resources.Resources) *Supplier {
 
 	s := &Supplier{
 		config:         config,
 		offersStrategy: CreateOffersStrategy(node, config),
 		client:         client,
-
-		nodeGUID: nil,
 
 		resourcesMap:       resourcesMap,
 		maxResources:       maxResources.Copy(),
@@ -116,9 +115,6 @@ func (s *Supplier) FindOffers(ctx context.Context, targetResources resources.Res
 		targetResources = *s.resourcesMap.LowestResources()
 	}
 
-	if s.nodeGUID != nil {
-		ctx = context.WithValue(ctx, types.NodeGUIDKey, s.nodeGUID.String())
-	}
 	return s.offersStrategy.FindOffers(ctx, targetResources)
 }
 
@@ -221,12 +217,7 @@ func (s *Supplier) updateOffers() {
 		usedResources := s.maxResources.Copy()
 		usedResources.Sub(*s.availableResources)
 
-		ctx := context.Background()
-		if s.nodeGUID != nil {
-			ctx = context.WithValue(ctx, types.NodeGUIDKey, s.nodeGUID.String())
-		}
-
-		s.offersStrategy.UpdateOffers(ctx, *s.availableResources, *usedResources)
+		s.offersStrategy.UpdateOffers(context.Background(), *s.availableResources, *usedResources)
 	}
 }
 
@@ -279,11 +270,11 @@ func (s *Supplier) checkResourcesInvariant() {
 	}
 }
 
-// Simulation
-func (s *Supplier) SetNodeGUID(GUID guid.GUID) {
-	if s.nodeGUID == nil {
-		s.nodeGUID = guid.NewGUIDBytes(GUID.Bytes())
-	}
+//Simulation
+func (s *Supplier) NumActiveOffers() int {
+	s.offersMutex.Lock()
+	defer s.offersMutex.Unlock()
+	return len(s.activeOffers)
 }
 
 // Simulation
@@ -331,4 +322,32 @@ func (s *Supplier) Stop() {
 
 func (s *Supplier) IsWorking() bool {
 	return s.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (s *Supplier) DebugSizeBytes() int {
+	supplierOfferSizeBytes := func(offer *supplierOffer) uintptr {
+		offerSizeBytes := unsafe.Sizeof(*offer)
+		// common.Offer
+		offerSizeBytes += unsafe.Sizeof(*offer.Offer)
+		offerSizeBytes += debug.DebugSizeofResources(offer.Offer.Resources())
+		// supplier offer
+		offerSizeBytes += debug.DebugSizeofString(offer.responsibleTraderIP)
+		offerSizeBytes += debug.DebugSizeofGUID(offer.responsibleTraderGUID)
+		return offerSizeBytes
+	}
+
+	supplierSizeBytes := unsafe.Sizeof(*s)
+	supplierSizeBytes += debug.DebugSizeofResources(s.maxResources)
+	supplierSizeBytes += debug.DebugSizeofResources(s.availableResources)
+	supplierSizeBytes += 30 // Hack: Offer strategy structure.
+	for offerID, offer := range s.activeOffers {
+		supplierSizeBytes += unsafe.Sizeof(offerID)
+		supplierSizeBytes += unsafe.Sizeof(offer)
+		supplierSizeBytes += supplierOfferSizeBytes(offer)
+	}
+	return int(supplierSizeBytes)
 }

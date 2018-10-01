@@ -2,14 +2,14 @@ package chord
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/strabox/caravela/overlay/types"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 	"github.com/strabox/go-chord"
 	"math/big"
 )
 
 //Used to handle events fired by the chord overlay.
-//The listener let the important events bubble up into Node layer using a provided interface called OverlayMembership.
+//The listener let the important events bubble up into Node layer using a provided interface called LocalNode.
 type Listener struct {
 	chordOverlay *Chord // Chord's overlay
 }
@@ -21,12 +21,12 @@ func (l *Listener) NewPredecessor(local, newPredecessor, previousPredecessor *ch
 		idToPrint := big.NewInt(0)
 		idToPrint.SetBytes(local.Id)
 		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
-		predecessorNode := types.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
+		predecessorNode := overlay.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
 		l.chordOverlay.newLocalVirtualNode(local.Id, predecessorNode)
 	} else if local != nil && newPredecessor != nil && previousPredecessor != nil {
 		// New predecessor for a existing node
 		nodeIP, nodePort := util.ObtainIpPort(newPredecessor.Host)
-		predecessorNode := types.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
+		predecessorNode := overlay.NewOverlayNode(nodeIP, nodePort, newPredecessor.Id)
 		l.chordOverlay.predecessorNodeChanged(local.Id, predecessorNode)
 	}
 }

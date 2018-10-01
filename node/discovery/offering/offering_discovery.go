@@ -12,8 +12,11 @@ import (
 	"github.com/strabox/caravela/node/discovery/offering/supplier"
 	"github.com/strabox/caravela/node/discovery/offering/trader"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
+	"unsafe"
 )
 
 // Discovery is responsible for dealing with the resource management local and remote.
@@ -22,15 +25,16 @@ type Discovery struct {
 	common.NodeComponent // Base component
 
 	config  *configuration.Configuration // System's configurations.
-	overlay external.Overlay             // Overlay component.
+	overlay overlay.Overlay              // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
+	nodeGUID     *guid.GUID
 	resourcesMap *resources.Mapping // GUID<->FreeResources mapping
 	supplier     *supplier.Supplier // Supplier for managing the offers locally and remotely
 	traders      sync.Map           // Node can have multiple "virtual" traders in several places of the overlay
 }
 
-func NewOfferingDiscovery(node common.Node, config *configuration.Configuration, overlay external.Overlay,
+func NewOfferingDiscovery(node common.Node, config *configuration.Configuration, overlay overlay.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{
@@ -38,17 +42,22 @@ func NewOfferingDiscovery(node common.Node, config *configuration.Configuration,
 		overlay: overlay,
 		client:  client,
 
+		nodeGUID:     nil,
 		resourcesMap: resourcesMap,
 		supplier:     supplier.NewSupplier(node, config, overlay, client, resourcesMap, maxResources),
 		traders:      sync.Map{},
 	}, nil
 }
 
+func (d *Discovery) GUID() string {
+	return d.nodeGUID.String()
+}
+
 // ====================== Local Services (Consumed by other Components) ============================
 
 // Adds a new local "virtual" trader when the overlay notifies its presence.
 func (d *Discovery) AddTrader(traderGUID guid.GUID) {
-	d.supplier.SetNodeGUID(traderGUID)
+	d.nodeGUID = &traderGUID
 
 	newTrader := trader.NewTrader(d.config, d.overlay, d.client, traderGUID, d.resourcesMap)
 	d.traders.Store(traderGUID.String(), newTrader)
@@ -121,16 +130,16 @@ func (d *Discovery) AdvertiseNeighborOffers(fromTrader, toNeighborTrader, trader
 // ======================= External Services (Consumed during simulation ONLY) =========================
 
 // Simulation
-func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int) {
-	numActiveOffers := 0
+func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int, int) {
+	traderActiveOffers := 0
 	d.traders.Range(func(_, value interface{}) bool {
 		currentTrader, ok := value.(*trader.Trader)
 		if ok {
-			numActiveOffers = currentTrader.NumActiveOffers()
+			traderActiveOffers = currentTrader.NumActiveOffers()
 		}
 		return true
 	})
-	return d.supplier.AvailableResources(), d.supplier.MaximumResources(), numActiveOffers
+	return d.supplier.AvailableResources(), d.supplier.MaximumResources(), traderActiveOffers, d.supplier.NumActiveOffers()
 }
 
 // Simulation
@@ -180,4 +189,26 @@ func (d *Discovery) Stop() {
 
 func (d *Discovery) IsWorking() bool {
 	return d.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (d *Discovery) DebugSizeBytes() int {
+	discoverySizeBytes := unsafe.Sizeof(*d)
+	discoverySizeBytes += debug.DebugSizeofGUID(d.nodeGUID)
+	// Resources<->GUIDMap
+	discoverySizeBytes += 500 // Hack!
+	// Traders.
+	d.traders.Range(func(key, value interface{}) bool {
+		discoverySizeBytes += unsafe.Sizeof(key.(string))
+		discoverySizeBytes += debug.DebugSizeofString(key.(string))
+		discoverySizeBytes += unsafe.Sizeof(value.(*trader.Trader))
+		discoverySizeBytes += uintptr(value.(*trader.Trader).DebugSizeBytes())
+		return true
+	})
+	// Supplier.
+	discoverySizeBytes += uintptr(d.supplier.DebugSizeBytes())
+	return int(discoverySizeBytes)
 }

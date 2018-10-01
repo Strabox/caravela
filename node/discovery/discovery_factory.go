@@ -12,11 +12,12 @@ import (
 	"github.com/strabox/caravela/node/discovery/random"
 	"github.com/strabox/caravela/node/discovery/swarm"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/overlay"
 	"strings"
 )
 
 // DiscoveryBackendFactory represents a method that creates a new discovery backend.
-type BackendFactory func(node common.Node, config *configuration.Configuration, overlay external.Overlay,
+type BackendFactory func(node common.Node, config *configuration.Configuration, overlay overlay.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error)
 
 // discoveryBackends holds all the registered discovery backends available.
@@ -44,7 +45,7 @@ func RegisterDiscoveryBackend(discBackendName string, factory BackendFactory) {
 }
 
 // CreateDiscoveryBackend is used to obtain a discovery backend based on the configurations.
-func CreateDiscoveryBackend(node common.Node, config *configuration.Configuration, overlay external.Overlay,
+func CreateDiscoveryBackend(node common.Node, config *configuration.Configuration, overlay overlay.Overlay,
 	client external.Caravela, resourcesMap *resources.Mapping, maxResources resources.Resources) backend.Discovery {
 	configuredDiscoveryBackend := config.DiscoveryBackend()
 

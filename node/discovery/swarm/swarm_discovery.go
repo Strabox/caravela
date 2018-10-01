@@ -9,8 +9,11 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/overlay"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 // Zero GUID is the master's GUID (used in simulation only).
@@ -24,7 +27,7 @@ type Discovery struct {
 
 	// Common fields
 	config       *configuration.Configuration // System's configurations.
-	overlay      external.Overlay             // Overlay component.
+	overlay      overlay.Overlay              // Overlay component.
 	client       external.Caravela            // Remote caravela's client.
 	nodeGUID     *guid.GUID                   // Node's own GUID.
 	isMasterNode bool                         // True: if the clusterNode is the master, False: if it is a regular peer.
@@ -42,7 +45,7 @@ type Discovery struct {
 }
 
 // NewSwarmResourcesDiscovery creates a resource discovery backend based on the Docker Swarm.
-func NewSwarmResourcesDiscovery(_ common.Node, config *configuration.Configuration, overlay external.Overlay,
+func NewSwarmResourcesDiscovery(_ common.Node, config *configuration.Configuration, overlay overlay.Overlay,
 	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{
@@ -118,12 +121,15 @@ func (d *Discovery) usedResources() *resources.Resources {
 
 // getMasterNodeIDs returns the IP and GUID of the master clusterNode.
 func (d *Discovery) getMasterNodeIDs() (string, string) {
-	ctx := context.WithValue(context.Background(), types.NodeGUIDKey, d.nodeGUID.String())
 	// Master's clusterNode has GUID 0 (in simulator).
-	nodes, _ := d.overlay.Lookup(ctx, guid.NewGUIDInteger(mastersNodeGUID).Bytes())
+	nodes, _ := d.overlay.Lookup(context.Background(), guid.NewGUIDInteger(mastersNodeGUID).Bytes())
 
 	masterNode := nodes[0]
 	return masterNode.IP(), guid.NewGUIDBytes(masterNode.GUID()).String()
+}
+
+func (d *Discovery) GUID() string {
+	return d.nodeGUID.String()
 }
 
 // ====================== Local Services (Consumed by other Components) ============================
@@ -297,7 +303,7 @@ func (d *Discovery) AdvertiseNeighborOffers(_, _, _ *types.Node) {
 // ======================= External Services (Consumed during simulation ONLY) =========================
 
 // Simulation
-func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int) {
+func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int, int) {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 
@@ -311,6 +317,7 @@ func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int)
 			CPUs:     d.maximumResources.CPUs(),
 			Memory:   d.maximumResources.Memory(),
 		},
+		0,
 		0
 }
 
@@ -351,4 +358,32 @@ func (d *Discovery) Stop() {
 
 func (d *Discovery) IsWorking() bool {
 	return d.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (d *Discovery) DebugSizeBytes() int {
+	clusterNodeSize := func(clusterNode *clusterNode) uintptr {
+		clusterNodeSizeBytes := unsafe.Sizeof(*clusterNode)
+		clusterNodeSizeBytes += debug.DebugSizeofString(clusterNode.ipAddress)
+		return clusterNodeSizeBytes
+	}
+
+	swarmSizeBytes := unsafe.Sizeof(*d)
+	swarmSizeBytes += debug.DebugSizeofGUID(d.nodeGUID)
+	swarmSizeBytes += debug.DebugSizeofResources(d.maximumResources)
+	swarmSizeBytes += debug.DebugSizeofResources(d.availableResources)
+	for i := range d.clusterNodes {
+		swarmSizeBytes += unsafe.Sizeof(d.clusterNodes[i])
+		swarmSizeBytes += clusterNodeSize(d.clusterNodes[i])
+	}
+	d.clusterNodesByGUID.Range(func(key, value interface{}) bool {
+		swarmSizeBytes += unsafe.Sizeof(key.(string))
+		swarmSizeBytes += debug.DebugSizeofString(key.(string))
+		swarmSizeBytes += unsafe.Sizeof(value.(*clusterNode))
+		return true
+	})
+	return int(swarmSizeBytes)
 }

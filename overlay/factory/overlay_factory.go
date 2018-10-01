@@ -1,17 +1,17 @@
-package overlay
+package factory
 
 import (
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/strabox/caravela/configuration"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/overlay/chord"
-	"github.com/strabox/caravela/overlay/types"
 	"strings"
 )
 
 // BackendFactory represents a method that creates a new overlay object.
-type Factory func(config *configuration.Configuration) (types.Overlay, error)
+type Factory func(config *configuration.Configuration) (overlay.Overlay, error)
 
 // overlayFactories holds all the registered overlays available.
 var overlayFactories = make(map[string]Factory)
@@ -34,7 +34,7 @@ func Register(overlayName string, factory Factory) {
 }
 
 // Create is used to create an overlay based on the configurations.
-func Create(config *configuration.Configuration) types.Overlay {
+func Create(config *configuration.Configuration) overlay.Overlay {
 	configuredOverlay := config.OverlayName()
 
 	overlayFactory, exist := overlayFactories[configuredOverlay]

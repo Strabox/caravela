@@ -22,9 +22,11 @@ import (
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/node/scheduler"
 	"github.com/strabox/caravela/node/user"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 	"math/rand"
 	"time"
+	"unsafe"
 )
 
 // Node is the top level entry structure, facade, for all the functionality of a CARAVELA's node.
@@ -34,7 +36,7 @@ type Node struct {
 	schedulerComp         *scheduler.Scheduler // Scheduler component.
 	containersManagerComp *containers.Manager  // Container's Manager component.
 	userManagerComp       *user.Manager        // User's Manager component.
-	overlayComp           external.Overlay     // Overlay component.
+	overlayComp           overlay.Overlay      // Overlay component.
 
 	config   *configuration.Configuration // System's configurations.
 	stopChan chan bool                    // Channel to stop the node functions.
@@ -43,7 +45,7 @@ type Node struct {
 }
 
 // NewNode creates a Node object that contains all the functionality of a CARAVELA's node.
-func NewNode(config *configuration.Configuration, overlay external.Overlay, caravelaCli external.Caravela,
+func NewNode(config *configuration.Configuration, overlayCli overlay.Overlay, caravelaCli external.Caravela,
 	dockerClient external.DockerClient, apiServer api.Server) *Node {
 
 	cpuClass, maxCPUs, maxMemory := dockerClient.GetDockerEngineTotalResources()     // Obtain the maximum resources Docker Engine has available.
@@ -59,18 +61,20 @@ func NewNode(config *configuration.Configuration, overlay external.Overlay, cara
 	node := &Node{}
 
 	caravelaCli = remote.NewClient(caravelaCli, node)
+	overlayCli = overlay.NewOverlayClient(overlayCli, node)
 
-	discoveryComp := discovery.CreateDiscoveryBackend(node, config, overlay, caravelaCli, resourcesMap, *maxAvailableResources)
+	discoveryComp := discovery.CreateDiscoveryBackend(node, config, overlayCli, caravelaCli, resourcesMap, *maxAvailableResources)
 	containersManagerComp := containers.NewManager(config, dockerClient, discoveryComp)
 	schedulerComp := scheduler.NewScheduler(config, discoveryComp, containersManagerComp, caravelaCli)
 	userManagerComp := user.NewManager(config, schedulerComp, caravelaCli, *resourcesMap.LowestResources())
 
+	// Initialize the node's fields.
 	node.apiServerComp = apiServer
 	node.discoveryComp = discoveryComp
 	node.schedulerComp = schedulerComp
 	node.containersManagerComp = containersManagerComp
 	node.userManagerComp = userManagerComp
-	node.overlayComp = overlay
+	node.overlayComp = overlayCli
 	node.config = config
 	node.stopChan = make(chan bool)
 	node.systemPartitionsState = partitions.NewSystemResourcePartitions(config.PartitionsStateBufferSize(), rand.New(util.NewSourceSafe(rand.NewSource(time.Now().Unix()))))
@@ -142,6 +146,10 @@ func (n *Node) Configuration(c context.Context) *configuration.Configuration {
 
 func (n *Node) GetSystemPartitionsState() *partitions.SystemResourcePartitions {
 	return n.systemPartitionsState
+}
+
+func (n *Node) GUID() string {
+	return n.discoveryComp.GUID()
 }
 
 // ##############################################################################################
@@ -244,7 +252,7 @@ func (n *Node) StopLocalContainer(ctx context.Context, containerID string) error
 
 // NodeInformationSim returns the available resources, maximum available resources and number of offers in the node.
 // Note: Only available when the node is running in simulation mode.
-func (n *Node) NodeInformationSim() (types.Resources, types.Resources, int) {
+func (n *Node) NodeInformationSim() (types.Resources, types.Resources, int, int) {
 	if !n.config.Simulation() {
 		panic(errors.New("NodeInformationSim request can only be used in Simulation Mode"))
 	}
@@ -267,4 +275,20 @@ func (n *Node) SpreadOffersSim() {
 		panic(errors.New("SpreadOffersSim request can only be used in Simulation Mode"))
 	}
 	n.discoveryComp.SpreadOffersSim()
+}
+
+// ##############################################################################################
+// #									    DEBUG API									        #
+// ##############################################################################################
+
+func (n *Node) DebugSizeBytes() int {
+	nodeSizeBytes := 0
+	nodeSizeBytes += int(unsafe.Sizeof(*n))
+	nodeSizeBytes += int(unsafe.Sizeof(n.stopChan))
+	// Components size.
+	nodeSizeBytes += n.userManagerComp.DebugSizeBytes()
+	nodeSizeBytes += n.containersManagerComp.DebugSizeBytes()
+	nodeSizeBytes += n.schedulerComp.DebugSizeBytes()
+	nodeSizeBytes += n.discoveryComp.DebugSizeBytes()
+	return nodeSizeBytes
 }

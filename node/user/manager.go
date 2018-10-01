@@ -9,7 +9,9 @@ import (
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
+	"unsafe"
 )
 
 type Manager struct {
@@ -136,4 +138,33 @@ func (m *Manager) Stop() {
 
 func (m *Manager) isWorking() bool {
 	return m.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (m *Manager) DebugSizeBytes() int {
+	deployedContainerSize := func(container *deployedContainer) uintptr {
+		contSizeBytes := unsafe.Sizeof(*container)
+		contSizeBytes += debug.DebugSizeofString(container.suppIP)
+		// common.Container
+		contSizeBytes += unsafe.Sizeof(*container.Container)
+		contSizeBytes += debug.DebugSizeofString(container.Name())
+		contSizeBytes += debug.DebugSizeofString(container.ImageKey())
+		contSizeBytes += debug.DebugSizeofString(container.ID())
+		contSizeBytes += debug.DebugSizeofStringSlice(container.Args())
+		contSizeBytes += debug.DebugSizeofPortMappings(container.PortMappings())
+		return contSizeBytes
+	}
+
+	userManagerSizeBytes := unsafe.Sizeof(*m)
+	m.containers.Range(func(key, value interface{}) bool {
+		userManagerSizeBytes += unsafe.Sizeof(key.(string))
+		userManagerSizeBytes += debug.DebugSizeofString(key.(string))
+		userManagerSizeBytes += unsafe.Sizeof(value.(*deployedContainer))
+		userManagerSizeBytes += deployedContainerSize(value.(*deployedContainer))
+		return true
+	})
+	return int(userManagerSizeBytes)
 }

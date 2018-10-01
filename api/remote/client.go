@@ -22,7 +22,9 @@ func NewClient(specificClient external.Caravela, clientNode common.Node) *Client
 
 func (h *Client) getRequestContext(ctx context.Context) context.Context {
 	if h.clientNode != nil {
-		return context.WithValue(ctx, types.PartitionsStateKey, h.clientNode.GetSystemPartitionsState().PartitionsState())
+		ctx = context.WithValue(ctx, types.PartitionsStateKey, h.clientNode.GetSystemPartitionsState().PartitionsState())
+		ctx = context.WithValue(ctx, types.NodeGUIDKey, h.clientNode.GUID())
+		return ctx
 	} else {
 		return context.Background()
 	}

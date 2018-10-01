@@ -10,13 +10,14 @@ import (
 	"github.com/strabox/caravela/node/common"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/util"
+	"unsafe"
 )
 
 // Scheduler is responsible for receiving local and remote requests for deploying containers
 // to run in the system. It takes a request for running a container and decides where to deploy it
 // in conjunction with the Discovery component.
 type Scheduler struct {
-	common.NodeComponent // Base component
+	common.NodeComponent // Base component.
 
 	config *configuration.Configuration // System's configuration.
 	client userRemoteClient             // CARAVELA's remote client.
@@ -173,4 +174,13 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) IsWorking() bool {
 	return s.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (s *Scheduler) DebugSizeBytes() int {
+	schedulerSizeBytes := unsafe.Sizeof(*s)
+	return int(schedulerSizeBytes)
 }

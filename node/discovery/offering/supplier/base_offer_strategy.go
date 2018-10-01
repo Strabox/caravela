@@ -11,7 +11,7 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/node/external"
-	overlayTypes "github.com/strabox/caravela/overlay/types"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
 )
 
@@ -27,7 +27,7 @@ type localSupplier interface {
 type baseOfferStrategy struct {
 	localSupplier    localSupplier
 	resourcesMapping *resources.Mapping
-	overlay          external.Overlay
+	overlay          overlay.Overlay
 	remoteClient     external.Caravela
 	node             nodeCommon.Node
 	configs          *configuration.Configuration
@@ -35,7 +35,7 @@ type baseOfferStrategy struct {
 
 func (b *baseOfferStrategy) createAnOffer(ctx context.Context, newOfferID int64, targetResources, realAvailableRes, usedResources resources.Resources) (*supplierOffer, error) {
 	var err error
-	var overlayNodes []*overlayTypes.OverlayNode = nil
+	var overlayNodes []*overlay.OverlayNode = nil
 
 	destinationGUID, err := b.resourcesMapping.RandGUIDOffer(targetResources)
 	if err != nil {
@@ -96,9 +96,9 @@ func (b *baseOfferStrategy) createAnOffer(ctx context.Context, newOfferID int64,
 }
 
 // Remove nodes that do not belong to that target GUID partition. (Probably because we were target a partition frontier node)
-func (b *baseOfferStrategy) removeNonTargetNodes(remoteNodes []*overlayTypes.OverlayNode, targetGuid guid.GUID) []*overlayTypes.OverlayNode {
+func (b *baseOfferStrategy) removeNonTargetNodes(remoteNodes []*overlay.OverlayNode, targetGuid guid.GUID) []*overlay.OverlayNode {
 
-	resultNodes := make([]*overlayTypes.OverlayNode, 0)
+	resultNodes := make([]*overlay.OverlayNode, 0)
 	targetGuidResources := b.resourcesMapping.ResourcesByGUID(targetGuid)
 	for _, remoteNode := range remoteNodes {
 		remoteNodeResources := b.resourcesMapping.ResourcesByGUID(*guid.NewGUIDBytes(remoteNode.GUID()))

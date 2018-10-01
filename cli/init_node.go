@@ -10,7 +10,7 @@ import (
 	"github.com/strabox/caravela/docker"
 	"github.com/strabox/caravela/node"
 	"github.com/strabox/caravela/node/common/guid"
-	"github.com/strabox/caravela/overlay"
+	overlayFactory "github.com/strabox/caravela/overlay/factory"
 	"strings"
 )
 
@@ -49,7 +49,7 @@ func initNode(hostIP, configFilePath string, join bool, joinIP string) error {
 		int64(systemConfigurations.GUIDScaleFactor()))
 
 	// Create Overlay Component
-	overlayConfigured := overlay.Create(systemConfigurations)
+	overlayConfigured := overlayFactory.Create(systemConfigurations)
 
 	// Create CARAVELA's Remote httpClient
 	caravelaCli := remote.NewHttpClient(systemConfigurations.APIPort(), systemConfigurations.APITimeout())

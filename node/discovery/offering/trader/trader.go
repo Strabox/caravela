@@ -10,10 +10,12 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/common"
 	"github.com/strabox/caravela/node/external"
-	overlayTypes "github.com/strabox/caravela/overlay/types"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 // Trader is responsible for managing offers from multiple suppliers and negotiate these offers with buyers.
@@ -22,16 +24,16 @@ type Trader struct {
 	nodeCommon.NodeComponent // Base component
 
 	config  *configuration.Configuration // System's configurations
-	overlay external.Overlay             // Node overlay to efficient route messages to specific nodes.
+	overlay overlay.Overlay              // Node overlay to efficient route messages to specific nodes.
 	client  external.Caravela            // Client for the system
 
 	guid             *guid.GUID           // Trader's own GUID
-	resourcesMap     *resources.Mapping   // GUID<->FreeResources mapping
+	resourcesMap     *resources.Mapping   // GUID<->Resources mapping
 	handledResources *resources.Resources // Combination of resources that its responsible for managing (FIXED)
 
 	nearbyTradersOffering *nearbyTradersOffering    // Nearby traders that might have offers available
 	offers                map[offerKey]*traderOffer // Map with all the offers that the trader is managing
-	offersMutex           *sync.Mutex               // Mutex for managing the offers
+	offersMutex           sync.Mutex                // Mutex for managing the offers
 
 	quitChan            chan bool        // Channel to alert that the node is stopping
 	refreshOffersTicker <-chan time.Time // Time ticker for sending the refreshing offer messages
@@ -39,7 +41,7 @@ type Trader struct {
 }
 
 // NewTrader creates a new "virtual" trader.
-func NewTrader(config *configuration.Configuration, overlay external.Overlay, client external.Caravela,
+func NewTrader(config *configuration.Configuration, overlay overlay.Overlay, client external.Caravela,
 	guid guid.GUID, resourcesMapping *resources.Mapping) *Trader {
 
 	handledResources := resourcesMapping.ResourcesByGUID(guid)
@@ -54,7 +56,7 @@ func NewTrader(config *configuration.Configuration, overlay external.Overlay, cl
 
 		nearbyTradersOffering: newNeighborTradersOffering(),
 		offers:                make(map[offerKey]*traderOffer),
-		offersMutex:           &sync.Mutex{},
+		offersMutex:           sync.Mutex{},
 
 		quitChan:            make(chan bool),
 		refreshOffersTicker: time.NewTicker(config.RefreshingInterval()).C,
@@ -289,7 +291,7 @@ func (t *Trader) advertiseOffersToNeighbors(isValidNeighbor func(neighborGUID *g
 	}
 
 	for _, overlayNeighbor := range overlayNeighbors { // Advertise to all neighbors (inside resource partition)
-		advertise := func(overlayNeighbor *overlayTypes.OverlayNode) {
+		advertise := func(overlayNeighbor *overlay.OverlayNode) {
 			nodeGUID := guid.NewGUIDBytes(overlayNeighbor.GUID())
 			nodeResourcesHandled := t.resourcesMap.ResourcesByGUID(*nodeGUID)
 
@@ -388,4 +390,31 @@ func (t *Trader) Stop() {
 
 func (t *Trader) IsWorking() bool {
 	return t.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (t *Trader) DebugSizeBytes() int {
+	traderOfferSizeBytes := func(offer *traderOffer) uintptr {
+		offerSizeBytes := unsafe.Sizeof(*offer)
+		// common.Offer
+		offerSizeBytes += unsafe.Sizeof(*offer.Offer)
+		offerSizeBytes += debug.DebugSizeofResources(offer.Offer.Resources())
+		// trader offer
+		offerSizeBytes += debug.DebugSizeofString(offer.supplierIP)
+		offerSizeBytes += debug.DebugSizeofGUID(offer.supplierGUID)
+		return offerSizeBytes
+	}
+
+	traderSizeBytes := unsafe.Sizeof(*t)
+	traderSizeBytes += unsafe.Sizeof(*t.nearbyTradersOffering)
+	traderSizeBytes += debug.DebugSizeofResources(t.handledResources)
+	for offerID, offer := range t.offers {
+		traderSizeBytes += unsafe.Sizeof(offerID)
+		traderSizeBytes += unsafe.Sizeof(offer)
+		traderSizeBytes += traderOfferSizeBytes(offer)
+	}
+	return int(traderSizeBytes)
 }

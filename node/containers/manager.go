@@ -11,7 +11,9 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
 	"github.com/strabox/caravela/util"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
+	"unsafe"
 )
 
 // Containers manager responsible for interacting with the Docker daemon and managing all the interaction with the
@@ -25,7 +27,7 @@ type Manager struct {
 	supplier     supplierLocal                // Local Supplier component.
 
 	quitChan        chan bool                             // Channel to alert that the node is stopping.
-	containersMutex *sync.Mutex                           // Mutex to control access to containers map.
+	containersMutex sync.Mutex                            // Mutex to control access to containers map.
 	containersMap   map[string]map[string]*localContainer // Collection of deployed containers (buyerIP->(containerID->Container)).
 }
 
@@ -38,21 +40,21 @@ func NewManager(config *configuration.Configuration, dockerClient external.Docke
 		supplier:     supplier,
 
 		quitChan:        make(chan bool),
-		containersMutex: &sync.Mutex{},
+		containersMutex: sync.Mutex{},
 		containersMap:   make(map[string]map[string]*localContainer),
 	}
 }
 
 // receiveDockerEvents
-func (man *Manager) receiveDockerEvents(eventsChan <-chan *events.Event) {
+func (m *Manager) receiveDockerEvents(eventsChan <-chan *events.Event) {
 	go func() {
 		for {
 			select {
 			case event := <-eventsChan:
 				if event.Type == events.ContainerDied {
-					man.StopContainer(event.Value)
+					m.StopContainer(event.Value)
 				}
-			case quit := <-man.quitChan: // Stopping the containers management
+			case quit := <-m.quitChan: // Stopping the containers management
 				if quit {
 					log.Infof(util.LogTag("CONTAINER") + "STOPPED")
 					return
@@ -63,18 +65,18 @@ func (man *Manager) receiveDockerEvents(eventsChan <-chan *events.Event) {
 }
 
 // Verify if the offer is valid and alert the supplier and after that start the container in the Docker engine.
-func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, containersConfigs []types.ContainerConfig,
+func (m *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, containersConfigs []types.ContainerConfig,
 	totalResourcesNecessary resources.Resources) ([]types.ContainerStatus, error) {
-	if !man.IsWorking() {
+	if !m.IsWorking() {
 		panic(fmt.Errorf("can't start container, container manager not working"))
 	}
 
-	man.containersMutex.Lock()
-	defer man.containersMutex.Unlock()
+	m.containersMutex.Lock()
+	defer m.containersMutex.Unlock()
 
 	// =================== Obtain the resources from the offer ==================
 
-	obtained := man.supplier.ObtainResources(offer.ID, totalResourcesNecessary, len(containersConfigs))
+	obtained := m.supplier.ObtainResources(offer.ID, totalResourcesNecessary, len(containersConfigs))
 	if !obtained {
 		log.Debugf(util.LogTag("CONTAINER")+"Container NOT RUNNING, invalid offer: %d", offer.ID)
 		return nil, fmt.Errorf("can't start container, invalid offer: %d", offer.ID)
@@ -85,11 +87,11 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 	deployedContStatus := make([]types.ContainerStatus, 0)
 
 	for _, contConfig := range containersConfigs {
-		containerStatus, err := man.dockerClient.RunContainer(contConfig)
+		containerStatus, err := m.dockerClient.RunContainer(contConfig)
 		if err != nil { // If can't deploy a container remove all the other containers.
-			man.supplier.ReturnResources(totalResourcesNecessary, len(containersConfigs))
+			m.supplier.ReturnResources(totalResourcesNecessary, len(containersConfigs))
 			for _, contStatus := range deployedContStatus {
-				man.StopContainer(contStatus.ContainerID)
+				m.StopContainer(contStatus.ContainerID)
 			}
 			return nil, err
 		}
@@ -104,15 +106,15 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 		newContainer := newContainer(contConfig.Name, contConfig.ImageKey, contConfig.Args, contConfig.PortMappings,
 			*contResources, containerID, fromBuyer.IP)
 
-		if _, ok := man.containersMap[fromBuyer.IP]; !ok {
+		if _, ok := m.containersMap[fromBuyer.IP]; !ok {
 			userContainersMap := make(map[string]*localContainer)
 			userContainersMap[containerID] = newContainer
-			man.containersMap[fromBuyer.IP] = userContainersMap
+			m.containersMap[fromBuyer.IP] = userContainersMap
 		} else {
-			man.containersMap[fromBuyer.IP][containerID] = newContainer
+			m.containersMap[fromBuyer.IP][containerID] = newContainer
 		}
 
-		deployedContStatus[i].SupplierIP = man.config.HostIP() // Set the container's supplier's IP!
+		deployedContStatus[i].SupplierIP = m.config.HostIP() // Set the container's supplier's IP!
 
 		log.Debugf(util.LogTag("CONTAINER")+"[%d] Container %s RUNNING, Img: %s, Args: %v, Res: <%d,%d>",
 			i, containerID[0:12], contConfig.ImageKey, contConfig.Args, contResources.CPUs(),
@@ -123,21 +125,21 @@ func (man *Manager) StartContainer(fromBuyer *types.Node, offer *types.Offer, co
 }
 
 // StopContainer stop a local container in the Docker engine and remove it.
-func (man *Manager) StopContainer(containerIDToStop string) error {
-	man.containersMutex.Lock()
-	defer man.containersMutex.Unlock()
+func (m *Manager) StopContainer(containerIDToStop string) error {
+	m.containersMutex.Lock()
+	defer m.containersMutex.Unlock()
 
-	for buyerIP, containersMap := range man.containersMap {
+	for buyerIP, containersMap := range m.containersMap {
 		for containerID, container := range containersMap {
 			if containerID == containerIDToStop {
-				man.dockerClient.RemoveContainer(containerIDToStop)
-				man.supplier.ReturnResources(container.Resources(), 1)
+				m.dockerClient.RemoveContainer(containerIDToStop)
+				m.supplier.ReturnResources(container.Resources(), 1)
 				delete(containersMap, containerID)
 				return nil
 			}
 		}
 		if containersMap == nil || len(containersMap) == 0 {
-			delete(man.containersMap, buyerIP)
+			delete(m.containersMap, buyerIP)
 		}
 	}
 
@@ -148,32 +150,67 @@ func (man *Manager) StopContainer(containerIDToStop string) error {
 // =							SubComponent Interface                           =
 // ===============================================================================
 
-func (man *Manager) Start() {
-	man.Started(man.config.Simulation(), func() {
-		if !man.config.Simulation() {
-			eventsChan := man.dockerClient.Start()
-			man.receiveDockerEvents(eventsChan)
+func (m *Manager) Start() {
+	m.Started(m.config.Simulation(), func() {
+		if !m.config.Simulation() {
+			eventsChan := m.dockerClient.Start()
+			m.receiveDockerEvents(eventsChan)
 		}
 	})
 }
 
-func (man *Manager) Stop() {
-	man.Stopped(func() {
-		man.containersMutex.Lock()
-		defer man.containersMutex.Unlock()
+func (m *Manager) Stop() {
+	m.Stopped(func() {
+		m.containersMutex.Lock()
+		defer m.containersMutex.Unlock()
 
 		// Stop and remove all the running containers from the docker engine
-		for _, containers := range man.containersMap {
+		for _, containers := range m.containersMap {
 			for containerID := range containers {
-				man.dockerClient.RemoveContainer(containerID)
+				m.dockerClient.RemoveContainer(containerID)
 				log.Debugf(util.LogTag("CONTAINER")+"Container, %s STOPPED and REMOVED", containerID)
 			}
 		}
 
-		man.quitChan <- true
+		m.quitChan <- true
 	})
 }
 
-func (man *Manager) IsWorking() bool {
-	return man.Working()
+func (m *Manager) IsWorking() bool {
+	return m.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (m *Manager) DebugSizeBytes() int {
+	localContainerSize := func(container *localContainer) uintptr {
+		contSizeBytes := unsafe.Sizeof(*container)
+		contSizeBytes += debug.DebugSizeofString(container.buyerIP)
+		// common.Container
+		contSizeBytes += unsafe.Sizeof(*container.Container)
+		contSizeBytes += debug.DebugSizeofString(container.Name())
+		contSizeBytes += debug.DebugSizeofString(container.ImageKey())
+		contSizeBytes += debug.DebugSizeofString(container.ID())
+		contSizeBytes += debug.DebugSizeofStringSlice(container.Args())
+		contSizeBytes += debug.DebugSizeofPortMappings(container.PortMappings())
+		return contSizeBytes
+	}
+
+	contManagerSizeBytes := unsafe.Sizeof(*m)
+	for k, v := range m.containersMap {
+		contManagerSizeBytes += unsafe.Sizeof(k)
+		contManagerSizeBytes += debug.DebugSizeofString(k)
+		contManagerSizeBytes += unsafe.Sizeof(v)
+		if v != nil {
+			for k2, v2 := range v {
+				contManagerSizeBytes += unsafe.Sizeof(k2)
+				contManagerSizeBytes += debug.DebugSizeofString(k2)
+				contManagerSizeBytes += unsafe.Sizeof(v2)
+				contManagerSizeBytes += localContainerSize(v2)
+			}
+		}
+	}
+	return int(contManagerSizeBytes)
 }

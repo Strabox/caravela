@@ -8,6 +8,7 @@ import (
 	"github.com/strabox/caravela/node/common/guid"
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/overlay"
 )
 
 type multipleOfferStrategy struct {
@@ -25,7 +26,7 @@ func newMultipleOfferStrategy(node common.Node, config *configuration.Configurat
 	}, nil
 }
 
-func (m *multipleOfferStrategy) Init(supp *Supplier, resourcesMapping *resources.Mapping, overlay external.Overlay,
+func (m *multipleOfferStrategy) Init(supp *Supplier, resourcesMapping *resources.Mapping, overlay overlay.Overlay,
 	remoteClient external.Caravela) {
 	m.localSupplier = supp
 	m.resourcesMapping = resourcesMapping

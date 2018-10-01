@@ -10,15 +10,18 @@ import (
 	"github.com/strabox/caravela/node/common/resources"
 	"github.com/strabox/caravela/node/discovery/backend"
 	"github.com/strabox/caravela/node/external"
+	"github.com/strabox/caravela/overlay"
 	"github.com/strabox/caravela/util"
+	"github.com/strabox/caravela/util/debug"
 	"sync"
+	"unsafe"
 )
 
 type Discovery struct {
 	common.NodeComponent // Base component
 
 	config  *configuration.Configuration // System's configurations.
-	overlay external.Overlay             // Overlay component.
+	overlay overlay.Overlay              // Overlay component.
 	client  external.Caravela            // Remote caravela's client.
 
 	nodeGUID         *guid.GUID           //
@@ -27,7 +30,7 @@ type Discovery struct {
 	resourcesMutex   sync.Mutex           //
 }
 
-func NewRandomDiscovery(_ common.Node, config *configuration.Configuration, overlay external.Overlay,
+func NewRandomDiscovery(_ common.Node, config *configuration.Configuration, overlay overlay.Overlay,
 	client external.Caravela, _ *resources.Mapping, maxResources resources.Resources) (backend.Discovery, error) {
 
 	return &Discovery{
@@ -41,6 +44,10 @@ func NewRandomDiscovery(_ common.Node, config *configuration.Configuration, over
 		freeResources:  maxResources.Copy(),
 		resourcesMutex: sync.Mutex{},
 	}, nil
+}
+
+func (d *Discovery) GUID() string {
+	return d.nodeGUID.String()
 }
 
 // ========================== Internal Services =============================
@@ -60,7 +67,6 @@ func (d *Discovery) FindOffers(ctx context.Context, targetResources resources.Re
 	for retry := 0; retry < d.config.RandBackendMaxRetries(); retry++ {
 		destinationGUID := guid.NewGUIDRandom()
 
-		ctx := context.WithValue(ctx, types.NodeGUIDKey, d.nodeGUID.String())
 		nodes, err := d.overlay.Lookup(ctx, destinationGUID.Bytes())
 		if err != nil {
 			continue
@@ -168,7 +174,7 @@ func (d *Discovery) AdvertiseNeighborOffers(_, _, _ *types.Node) {
 
 // ============== External/Remote Services (Only Simulation) ================
 
-func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int) {
+func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int, int) {
 	d.resourcesMutex.Lock()
 	defer d.resourcesMutex.Unlock()
 	return types.Resources{
@@ -181,6 +187,7 @@ func (d *Discovery) NodeInformationSim() (types.Resources, types.Resources, int)
 			CPUs:     d.maximumResources.CPUs(),
 			Memory:   d.maximumResources.Memory(),
 		},
+		0,
 		0
 }
 
@@ -210,4 +217,16 @@ func (d *Discovery) Stop() {
 
 func (d *Discovery) IsWorking() bool {
 	return d.Working()
+}
+
+// ===============================================================================
+// =							    Debug Methods                                =
+// ===============================================================================
+
+func (d *Discovery) DebugSizeBytes() int {
+	schedulerSizeBytes := unsafe.Sizeof(*d)
+	schedulerSizeBytes += debug.DebugSizeofGUID(d.nodeGUID)
+	schedulerSizeBytes += debug.DebugSizeofResources(d.maximumResources)
+	schedulerSizeBytes += debug.DebugSizeofResources(d.freeResources)
+	return int(schedulerSizeBytes)
 }
