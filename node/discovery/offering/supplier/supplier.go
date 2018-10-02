@@ -333,16 +333,16 @@ func (s *Supplier) DebugSizeBytes() int {
 		offerSizeBytes := unsafe.Sizeof(*offer)
 		// common.Offer
 		offerSizeBytes += unsafe.Sizeof(*offer.Offer)
-		offerSizeBytes += debug.DebugSizeofResources(offer.Offer.Resources())
+		offerSizeBytes += debug.SizeofResources(offer.Offer.Resources())
 		// supplier offer
-		offerSizeBytes += debug.DebugSizeofString(offer.responsibleTraderIP)
-		offerSizeBytes += debug.DebugSizeofGUID(offer.responsibleTraderGUID)
+		offerSizeBytes += debug.SizeofString(offer.responsibleTraderIP)
+		offerSizeBytes += debug.SizeofGUID(offer.responsibleTraderGUID)
 		return offerSizeBytes
 	}
 
 	supplierSizeBytes := unsafe.Sizeof(*s)
-	supplierSizeBytes += debug.DebugSizeofResources(s.maxResources)
-	supplierSizeBytes += debug.DebugSizeofResources(s.availableResources)
+	supplierSizeBytes += debug.SizeofResources(s.maxResources)
+	supplierSizeBytes += debug.SizeofResources(s.availableResources)
 	supplierSizeBytes += 30 // Hack: Offer strategy structure.
 	for offerID, offer := range s.activeOffers {
 		supplierSizeBytes += unsafe.Sizeof(offerID)

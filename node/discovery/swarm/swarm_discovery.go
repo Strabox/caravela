@@ -367,21 +367,21 @@ func (d *Discovery) IsWorking() bool {
 func (d *Discovery) DebugSizeBytes() int {
 	clusterNodeSize := func(clusterNode *clusterNode) uintptr {
 		clusterNodeSizeBytes := unsafe.Sizeof(*clusterNode)
-		clusterNodeSizeBytes += debug.DebugSizeofString(clusterNode.ipAddress)
+		clusterNodeSizeBytes += debug.SizeofString(clusterNode.ipAddress)
 		return clusterNodeSizeBytes
 	}
 
 	swarmSizeBytes := unsafe.Sizeof(*d)
-	swarmSizeBytes += debug.DebugSizeofGUID(d.nodeGUID)
-	swarmSizeBytes += debug.DebugSizeofResources(d.maximumResources)
-	swarmSizeBytes += debug.DebugSizeofResources(d.availableResources)
+	swarmSizeBytes += debug.SizeofGUID(d.nodeGUID)
+	swarmSizeBytes += debug.SizeofResources(d.maximumResources)
+	swarmSizeBytes += debug.SizeofResources(d.availableResources)
 	for i := range d.clusterNodes {
 		swarmSizeBytes += unsafe.Sizeof(d.clusterNodes[i])
 		swarmSizeBytes += clusterNodeSize(d.clusterNodes[i])
 	}
 	d.clusterNodesByGUID.Range(func(key, value interface{}) bool {
 		swarmSizeBytes += unsafe.Sizeof(key.(string))
-		swarmSizeBytes += debug.DebugSizeofString(key.(string))
+		swarmSizeBytes += debug.SizeofString(key.(string))
 		swarmSizeBytes += unsafe.Sizeof(value.(*clusterNode))
 		return true
 	})

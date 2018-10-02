@@ -147,21 +147,21 @@ func (m *Manager) isWorking() bool {
 func (m *Manager) DebugSizeBytes() int {
 	deployedContainerSize := func(container *deployedContainer) uintptr {
 		contSizeBytes := unsafe.Sizeof(*container)
-		contSizeBytes += debug.DebugSizeofString(container.suppIP)
+		contSizeBytes += debug.SizeofString(container.suppIP)
 		// common.Container
 		contSizeBytes += unsafe.Sizeof(*container.Container)
-		contSizeBytes += debug.DebugSizeofString(container.Name())
-		contSizeBytes += debug.DebugSizeofString(container.ImageKey())
-		contSizeBytes += debug.DebugSizeofString(container.ID())
-		contSizeBytes += debug.DebugSizeofStringSlice(container.Args())
-		contSizeBytes += debug.DebugSizeofPortMappings(container.PortMappings())
+		contSizeBytes += debug.SizeofString(container.Name())
+		contSizeBytes += debug.SizeofString(container.ImageKey())
+		contSizeBytes += debug.SizeofString(container.ID())
+		contSizeBytes += debug.SizeofStringSlice(container.Args())
+		contSizeBytes += debug.SizeofPortMappings(container.PortMappings())
 		return contSizeBytes
 	}
 
 	userManagerSizeBytes := unsafe.Sizeof(*m)
 	m.containers.Range(func(key, value interface{}) bool {
 		userManagerSizeBytes += unsafe.Sizeof(key.(string))
-		userManagerSizeBytes += debug.DebugSizeofString(key.(string))
+		userManagerSizeBytes += debug.SizeofString(key.(string))
 		userManagerSizeBytes += unsafe.Sizeof(value.(*deployedContainer))
 		userManagerSizeBytes += deployedContainerSize(value.(*deployedContainer))
 		return true

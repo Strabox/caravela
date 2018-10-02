@@ -225,8 +225,8 @@ func (d *Discovery) IsWorking() bool {
 
 func (d *Discovery) DebugSizeBytes() int {
 	schedulerSizeBytes := unsafe.Sizeof(*d)
-	schedulerSizeBytes += debug.DebugSizeofGUID(d.nodeGUID)
-	schedulerSizeBytes += debug.DebugSizeofResources(d.maximumResources)
-	schedulerSizeBytes += debug.DebugSizeofResources(d.freeResources)
+	schedulerSizeBytes += debug.SizeofGUID(d.nodeGUID)
+	schedulerSizeBytes += debug.SizeofResources(d.maximumResources)
+	schedulerSizeBytes += debug.SizeofResources(d.freeResources)
 	return int(schedulerSizeBytes)
 }

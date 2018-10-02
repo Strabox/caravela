@@ -401,16 +401,16 @@ func (t *Trader) DebugSizeBytes() int {
 		offerSizeBytes := unsafe.Sizeof(*offer)
 		// common.Offer
 		offerSizeBytes += unsafe.Sizeof(*offer.Offer)
-		offerSizeBytes += debug.DebugSizeofResources(offer.Offer.Resources())
+		offerSizeBytes += debug.SizeofResources(offer.Offer.Resources())
 		// trader offer
-		offerSizeBytes += debug.DebugSizeofString(offer.supplierIP)
-		offerSizeBytes += debug.DebugSizeofGUID(offer.supplierGUID)
+		offerSizeBytes += debug.SizeofString(offer.supplierIP)
+		offerSizeBytes += debug.SizeofGUID(offer.supplierGUID)
 		return offerSizeBytes
 	}
 
 	traderSizeBytes := unsafe.Sizeof(*t)
 	traderSizeBytes += unsafe.Sizeof(*t.nearbyTradersOffering)
-	traderSizeBytes += debug.DebugSizeofResources(t.handledResources)
+	traderSizeBytes += debug.SizeofResources(t.handledResources)
 	for offerID, offer := range t.offers {
 		traderSizeBytes += unsafe.Sizeof(offerID)
 		traderSizeBytes += unsafe.Sizeof(offer)

@@ -197,13 +197,13 @@ func (d *Discovery) IsWorking() bool {
 
 func (d *Discovery) DebugSizeBytes() int {
 	discoverySizeBytes := unsafe.Sizeof(*d)
-	discoverySizeBytes += debug.DebugSizeofGUID(d.nodeGUID)
+	discoverySizeBytes += debug.SizeofGUID(d.nodeGUID)
 	// Resources<->GUIDMap
 	discoverySizeBytes += 500 // Hack!
 	// Traders.
 	d.traders.Range(func(key, value interface{}) bool {
 		discoverySizeBytes += unsafe.Sizeof(key.(string))
-		discoverySizeBytes += debug.DebugSizeofString(key.(string))
+		discoverySizeBytes += debug.SizeofString(key.(string))
 		discoverySizeBytes += unsafe.Sizeof(value.(*trader.Trader))
 		discoverySizeBytes += uintptr(value.(*trader.Trader).DebugSizeBytes())
 		return true

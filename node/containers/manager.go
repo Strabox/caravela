@@ -187,26 +187,26 @@ func (m *Manager) IsWorking() bool {
 func (m *Manager) DebugSizeBytes() int {
 	localContainerSize := func(container *localContainer) uintptr {
 		contSizeBytes := unsafe.Sizeof(*container)
-		contSizeBytes += debug.DebugSizeofString(container.buyerIP)
+		contSizeBytes += debug.SizeofString(container.buyerIP)
 		// common.Container
 		contSizeBytes += unsafe.Sizeof(*container.Container)
-		contSizeBytes += debug.DebugSizeofString(container.Name())
-		contSizeBytes += debug.DebugSizeofString(container.ImageKey())
-		contSizeBytes += debug.DebugSizeofString(container.ID())
-		contSizeBytes += debug.DebugSizeofStringSlice(container.Args())
-		contSizeBytes += debug.DebugSizeofPortMappings(container.PortMappings())
+		contSizeBytes += debug.SizeofString(container.Name())
+		contSizeBytes += debug.SizeofString(container.ImageKey())
+		contSizeBytes += debug.SizeofString(container.ID())
+		contSizeBytes += debug.SizeofStringSlice(container.Args())
+		contSizeBytes += debug.SizeofPortMappings(container.PortMappings())
 		return contSizeBytes
 	}
 
 	contManagerSizeBytes := unsafe.Sizeof(*m)
 	for k, v := range m.containersMap {
 		contManagerSizeBytes += unsafe.Sizeof(k)
-		contManagerSizeBytes += debug.DebugSizeofString(k)
+		contManagerSizeBytes += debug.SizeofString(k)
 		contManagerSizeBytes += unsafe.Sizeof(v)
 		if v != nil {
 			for k2, v2 := range v {
 				contManagerSizeBytes += unsafe.Sizeof(k2)
-				contManagerSizeBytes += debug.DebugSizeofString(k2)
+				contManagerSizeBytes += debug.SizeofString(k2)
 				contManagerSizeBytes += unsafe.Sizeof(v2)
 				contManagerSizeBytes += localContainerSize(v2)
 			}
