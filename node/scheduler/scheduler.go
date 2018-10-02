@@ -126,7 +126,7 @@ func (s *Scheduler) launchContainers(ctx context.Context, containersConfigs []ty
 	}
 
 	offers := s.discovery.FindOffers(ctx, resourcesNecessary)
-	CreateSchedulePolicy(s.config).Sort(offers, resourcesNecessary) // Sort the offers according with the schedule policy.
+	offers = CreateSchedulePolicy(s.config).Rank(offers, resourcesNecessary) // Rank the offers according with the scheduling policy.
 
 	if len(offers) == 0 {
 		log.Debugf(util.LogTag("SCHEDULE") + "Deploy FAILED. No offers found.")

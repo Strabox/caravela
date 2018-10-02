@@ -138,24 +138,12 @@ func (t *Trader) CreateOffer(fromSupp *types.Node, newOffer *types.Offer) {
 		offer := newTraderOffer(*guid.NewGUIDString(fromSupp.GUID), fromSupp.IP, common.OfferID(newOffer.ID),
 			newOffer.Amount, *resourcesOffered)
 
-		advertise := len(t.offers) == 0
-
 		t.offers[offerKey] = offer
 		log.Debugf(util.LogTag("TRADER")+"%s Offer CREATED %dX<%d;%d>, From: %s, Offer: %d",
 			t.guid.Short(), newOffer.Amount, newOffer.FreeResources.CPUs, newOffer.FreeResources.Memory,
 			fromSupp.IP, newOffer.ID)
 
 		t.offersMutex.Unlock()
-
-		if advertise && t.config.SpreadOffers() { // If node had no offers, advertise it has now for all the neighbors
-			if t.config.Simulation() {
-				t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
-			} else {
-				go t.advertiseOffersToNeighbors(func(neighborGUID *guid.GUID) bool { return true },
-					&types.Node{GUID: t.guid.String(), IP: t.config.HostIP()})
-			}
-		}
 	}
 }
 

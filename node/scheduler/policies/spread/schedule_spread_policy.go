@@ -17,7 +17,8 @@ func NewSpreadSchedulePolicy() (policies.SchedulingPolicy, error) {
 	return &SchedulePolicy{}, nil
 }
 
-func (s *SchedulePolicy) Sort(availableOffers policies.WeightedOffers, necessaryResources resources.Resources) {
-	s.Rank(availableOffers, necessaryResources)
-	sort.Sort(availableOffers)
+func (s *SchedulePolicy) Rank(availableOffers policies.WeightedOffers, necessaryResources resources.Resources) policies.WeightedOffers {
+	suitableOffers := s.WeightOffers(availableOffers, necessaryResources)
+	sort.Sort(suitableOffers)
+	return suitableOffers
 }

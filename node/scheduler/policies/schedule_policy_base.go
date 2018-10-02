@@ -8,7 +8,8 @@ import (
 type BaseSchedulePolicy struct {
 }
 
-func (b *BaseSchedulePolicy) Rank(availableOffers WeightedOffers, necessaryResources resources.Resources) {
+func (b *BaseSchedulePolicy) WeightOffers(availableOffers WeightedOffers, necessaryResources resources.Resources) WeightedOffers {
+	suitableOffers := make(WeightedOffers, 0)
 	for i, offer := range availableOffers {
 		offerResources := resources.NewResourcesCPUClass(int(offer.FreeResources.CPUClass), offer.FreeResources.CPUs, offer.FreeResources.Memory)
 		// Skip nodes that don't have sufficient available resources.
@@ -32,6 +33,8 @@ func (b *BaseSchedulePolicy) Rank(availableOffers WeightedOffers, necessaryResou
 
 		if cpuScore <= 100 && memoryScore <= 100 {
 			availableOffers[i].Weight = cpuScore + memoryScore
+			suitableOffers = append(suitableOffers, availableOffers[i])
 		}
 	}
+	return suitableOffers
 }
