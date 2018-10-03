@@ -1,6 +1,6 @@
 package types
 
 type PartitionState struct {
-	PartitionResources Resources `json:"PartitionResources"`
-	Hits               int       `json:"Hits"`
+	PartitionResources Resources `json:"PR"`
+	Hits               int       `json:"H"`
 }

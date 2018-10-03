@@ -3,22 +3,22 @@ package types
 import "github.com/pkg/errors"
 
 type Resources struct {
-	CPUClass CPUClass `json:"CPUClass"`
+	CPUClass CPUClass `json:"CC"`
 	CPUs     int      `json:"CPUs"`
-	Memory   int      `json:"Memory"`
+	Memory   int      `json:"RAM"`
 }
 
 type Offer struct {
 	ID                int64     `json:"ID"`
-	Amount            int       `json:"Amount"`
-	FreeResources     Resources `json:"FreeResources"`
-	UsedResources     Resources `json:"UsedResources"`
-	ContainersRunning int       `json:"ContainersRunning"`
+	Amount            int       `json:"A"`
+	FreeResources     Resources `json:"FR"`
+	UsedResources     Resources `json:"UR"`
+	ContainersRunning int       `json:"CR"`
 }
 
 type AvailableOffer struct {
-	Offer      `json:"Offer"`
-	SupplierIP string `json:"SupplierIP"`
+	Offer      `json:"O"`
+	SupplierIP string `json:"SIp"`
 	Weight     int    `json:"-"` // Used locally only by the scheduler.
 }
 

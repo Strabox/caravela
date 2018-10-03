@@ -3,25 +3,25 @@ package types
 import "errors"
 
 type ContainerConfig struct {
-	Name         string        `json:"Name"`
-	ImageKey     string        `json:"ImageKey"`
-	Args         []string      `json:"Args"`
-	PortMappings []PortMapping `json:"PortMappings"`
-	Resources    Resources     `json:"FreeResources"`
-	GroupPolicy  GroupPolicy   `json:"GroupPolicy"`
+	Name         string        `json:"N"`
+	ImageKey     string        `json:"IK"`
+	Args         []string      `json:"A"`
+	PortMappings []PortMapping `json:"PM"`
+	Resources    Resources     `json:"FR"`
+	GroupPolicy  GroupPolicy   `json:"GP"`
 }
 
 type ContainerStatus struct {
-	ContainerConfig `json:"ContainerConfig"`
-	SupplierIP      string `json:"SupplierIP"`
-	ContainerID     string `json:"ContainerID"`
-	Status          string `json:"Status"`
+	ContainerConfig `json:"CC"`
+	SupplierIP      string `json:"SIp"`
+	ContainerID     string `json:"CId"`
+	Status          string `json:"S"`
 }
 
 type PortMapping struct {
-	HostPort      int    `json:"HostPort"`
-	ContainerPort int    `json:"ContainerPort"`
-	Protocol      string `json:"Protocol"`
+	HostPort      int    `json:"HP"`
+	ContainerPort int    `json:"CP"`
+	Protocol      string `json:"P"`
 }
 
 // ======================= Container Group Policy ========================
