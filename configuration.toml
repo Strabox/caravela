@@ -6,12 +6,11 @@ CPUOvercommit = 100
 MemoryOvercommit = 100
 SchedulingPolicy = "binpack"
 [Caravela.DiscoveryBackend]
-Backend = "chord-single-offer"
+    Backend = "chord-multiple-offer"
     [Caravela.DiscoveryBackend.OfferingChordBackend]
     SupplyingInterval = "1m"
-    SpreadOffersInterval = "1m"
-    RefreshingInterval = "5m"
-    RefreshesCheckInterval = "5m30s"
+    RefreshingInterval = "15m"
+    RefreshesCheckInterval = "15m30s"
     RefreshMissedTimeout = "1m"
     MaxRefreshesFailed = 3
     MaxRefreshesMissed = 2
@@ -61,3 +60,4 @@ OverlayPort = 8000
     VirtualNodes = 12
     NumSuccessors = 4
     HashSizeBits = 128
+

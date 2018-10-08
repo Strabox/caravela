@@ -85,7 +85,7 @@ func (m *Manager) StopContainers(ctx context.Context, containerIDs []string) err
 		container, ok := contTmp.(*deployedContainer)
 		if contExist && ok {
 			if err := m.userRemoteCli.StopLocalContainer(ctx, &types.Node{IP: container.supplierIP()}, container.ID()); err == nil {
-				m.containers.Delete(contID)
+				m.containers.Delete(contID[:common.ContainerShortIDSize])
 			} else {
 				fail = true
 				errMsg += " " + contID
